@@ -27,7 +27,6 @@
     
     /* Transiciones */
     --transition: all 0.3s ease;
-    --transition-fast: all 0.15s ease;
 }
 
 /* Estilos base */
@@ -40,7 +39,6 @@ body {
     color: var(--color-text);
 }
 
-/* Contenedor principal */
 .container {
     width: 90%;
     max-width: 1200px;
@@ -68,7 +66,7 @@ h2 {
     margin-bottom: 1.25rem;
 }
 
-/* Secciones de formulario e inventario */
+/* Formularios */
 .form-container, .inventario-container {
     background: var(--color-bg-secondary);
     padding: 25px;
@@ -77,10 +75,8 @@ h2 {
     box-shadow: var(--box-shadow);
 }
 
-/* Grupos de formulario */
 .form-group {
     margin-bottom: 20px;
-    position: relative;
 }
 
 .form-group label {
@@ -90,7 +86,6 @@ h2 {
     color: var(--color-text-dark);
 }
 
-/* Campos de formulario */
 input, select {
     width: 100%;
     padding: 12px;
@@ -107,7 +102,7 @@ input:focus, select:focus {
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
 }
 
-/* Botones base */
+/* Botones principales */
 button {
     background: var(--color-primary);
     color: var(--color-text-light);
@@ -126,11 +121,6 @@ button:hover {
     box-shadow: var(--box-shadow);
 }
 
-button:active {
-    transform: translateY(0);
-}
-
-/* Botón Agregar/Submit */
 button[type="submit"] {
     background-color: var(--color-success);
     display: flex;
@@ -175,117 +165,62 @@ th {
     background-color: var(--color-primary);
     color: var(--color-text-light);
     font-weight: bold;
-    text-transform: uppercase;
     font-size: 14px;
 }
 
-/* Filas de artículos */
-tr.fila-articulo {
-    transition: var(--transition);
-    background-color: var(--color-bg-light);
+tr:hover {
+    background-color: #f5f9ff;
 }
 
-tr.fila-articulo:hover {
-    background-color: #f0f8ff;
-    transform: scale(1.01);
-    box-shadow: var(--box-shadow);
-}
-
-/* Acciones en tabla */
-.acciones {
+/* BOTONES DE ACCIÓN - VERSIÓN FINAL */
+.acciones-cuadradas {
     display: flex;
     gap: 8px;
-}
-
-.acciones button {
-    padding: 8px 12px;
+    justify-content: center;
+  }
+  
+  .acciones-cuadradas button {
+    all: unset; /* Reset completo */
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
     font-size: 14px;
-    flex: 1;
-    text-transform: none;
-}
-
-.eliminar {
-    background-color: var(--color-danger);
-}
-
-.eliminar:hover {
-    background-color: var(--color-danger-hover);
-}
-
-.editar {
-    background-color: var(--color-warning);
-}
-
-.editar:hover {
-    background-color: var(--color-warning-hover);
-}
-
-/* Notificaciones */
-.notificacion {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 15px 25px;
-    border-radius: var(--border-radius);
-    color: var(--color-text-light);
-    font-weight: bold;
-    box-shadow: var(--box-shadow-lg);
-    opacity: 1;
-    transition: var(--transition);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.notificacion.success {
-    background-color: var(--color-success);
-}
-
-.notificacion.error {
-    background-color: var(--color-danger);
-}
-
-/* Validación */
-input:invalid, select:invalid {
-    border-color: var(--color-danger);
-}
-
-.error-mensaje {
-    color: var(--color-danger);
-    font-size: 0.8rem;
-    margin-top: 5px;
-    display: block;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .container {
-        width: 95%;
-        padding: 15px;
-    }
-    
-    .filtros {
-        flex-direction: column;
-    }
-    
-    .acciones {
-        flex-direction: column;
-    }
-    
-    table {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
-    
-    th, td {
-        padding: 10px;
-    }
-}
-
-/* Iconos */
-.icono {
-    font-weight: bold;
-    font-size: 1.1em;
-}
+    transition: all 0.2s ease;
+    color: white !important;
+  }
+  
+  .acciones-cuadradas button i {
+    font-size: 14px;
+    display: block !important;
+  }
+  
+  /* Estilos específicos */
+  .acciones-cuadradas .btn-editar {
+    background-color: #FFA726; /* Naranja */
+  }
+  
+  .acciones-cuadradas .btn-eliminar {
+    background-color: #EF5350; /* Rojo */
+  }
+  
+  /* Efectos hover */
+  .acciones-cuadradas button:hover {
+    transform: scale(1.1);
+  }
+  .acciones-cuadradas .btn-editar:hover {
+    background-color: #FB8C00;
+  }
+  .acciones-cuadradas .btn-eliminar:hover {
+    background-color: #E53935;
+  }
+  
+  /* Eliminar texto */
+  .acciones-cuadradas button span,
+  .acciones-cuadradas button:after {
+    display: none !important;
+    content: "" !important;
+  }
+  

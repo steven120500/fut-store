@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Array para almacenar los artículos
     let inventario = JSON.parse(localStorage.getItem('inventarioCamisetas')) || [];
+    let articuloEditandoId = null;
     
     // Elementos del DOM
     const form = document.getElementById('form-articulo');
@@ -8,12 +9,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputBusqueda = document.getElementById('busqueda');
     const btnFiltrar = document.getElementById('btn-filtrar');
     const btnReset = document.getElementById('btn-reset');
-    
-    // Evento para agregar artículo
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        agregarArticulo();
+    const btnAgregar = document.getElementById('btn-agregar');
+
+    // Event Listeners
+    form.addEventListener('submit', manejarSubmit);
+    btnFiltrar.addEventListener('click', filtrarArticulos);
+    btnReset.addEventListener('click', () => {
+        inputBusqueda.value = '';
+        renderizarTabla();
     });
+
+    // Función principal para manejar el envío del formulario
+    function manejarSubmit(e) {
+        e.preventDefault();
+        
+        if (articuloEditandoId !== null) {
+            actualizarArticulo(articuloEditandoId);
+        } else {
+            agregarArticulo();
+        }
+    }
 
     // Función para agregar artículo
     function agregarArticulo() {
@@ -21,14 +36,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const equipo = document.getElementById('equipo').value.trim();
         const jugador = document.getElementById('jugador').value.trim();
         const temporada = document.getElementById('temporada').value.trim();
+        const color = document.getElementById('color').value.trim();
         const talla = document.getElementById('talla').value;
         const tipo = document.getElementById('tipo').value;
         const cantidad = parseInt(document.getElementById('cantidad').value);
         const precio = parseFloat(document.getElementById('precio').value);
         
         // Validación
-        if (!equipo || !jugador) {
-            mostrarError('Por favor complete equipo y jugador');
+        if (!equipo || !jugador || !color) {
+            mostrarError('Por favor complete equipo, jugador y color');
             return;
         }
         
@@ -47,6 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
             equipo,
             jugador,
             temporada: temporada || '2023-2024',
+            color,
             talla,
             tipo,
             cantidad,
@@ -63,12 +80,62 @@ document.addEventListener('DOMContentLoaded', function() {
         mostrarNotificacion('Artículo agregado correctamente', 'success');
     }
 
+    // Función para actualizar artículo
+    function actualizarArticulo(id) {
+        // Obtener valores del formulario
+        const equipo = document.getElementById('equipo').value.trim();
+        const jugador = document.getElementById('jugador').value.trim();
+        const temporada = document.getElementById('temporada').value.trim();
+        const color = document.getElementById('color').value.trim();
+        const talla = document.getElementById('talla').value;
+        const tipo = document.getElementById('tipo').value;
+        const cantidad = parseInt(document.getElementById('cantidad').value);
+        const precio = parseFloat(document.getElementById('precio').value);
+        
+        // Validación
+        if (!equipo || !jugador || !color) {
+            mostrarError('Por favor complete equipo, jugador y color');
+            return;
+        }
+        
+        if (isNaN(cantidad) || cantidad <= 0) {
+            mostrarError('La cantidad debe ser mayor a 0');
+            return;
+        }
+        
+        if (isNaN(precio) || precio <= 0) {
+            mostrarError('El precio debe ser válido');
+            return;
+        }
+
+        // Actualizar el artículo
+        inventario[id] = {
+            equipo,
+            jugador,
+            temporada,
+            color,
+            talla,
+            tipo,
+            cantidad,
+            precio
+        };
+
+        guardarEnLocalStorage();
+        renderizarTabla();
+        mostrarNotificacion('Artículo actualizado correctamente', 'success');
+
+        // Restaurar formulario a modo agregar
+        form.reset();
+        btnAgregar.textContent = 'Agregar al Inventario';
+        articuloEditandoId = null;
+    }
+
     // Función para renderizar la tabla
     function renderizarTabla(items = inventario) {
         tabla.innerHTML = '';
         
         if (items.length === 0) {
-            tabla.innerHTML = '<tr><td colspan="8">No hay artículos en el inventario</td></tr>';
+            tabla.innerHTML = '<tr><td colspan="9">No hay artículos en el inventario</td></tr>';
             return;
         }
         
@@ -78,6 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${item.equipo || '-'}</td>
                 <td>${item.jugador || '-'}</td>
                 <td>${item.temporada || '-'}</td>
+                <td>${item.color || '-'}</td>
                 <td>${item.talla || '-'}</td>
                 <td>${item.cantidad || 0}</td>
                 <td>${item.precio ? item.precio.toFixed(2) : '0.00'} €</td>
@@ -90,7 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
             tabla.appendChild(tr);
         });
         
-        // Agregar eventos a los botones
         agregarEventosBotones();
     }
 
@@ -108,9 +175,29 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.editar').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.getAttribute('data-id');
-                editarArticulo(id);
+                prepararEdicion(id);
             });
         });
+    }
+
+    // Función para preparar la edición
+    function prepararEdicion(id) {
+        const articulo = inventario[id];
+        if (!articulo) return;
+        
+        articuloEditandoId = id;
+
+        // Llenar formulario
+        document.getElementById('equipo').value = articulo.equipo || '';
+        document.getElementById('jugador').value = articulo.jugador || '';
+        document.getElementById('temporada').value = articulo.temporada || '';
+        document.getElementById('color').value = articulo.color || '';
+        document.getElementById('talla').value = articulo.talla || 'M';
+        document.getElementById('tipo').value = articulo.tipo || 'Retro';
+        document.getElementById('cantidad').value = articulo.cantidad || 1;
+        document.getElementById('precio').value = articulo.precio || 0;
+
+        btnAgregar.textContent = 'Actualizar Artículo';
     }
 
     // Función para eliminar artículo
@@ -123,43 +210,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Función para editar artículo
-    function editarArticulo(id) {
-        const articulo = inventario[id];
-        if (!articulo) return;
-        
-        // Llenar formulario con los datos
-        document.getElementById('equipo').value = articulo.equipo;
-        document.getElementById('jugador').value = articulo.jugador;
-        document.getElementById('temporada').value = articulo.temporada;
-        document.getElementById('talla').value = articulo.talla;
-        document.getElementById('tipo').value = articulo.tipo;
-        document.getElementById('cantidad').value = articulo.cantidad;
-        document.getElementById('precio').value = articulo.precio;
-        
-        // Eliminar el artículo antiguo
-        inventario.splice(id, 1);
-        
-        // Cambiar texto del botón
-        const btnSubmit = document.getElementById('btn-agregar');
-        btnSubmit.textContent = 'Actualizar Artículo';
-        
-        // Cambiar temporalmente el evento del formulario
-        form.removeEventListener('submit', agregarArticulo);
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            agregarArticulo();
-            btnSubmit.textContent = 'Agregar al Inventario';
-            form.addEventListener('submit', agregarArticulo);
-        });
-    }
-
     // Función para filtrar
     function filtrarArticulos() {
         const busqueda = inputBusqueda.value.toLowerCase();
         const resultados = inventario.filter(item => 
             item.equipo.toLowerCase().includes(busqueda) || 
-            item.jugador.toLowerCase().includes(busqueda)
+            item.jugador.toLowerCase().includes(busqueda) ||
+            item.color.toLowerCase().includes(busqueda)
         );
         renderizarTabla(resultados);
     }
@@ -186,13 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
         alert(mensaje);
     }
 
-    // Event Listeners adicionales
-    btnFiltrar.addEventListener('click', filtrarArticulos);
-    btnReset.addEventListener('click', () => {
-        inputBusqueda.value = '';
-        renderizarTabla();
-    });
-
     // Inicializar la tabla al cargar
     renderizarTabla();
+
+
 });
+
+
+
+
+
