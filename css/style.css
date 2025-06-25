@@ -1,0 +1,291 @@
+:root {
+    /* Colores principales */
+    --color-primary: #3498db;
+    --color-primary-hover: #2980b9;
+    --color-success: #2ecc71;
+    --color-success-hover: #27ae60;
+    --color-danger: #e74c3c;
+    --color-danger-hover: #c0392b;
+    --color-warning: #f39c12;
+    --color-warning-hover: #d35400;
+    
+    /* Colores de texto */
+    --color-text: #333;
+    --color-text-light: #f4f4f4;
+    --color-text-dark: #2c3e50;
+    
+    /* Fondos */
+    --color-bg: #f4f4f4;
+    --color-bg-light: #fff;
+    --color-bg-secondary: #f9f9f9;
+    
+    /* Bordes y sombras */
+    --border-radius: 4px;
+    --border-radius-lg: 8px;
+    --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    --box-shadow-lg: 0 4px 8px rgba(0,0,0,0.1);
+    
+    /* Transiciones */
+    --transition: all 0.3s ease;
+    --transition-fast: all 0.15s ease;
+}
+
+/* Estilos base */
+body {
+    font-family: 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+}
+
+/* Contenedor principal */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background: var(--color-bg-light);
+    box-shadow: var(--box-shadow-lg);
+    border-radius: var(--border-radius-lg);
+}
+
+/* Encabezados */
+h1, h2, h3 {
+    color: var(--color-text-dark);
+    margin-top: 0;
+}
+
+h1 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+/* Secciones de formulario e inventario */
+.form-container, .inventario-container {
+    background: var(--color-bg-secondary);
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow);
+}
+
+/* Grupos de formulario */
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--color-text-dark);
+}
+
+/* Campos de formulario */
+input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: var(--transition);
+    background-color: var(--color-bg-light);
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Botones base */
+button {
+    background: var(--color-primary);
+    color: var(--color-text-light);
+    border: none;
+    padding: 12px 20px;
+    cursor: pointer;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    transition: var(--transition);
+    font-weight: 600;
+}
+
+button:hover {
+    background: var(--color-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--box-shadow);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Botón Agregar/Submit */
+button[type="submit"] {
+    background-color: var(--color-success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+button[type="submit"]:hover {
+    background-color: var(--color-success-hover);
+}
+
+/* Filtros */
+.filtros {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+#busqueda {
+    flex-grow: 1;
+    padding: 12px;
+    font-size: 16px;
+}
+
+/* Tabla */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: var(--box-shadow);
+}
+
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: var(--color-primary);
+    color: var(--color-text-light);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+/* Filas de artículos */
+tr.fila-articulo {
+    transition: var(--transition);
+    background-color: var(--color-bg-light);
+}
+
+tr.fila-articulo:hover {
+    background-color: #f0f8ff;
+    transform: scale(1.01);
+    box-shadow: var(--box-shadow);
+}
+
+/* Acciones en tabla */
+.acciones {
+    display: flex;
+    gap: 8px;
+}
+
+.acciones button {
+    padding: 8px 12px;
+    font-size: 14px;
+    flex: 1;
+    text-transform: none;
+}
+
+.eliminar {
+    background-color: var(--color-danger);
+}
+
+.eliminar:hover {
+    background-color: var(--color-danger-hover);
+}
+
+.editar {
+    background-color: var(--color-warning);
+}
+
+.editar:hover {
+    background-color: var(--color-warning-hover);
+}
+
+/* Notificaciones */
+.notificacion {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: var(--border-radius);
+    color: var(--color-text-light);
+    font-weight: bold;
+    box-shadow: var(--box-shadow-lg);
+    opacity: 1;
+    transition: var(--transition);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notificacion.success {
+    background-color: var(--color-success);
+}
+
+.notificacion.error {
+    background-color: var(--color-danger);
+}
+
+/* Validación */
+input:invalid, select:invalid {
+    border-color: var(--color-danger);
+}
+
+.error-mensaje {
+    color: var(--color-danger);
+    font-size: 0.8rem;
+    margin-top: 5px;
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 15px;
+    }
+    
+    .filtros {
+        flex-direction: column;
+    }
+    
+    .acciones {
+        flex-direction: column;
+    }
+    
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    th, td {
+        padding: 10px;
+    }
+}
+
+/* Iconos */
+.icono {
+    font-weight: bold;
+    font-size: 1.1em;
+}
