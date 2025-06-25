@@ -35,7 +35,7 @@ body {
     line-height: 1.6;
     margin: 0;
     padding: 20px;
-    background-color: var(--color-bg);
+    background-color: #2980b9;
     color: var(--color-text);
 }
 
@@ -172,15 +172,15 @@ tr:hover {
     background-color: #f5f9ff;
 }
 
-/* BOTONES DE ACCIÓN - VERSIÓN FINAL */
+/* ===== BOTONES DE ACCIÓN ===== */
 .acciones-cuadradas {
     display: flex;
     gap: 8px;
     justify-content: center;
-  }
+}
   
-  .acciones-cuadradas button {
-    all: unset; /* Reset completo */
+.acciones-cuadradas button {
+    all: unset;
     width: 32px;
     height: 32px;
     border-radius: 4px;
@@ -190,52 +190,227 @@ tr:hover {
     font-size: 14px;
     transition: all 0.2s ease;
     color: white !important;
-  }
+}
   
-  .acciones-cuadradas button i {
+.acciones-cuadradas button i {
     font-size: 14px;
     display: block !important;
-  }
+}
   
-  /* Estilos específicos */
-  .acciones-cuadradas .editar {
-    background-color: #FFA726; /* Naranja */
-  }
+/* Estilos específicos */
+.acciones-cuadradas .editar {
+    background-color: var(--color-warning);
+}
   
-  .acciones-cuadradas .eliminar {
-    background-color: #EF5350; /* Rojo */
-  }
+.acciones-cuadradas .eliminar {
+    background-color: var(--color-danger);
+}
   
-  /* Efectos hover */
-  .acciones-cuadradas button:hover {
+/* Efectos hover */
+.acciones-cuadradas button:hover {
     transform: scale(1.1);
-  }
-  .acciones-cuadradas .editar:hover {
-    background-color: #FB8C00;
-  }
-  .acciones-cuadradas .eliminar:hover {
-    background-color: #E53935;
-  }
-  
-  /* Eliminar texto */
-  .acciones-cuadradas button span,
-  .acciones-cuadradas button:after {
-    display: none !important;
-    content: "" !important;
-  }
-  /* Ícono de warning */
+}
+
+.acciones-cuadradas .editar:hover {
+    background-color: var(--color-warning-hover);
+}
+
+.acciones-cuadradas .eliminar:hover {
+    background-color: var(--color-danger-hover);
+}
+
+/* ===== SISTEMA DE VENTAS ===== */
 .warning-icon {
-    color: #e74c3c;
+    color: var(--color-danger);
     margin-left: 5px;
     font-size: 14px;
-  }
+}
   
-  /* Botón de filtro "Bajo Stock" */
-  .btn-icon.warning {
-    background-color: #f39c12;
-  }
-  
-  .btn-icon.warning:hover {
-    background-color: #d35400;
-  }
-  
+.btn-icon.warning {
+    background-color: var(--color-warning);
+}
+
+.btn-icon.warning:hover {
+    background-color: var(--color-warning-hover);
+}
+
+/* Botón de venta */
+.btn-vender {
+    background-color: var(--color-success);
+    color: white;
+    border: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-vender:hover {
+    background-color: var(--color-success-hover);
+    transform: scale(1.1);
+}
+
+/* Panel de ventas */
+.ventas-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 350px;
+    max-height: 80vh;
+    background: white;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow-lg);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+}
+
+.ventas-header {
+    padding: 15px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-cerrar {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.lista-ventas {
+    padding: 15px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.venta-item {
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    font-size: 14px;
+}
+
+.venta-item div:nth-child(odd) {
+    font-weight: bold;
+}
+
+.ventas-footer {
+    padding: 15px;
+    background: var(--color-bg-secondary);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.total-ventas {
+    font-size: 16px;
+}
+
+.total-ventas strong {
+    color: var(--color-success);
+    font-size: 18px;
+}
+
+.btn-limpiar {
+    background-color: var(--color-danger);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+}
+
+.btn-limpiar:hover {
+    background-color: var(--color-danger-hover);
+}
+
+/* Header mejorado */
+.header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.btn-ventas {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    transition: var(--transition);
+    position: relative;
+}
+
+.btn-ventas:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.contador-ventas {
+    background-color: var(--color-danger);
+    color: white;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    position: absolute;
+    top: -8px;
+    right: -8px;
+}
+/* Botón de descarga PDF */
+.btn-descargar {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-descargar:hover {
+    background-color: #c0392b;
+    transform: scale(1.1);
+}
+
+/* Mejora para el header de ventas */
+.ventas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.ventas-header > div {
+    display: flex;
+    align-items: center;
+}

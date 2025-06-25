@@ -6,10 +6,19 @@
     <title>Inventario Tienda de Camisetas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
+    <!-- Librería para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Inventario Camisetas de Fútbol</h1>
+        <div class="header-container">
+            <h1>Inventario Camisetas de Fútbol</h1>
+            <button id="btn-ventas" class="btn-ventas">
+                <i class="fas fa-receipt"></i> Ventas
+                <span id="contador-ventas" class="contador-ventas">0</span>
+            </button>
+        </div>
         
         <div class="form-container">
             <h2>Agregar Nuevo Artículo</h2>
@@ -101,31 +110,40 @@
                         <th>Precio (€)</th>
                         <th>Tipo</th>
                         <th>Acciones</th>
+                        <th>Vender</th>
                     </tr>
                 </thead>
                 <tbody id="cuerpo-tabla">
-                    <!-- Ejemplo de fila con botones de acciones -->
-                    <tr>
-                        <td>FC Barcelona</td>
-                        <td>Messi</td>
-                        <td>2020-2021</td>
-                        <td>Azul/Rojo</td>
-                        <td>L</td>
-                        <td>5</td>
-                        <td>89.99</td>
-                        <td>Player</td>
-                        <td class="acciones-cuadradas">
-                            <button class="btn-editar" title="Editar" data-id="0">
-                              <i class="fas fa-pencil-alt"></i>
-                            </button>
-                            <button class="btn-eliminar" title="Eliminar" data-id="0">
-                              <i class="fas fa-trash-alt"></i>
-                            </button>
-                          </td>
-                    </tr>
-                    <!-- Otras filas se agregarán aquí dinámicamente -->
+                    <!-- Filas se agregarán dinámicamente -->
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Panel de Ventas -->
+    <div id="ventas-panel" class="ventas-panel">
+        <div class="ventas-header">
+            <h3><i class="fas fa-receipt"></i> Ventas del Día</h3>
+            <div>
+                <button id="btn-descargar-pdf" class="btn-descargar" title="Descargar PDF">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button id="cerrar-ventas" class="btn-cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="lista-ventas" class="lista-ventas">
+            <!-- Ventas se agregarán aquí dinámicamente -->
+        </div>
+        <div class="ventas-footer">
+            <div class="total-ventas">
+                <span>Total del día:</span>
+                <strong id="total-ventas">0.00 €</strong>
+            </div>
+            <button id="btn-limpiar-ventas" class="btn-limpiar">
+                <i class="fas fa-trash-alt"></i> Limpiar
+            </button>
         </div>
     </div>
 
