@@ -198,11 +198,11 @@ tr:hover {
   }
   
   /* Estilos específicos */
-  .acciones-cuadradas .btn-editar {
+  .acciones-cuadradas .editar {
     background-color: #FFA726; /* Naranja */
   }
   
-  .acciones-cuadradas .btn-eliminar {
+  .acciones-cuadradas .eliminar {
     background-color: #EF5350; /* Rojo */
   }
   
@@ -210,10 +210,10 @@ tr:hover {
   .acciones-cuadradas button:hover {
     transform: scale(1.1);
   }
-  .acciones-cuadradas .btn-editar:hover {
+  .acciones-cuadradas .editar:hover {
     background-color: #FB8C00;
   }
-  .acciones-cuadradas .btn-eliminar:hover {
+  .acciones-cuadradas .eliminar:hover {
     background-color: #E53935;
   }
   
@@ -222,5 +222,20 @@ tr:hover {
   .acciones-cuadradas button:after {
     display: none !important;
     content: "" !important;
+  }
+  /* Ícono de warning */
+.warning-icon {
+    color: #e74c3c;
+    margin-left: 5px;
+    font-size: 14px;
+  }
+  
+  /* Botón de filtro "Bajo Stock" */
+  .btn-icon.warning {
+    background-color: #f39c12;
+  }
+  
+  .btn-icon.warning:hover {
+    background-color: #d35400;
   }
   

@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnFiltrar = document.getElementById('btn-filtrar');
     const btnReset = document.getElementById('btn-reset');
     const btnAgregar = document.getElementById('btn-agregar');
+    const btnFiltrarBajoStock = document.getElementById('btn-filtrar-bajo-stock');
 
     // Event Listeners
     form.addEventListener('submit', manejarSubmit);
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inputBusqueda.value = '';
         renderizarTabla();
     });
+    btnFiltrarBajoStock.addEventListener('click', filtrarBajoStock);
 
     // Función principal para manejar el envío del formulario
     function manejarSubmit(e) {
@@ -147,18 +149,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td>${item.temporada || '-'}</td>
                 <td>${item.color || '-'}</td>
                 <td>${item.talla || '-'}</td>
-                <td>${item.cantidad || 0}</td>
+                <td>${item.cantidad || 0} ${item.cantidad <= 1 ? '<span class="warning-icon">⚠️</span>' : ''}</td>
                 <td>${item.precio ? item.precio.toFixed(2) : '0.00'} €</td>
                 <td>${item.tipo || '-'}</td>
-                <td class="acciones">
-                    <button class="editar" data-id="${index}">Editar</button>
-                    <button class="eliminar" data-id="${index}">Eliminar</button>
+                <td class="acciones-cuadradas">
+                    <button class="editar" data-id="${index}"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="eliminar" data-id="${index}"><i class="fas fa-trash-alt"></i></button>
                 </td>
             `;
             tabla.appendChild(tr);
         });
         
         agregarEventosBotones();
+    }
+
+    // Función para filtrar artículos con bajo stock
+    function filtrarBajoStock() {
+        const bajoStock = inventario.filter(item => item.cantidad <= 1);
+        renderizarTabla(bajoStock);
     }
 
     // Función para agregar eventos a los botones
@@ -245,11 +253,4 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar la tabla al cargar
     renderizarTabla();
-
-
 });
-
-
-
-
-
