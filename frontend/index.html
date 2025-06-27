@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Sistema de inventario de camisetas de fútbol">
+    <meta name="theme-color" content="#3498db">
+    <title>Login - Inventario Camisetas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/login.css">
+    <style>
+        .spinner {
+            margin-left: 8px;
+            display: inline-block;
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <i class="fas fa-lock" aria-hidden="true"></i>
+            <h1>Acceso al Inventario</h1>
+        </div>
+        
+        <form id="loginForm" class="login-form" aria-label="Formulario de acceso">
+            <div class="form-group">
+                <label for="username" aria-required="true">Usuario:</label>
+                <input type="text" id="username" placeholder="Ingresa tu usuario" required 
+                       aria-describedby="userHelp" autocapitalize="off" autocorrect="off">
+                <small id="userHelp" class="sr-only">Ingresa tu nombre de usuario</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="password" aria-required="true">Contraseña:</label>
+                <input type="password" id="password" placeholder="Ingresa tu contraseña" required
+                       autocomplete="current-password" autocapitalize="off" autocorrect="off">
+            </div>
+            
+            <button type="submit" class="login-btn" id="loginButton">
+                <i class="fas fa-sign-in-alt"></i> <span id="loginText">Ingresar</span>
+                <span id="loginSpinner" class="spinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                </span>
+            </button>
+            
+            <div id="errorMessage" class="error-message" role="alert" aria-live="assertive" style="display: none;">
+                Credenciales incorrectas. Por favor intente nuevamente.
+            </div>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Mostrar loading
+            document.getElementById('loginText').style.display = 'none';
+            document.getElementById('loginSpinner').style.display = 'inline-block';
+            document.getElementById('loginButton').disabled = true;
+            
+            // Obtener valores
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('http://localhost:3000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Guardar token en localStorage o cookies seguras
+                    localStorage.setItem('authToken', data.token);
+                    window.location.href = 'landing.html';
+                } else {
+                    mostrarError();
+                }
+            } catch (error) {
+                mostrarError();
+            } finally {
+                // Ocultar loading
+                document.getElementById('loginText').style.display = 'inline';
+                document.getElementById('loginSpinner').style.display = 'none';
+                document.getElementById('loginButton').disabled = false;
+            }
+        });
+        
+        function mostrarError() {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.style.display = 'block';
+            document.getElementById('password').value = '';
+            document.getElementById('password').focus();
+            
+            // Ocultar después de 5 segundos
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Ocultar mensaje de error al escribir
+        document.getElementById('username').addEventListener('input', ocultarError);
+        document.getElementById('password').addEventListener('input', ocultarError);
+        
+        function ocultarError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

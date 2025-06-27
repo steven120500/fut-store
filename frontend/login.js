@@ -1,4 +1,5 @@
 // login.js - Sistema de autenticación para el inventario
+const API_BASE_URL = 'http://localhost:3000/api';
 
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
