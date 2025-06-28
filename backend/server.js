@@ -254,4 +254,4 @@ app.listen(PORT, () => {
   console.log(`- GET    http://localhost:${PORT}/api/sales/today`);
   console.log(`- DELETE http://localhost:${PORT}/api/sales/clear`);
   console.log(`- GET    http://localhost:${PORT}/api/sales/report`);
-});
+})
