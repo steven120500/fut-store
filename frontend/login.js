@@ -1,5 +1,5 @@
 // login.js - Sistema de autenticación para el inventario
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'https://fut-store.onrender.com/api';  // Usa HTTPS
 
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos del DOM
