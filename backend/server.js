@@ -194,4 +194,33 @@ process.on('SIGTERM', () => {
       process.exit(0);
     });
   });
+
+  // Importaciones
+const express = require('express');
+const cors = require('cors');
+const authRoutes = require('./routes/auth');
+const authMiddleware = require('./config/middlewares/auth');
+
+// Configuración inicial
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Rutas públicas
+app.use('/api/auth', authRoutes);
+
+// Ruta protegida de ejemplo
+app.get('/api/datos-protegidos', authMiddleware, (req, res) => {
+    res.json({ 
+        success: true,
+        message: "¡Acceso autorizado!",
+        user: req.user 
+    });
+});
+
+// Iniciar servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Servidor en puerto ${PORT}`);
+});
 });
