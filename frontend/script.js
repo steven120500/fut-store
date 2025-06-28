@@ -210,28 +210,15 @@ document.addEventListener('DOMContentLoaded', function() {
             mostrarError("Error al cargar las ventas. Intente nuevamente.");
         }
     }
-
     async function venderArticulo(id) {
         const articulo = inventario.find(item => item._id === id);
         if (!articulo || articulo.cantidad <= 0) {
             mostrarNotificacion('No hay stock disponible', 'error');
             return;
         }
-
+    
         try {
-            // 1. Actualizar inventario
-            const updateResponse = await fetch(`${API_BASE_URL}/products/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...articulo,
-                    cantidad: articulo.cantidad - 1
-                })
-            });
-
-            if (!updateResponse.ok) throw new Error('Error al actualizar inventario');
-
-            // 2. Registrar venta
+            // Solo registrar la venta (el endpoint /sales ya actualiza el stock)
             const ventaData = {
                 productoId: id,
                 equipo: articulo.equipo,
@@ -243,23 +230,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 precio: articulo.precio,
                 cantidad: 1
             };
-
+    
             const ventaResponse = await fetch(`${API_BASE_URL}/sales`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(ventaData)
             });
-
+    
             if (!ventaResponse.ok) {
                 const errorData = await ventaResponse.json();
                 throw new Error(errorData.message || 'Error al registrar venta');
             }
-
+    
             const nuevaVenta = await ventaResponse.json();
             ventasDelDia.push(nuevaVenta);
             totalVentas += articulo.precio;
-
-            // 3. Actualizar UI
+    
+            // Actualizar UI
             await cargarInventario();
             actualizarPanelVentas();
             mostrarNotificacion(`Vendido: 1x ${articulo.equipo} - ${articulo.jugador}`, 'success');

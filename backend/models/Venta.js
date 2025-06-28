@@ -13,7 +13,10 @@ const ventaSchema = new mongoose.Schema({
   },
   jugador: { 
     type: String, 
-    required: [true, 'El jugador es requerido'],
+    required: function() {
+      // Hacer jugador requerido solo si el tipo no es 'Genérico' o similar
+      return !['Genérico', 'Equipo', 'Promocional'].includes(this.tipo);
+    },
     trim: true
   },
   temporada: {
@@ -26,14 +29,15 @@ const ventaSchema = new mongoose.Schema({
   },
   talla: { 
     type: String,
-    enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
+    enum: [, 'S', 'M', 'L', 'XL', '2XL', '3XL', '16/4', '20/6','22/8','26/12','28/14',],
     uppercase: true,
     trim: true
   },
   tipo: {
     type: String,
-    enum: ['Retro', 'Actual', 'Edición Especial', 'Promocional'],
-    trim: true
+    enum: ['Retro', 'Player', 'Niños', 'Fan', 'Nacional'],
+    trim: true,
+    default: 'Actual'
   },
   precio: { 
     type: Number, 
@@ -65,12 +69,14 @@ const ventaSchema = new mongoose.Schema({
 
 // Índices para optimización
 ventaSchema.index({ productoId: 1 });
-ventaSchema.index({ fecha: -1 }); // Orden descendente para consultas recientes
-ventaSchema.index({ equipo: 1, jugador: 1 }); // Para búsquedas
+ventaSchema.index({ fecha: -1 });
+ventaSchema.index({ equipo: 1, jugador: 1 });
 
 // Virtual para mostrar información resumida
 ventaSchema.virtual('infoResumida').get(function() {
-  return `${this.cantidad}x ${this.equipo} - ${this.jugador} (${this.talla})`;
+  return this.jugador 
+    ? `${this.cantidad}x ${this.equipo} - ${this.jugador} (${this.talla})`
+    : `${this.cantidad}x ${this.equipo} (${this.talla})`;
 });
 
 // Middleware para calcular automáticamente el total antes de guardar
