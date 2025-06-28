@@ -3,122 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema de inventario de camisetas de fútbol">
-    <meta name="theme-color" content="#3498db">
-    <title>Login - Inventario Camisetas</title>
+    <title>Inventario Tienda de Camisetas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/login.css">
-    <style>
-        .spinner {
-            margin-left: 8px;
-            display: inline-block;
-        }
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border-width: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Librería para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-header">
-            <i class="fas fa-lock" aria-hidden="true"></i>
-            <h1>Acceso al Inventario</h1>
-        </div>
-            
-        <form id="loginForm" class="login-form" aria-label="Formulario de acceso">
-            <div class="form-group">
-                <label for="username" aria-required="true">Usuario:</label>
-                <input type="text" id="username" placeholder="Ingresa tu usuario" required 
-                       aria-describedby="userHelp" autocapitalize="off" autocorrect="off">
-                <small id="userHelp" class="sr-only">Ingresa tu nombre de usuario</small>
-            </div>
-            
-            <div class="form-group">
-                <label for="password" aria-required="true">Contraseña:</label>
-                <input type="password" id="password" placeholder="Ingresa tu contraseña" required
-                       autocomplete="current-password" autocapitalize="off" autocorrect="off">
-            </div>
-            
-            <button type="submit" class="login-btn" id="loginButton">
-                <i class="fas fa-sign-in-alt"></i> <span id="loginText">Ingresar</span>
-                <span id="loginSpinner" class="spinner" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i>
-                </span>
+    <div class="container">
+        <div class="header-container">
+            <h1>Inventario Camisetas de Fútbol</h1>
+            <button id="btn-ventas" class="btn-ventas">
+                <i class="fas fa-receipt"></i> Ventas
+                <span id="contador-ventas" class="contador-ventas">0</span>
             </button>
-            
-            <div id="errorMessage" class="error-message" role="alert" aria-live="assertive" style="display: none;">
-                Credenciales incorrectas. Por favor intente nuevamente.
+        </div>
+        
+        <div class="form-container">
+            <h2>Agregar Nuevo Artículo</h2>
+            <form id="form-articulo">
+                <div class="form-group">
+                    <label for="equipo">Equipo:</label>
+                    <input type="text" id="equipo" required>
+                </div>
+                <div class="form-group">
+                    <label for="jugador">Jugador:</label>
+                    <input type="text" id="jugador" placeholder="Ej: Messi" required>
+                </div>
+                <div class="form-group">
+                    <label for="temporada">Temporada:</label>
+                    <input type="text" id="temporada" placeholder="Ej: 2023-2024">
+                </div>
+                <div class="form-group">
+                    <label for="color">Color:</label>
+                    <input type="text" id="color" placeholder="Ej: Rojo/Azul" required>
+                </div>
+                <div class="form-group">
+                    <label for="talla">Talla:</label>
+                    <select id="talla">
+                        <option value="16/4">16/4</option>
+                        <option value="20/6">20/6</option>
+                        <option value="22/8">22/8</option>
+                        <option value="24/10">24/10</option>
+                        <option value="26/12">26/12</option>
+                        <option value="28/14">28/14</option>
+                        <option value="S">S</option>
+                        <option value="M" selected>M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                        <option value="2XL">2XL</option>
+                        <option value="3XL">3XL</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tipo">Tipo:</label>
+                    <select id="tipo">
+                        <option value="Player">Player</option>
+                        <option value="Fan">Fan</option>
+                        <option value="Retro" selected>Retro</option>
+                        <option value="Niños">Niños</option>
+                        <option value="Nacional">Nacional</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="cantidad">Cantidad:</label>
+                    <input type="number" id="cantidad" min="1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="precio">Precio (€):</label>
+                    <input type="number" id="precio" min="0" step="0.01" required>
+                </div>
+                <button type="submit" id="btn-agregar">
+                    <i class="fas fa-plus-circle"></i> Agregar al Inventario
+                </button>
+            </form>
+        </div>
+        
+        <div class="inventario-container">
+            <h2>Inventario Actual</h2>
+            <div class="filtros">
+                <input type="text" id="busqueda" placeholder="Buscar por equipo o jugador...">
+                
+                <!-- Botones con iconos -->
+                <button id="btn-filtrar" class="btn-icon" title="Filtrar">
+                    <i class="fas fa-filter"></i>
+                </button>
+                
+                <button id="btn-reset" class="btn-icon" title="Mostrar todo">
+                    <i class="fas fa-list"></i>
+                </button>
+
+                <!-- Nuevo botón para filtrar bajo stock -->
+                <button id="btn-filtrar-bajo-stock" class="btn-icon warning" title="Filtrar bajo stock">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                </button>
             </div>
-        </form>
+            
+            <table id="tabla-inventario">
+                <thead>
+                    <tr>
+                        <th>Equipo</th>
+                        <th>Jugador</th>
+                        <th>Temporada</th>
+                        <th>Color</th>
+                        <th>Talla</th>
+                        <th>Cantidad</th>
+                        <th>Precio (€)</th>
+                        <th>Tipo</th>
+                        <th>Acciones</th>
+                        <th>Vender</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpo-tabla">
+                    <!-- Filas se agregarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            // Mostrar loading
-            document.getElementById('loginText').style.display = 'none';
-            document.getElementById('loginSpinner').style.display = 'inline-block';
-            document.getElementById('loginButton').disabled = true;
-            
-            // Obtener valores
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                const response = await fetch('https://fut-store.onrender.com/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    // Guardar token en localStorage o cookies seguras
-                    localStorage.setItem('authToken', data.token);
-                    window.location.href = 'landing.html';
-                } else {
-                    mostrarError();
-                }
-            } catch (error) {
-                mostrarError();
-            } finally {
-                // Ocultar loading
-                document.getElementById('loginText').style.display = 'inline';
-                document.getElementById('loginSpinner').style.display = 'none';
-                document.getElementById('loginButton').disabled = false;
-            }
-        });
-        
-        function mostrarError() {
-            const errorElement = document.getElementById('errorMessage');
-            errorElement.style.display = 'block';
-            document.getElementById('password').value = '';
-            document.getElementById('password').focus();
-            
-            // Ocultar después de 5 segundos
-            setTimeout(() => {
-                errorElement.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Ocultar mensaje de error al escribir
-        document.getElementById('username').addEventListener('input', ocultarError);
-        document.getElementById('password').addEventListener('input', ocultarError);
-        
-        function ocultarError() {
-            document.getElementById('errorMessage').style.display = 'none';
-        }
-    </script>
+    <!-- Panel de Ventas -->
+    <div id="ventas-panel" class="ventas-panel">
+        <div class="ventas-header">
+            <h3><i class="fas fa-receipt"></i> Ventas del Día</h3>
+            <div>
+                <button id="btn-descargar-pdf" class="btn-descargar" title="Descargar PDF">
+                    <i class="fas fa-file-pdf"></i>
+                </button>
+                <button id="cerrar-ventas" class="btn-cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div id="lista-ventas" class="lista-ventas">
+            <!-- Ventas se agregarán aquí dinámicamente -->
+        </div>
+        <div class="ventas-footer">
+            <div class="total-ventas">
+                <span>Total del día:</span>
+                <strong id="total-ventas">0.00 €</strong>
+            </div>
+            <button id="btn-limpiar-ventas" class="btn-limpiar">
+                <i class="fas fa-trash-alt"></i> Limpiar
+            </button>
+        </div>
+    </div>
+
+    <script src="./script.js"></script>
 </body>
 </html>
