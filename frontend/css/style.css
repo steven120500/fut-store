@@ -429,3 +429,24 @@
     }
     .success { background-color: #4CAF50; }
     .error { background-color: #F44336; }
+
+    /* Contenedor de la tabla para scroll móvil */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Suaviza el scroll en iOS */
+  }
+  
+  /* Estilos para pantallas grandes (se muestra normal) */
+  @media (min-width: 768px) {
+    .table-container {
+      overflow-x: visible;
+    }
+  }
+  
+  /* Estilos para la tabla */
+  table {
+    width: 100%;
+    min-width: 600px; /* Ancho mínimo para forzar scroll en móviles */
+    border-collapse: collapse;
+  }
