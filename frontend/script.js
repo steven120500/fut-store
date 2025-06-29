@@ -27,6 +27,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const tablaVentas = document.getElementById('tabla-ventas');
     const btnExportarPDF = document.getElementById('btn-exportar-pdf');
 
+    // Elementos para filtrado por tipo
+    const filtroTipoBtns = document.querySelectorAll('.tipo-btn');
+    const btnAplicarFiltro = document.getElementById('aplicar-filtro-tipo');
+
     // Inicialización
     cargarDatosIniciales();
     setupEventListeners();
@@ -57,6 +61,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('precio')?.addEventListener('input', validarCampoNumerico);
         document.getElementById('cantidad')?.addEventListener('input', validarCampoNumerico);
+
+        // Eventos para filtrado por tipo
+        if (filtroTipoBtns.length > 0) {
+            filtroTipoBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    aplicarFiltroTipo();
+                });
+            });
+        }
+
+        if (btnAplicarFiltro) {
+            btnAplicarFiltro.addEventListener('click', aplicarFiltroTipo);
+        }
     }
 
     // ===================== FUNCIONES DE INVENTARIO =====================
@@ -166,7 +184,7 @@ document.addEventListener('DOMContentLoaded', function() {
         tabla.innerHTML = items.length === 0 
             ? '<tr><td colspan="10">No hay artículos en el inventario</td></tr>'
             : items.map(item => `
-                <tr>
+                <tr data-tipo="${item.tipo || ''}">
                     <td>${item.equipo || '-'}</td>
                     <td>${item.jugador || '-'}</td>
                     <td>${item.temporada || '-'}</td>
@@ -194,7 +212,7 @@ document.addEventListener('DOMContentLoaded', function() {
         agregarEventosBotones();
     }
 
-    // ===================== FUNCIONES DE VENTAS (CORREGIDAS) =====================
+    // ===================== FUNCIONES DE VENTAS =====================
     async function cargarYMostrarVentasDelDia() {
         try {
             const response = await fetch(`${API_BASE_URL}/sales/today`);
@@ -210,6 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
             mostrarError("Error al cargar las ventas. Intente nuevamente.");
         }
     }
+
     async function venderArticulo(id) {
         const articulo = inventario.find(item => item._id === id);
         if (!articulo || articulo.cantidad <= 0) {
@@ -218,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     
         try {
-            // Solo registrar la venta (el endpoint /sales ya actualiza el stock)
             const ventaData = {
                 productoId: id,
                 equipo: articulo.equipo,
@@ -246,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ventasDelDia.push(nuevaVenta);
             totalVentas += articulo.precio;
     
-            // Actualizar UI
             await cargarInventario();
             actualizarPanelVentas();
             mostrarNotificacion(`Vendido: 1x ${articulo.equipo} - ${articulo.jugador}`, 'success');
@@ -280,6 +297,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         totalVentasElement.textContent = `${nuevoTotal.toFixed(2)} €`;
         contadorVentas.textContent = ventasOrdenadas.length;
+    }
+
+    // ===================== FUNCIONES DE FILTRADO =====================
+    function aplicarFiltroTipo() {
+        const tiposActivos = Array.from(document.querySelectorAll('.tipo-btn.active'))
+            .map(btn => btn.dataset.tipo);
+        
+        if (tiposActivos.length === 0) {
+            // Si no hay filtros seleccionados, mostrar todo
+            document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+                tr.style.display = '';
+            });
+            return;
+        }
+
+        // Ocultar todos los elementos primero
+        document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
+            tr.style.display = 'none';
+        });
+
+        // Mostrar solo los que coinciden con los tipos seleccionados
+        tiposActivos.forEach(tipo => {
+            document.querySelectorAll(`#cuerpo-tabla tr[data-tipo="${tipo}"]`).forEach(tr => {
+                tr.style.display = '';
+            });
+        });
+    }
+
+    function filtrarArticulos() {
+        const busqueda = inputBusqueda.value.trim().toLowerCase();
+        if (!busqueda) return;
+
+        inventarioFiltrado = inventario.filter(item =>
+            (item.equipo && item.equipo.toLowerCase().includes(busqueda)) ||
+            (item.jugador && item.jugador.toLowerCase().includes(busqueda)) ||
+            (item.tipo && item.tipo.toLowerCase().includes(busqueda))
+        );
+
+        renderizarTabla(inventarioFiltrado);
+    }
+
+    function filtrarBajoStock() {
+        inventarioFiltrado = inventario.filter(item => item.cantidad <= 1);
+        renderizarTabla(inventarioFiltrado);
+    }
+
+    function resetearFiltros() {
+        inputBusqueda.value = '';
+        inventarioFiltrado = null;
+        renderizarTabla();
+        // Resetear botones de tipo
+        document.querySelectorAll('.tipo-btn').forEach(btn => {
+            btn.classList.add('active');
+        });
+        aplicarFiltroTipo();
     }
 
     // ===================== FUNCIONES AUXILIARES =====================
@@ -372,31 +444,6 @@ document.addEventListener('DOMContentLoaded', function() {
         input.classList.toggle('input-error', isNaN(input.value));
     }
 
-    // ===================== FUNCIONES DE FILTRADO =====================
-    function filtrarArticulos() {
-        const busqueda = inputBusqueda.value.trim().toLowerCase();
-        if (!busqueda) return;
-
-        inventarioFiltrado = inventario.filter(item =>
-            (item.equipo && item.equipo.toLowerCase().includes(busqueda)) ||
-            (item.jugador && item.jugador.toLowerCase().includes(busqueda)) ||
-            (item.tipo && item.tipo.toLowerCase().includes(busqueda))
-        );
-
-        renderizarTabla(inventarioFiltrado);
-    }
-
-    function filtrarBajoStock() {
-        inventarioFiltrado = inventario.filter(item => item.cantidad <= 1);
-        renderizarTabla(inventarioFiltrado);
-    }
-
-    function resetearFiltros() {
-        inputBusqueda.value = '';
-        inventarioFiltrado = null;
-        renderizarTabla();
-    }
-
     // ===================== FUNCIONES DEL PANEL DE VENTAS =====================
     function mostrarPanelVentas() {
         if (ventasPanel) ventasPanel.style.display = 'flex';
@@ -406,49 +453,25 @@ document.addEventListener('DOMContentLoaded', function() {
         if (ventasPanel) ventasPanel.style.display = 'none';
     }
 
-   
-   // ===================== FUNCIÓN LIMPIAR VENTAS (CORREGIDA) =====================
-// Función para limpiar ventas - VERSIÓN CORREGIDA
-async function limpiarVentas() {
-    if (!confirm('¿Estás seguro de eliminar TODAS las ventas del día?')) return;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/sales/clear`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+    async function limpiarVentas() {
+        if (!confirm('¿Estás seguro de eliminar TODAS las ventas del día?')) return;
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/sales/clear`, {
+                method: 'DELETE'
+            });
 
-        const result = await response.json();
+            if (!response.ok) throw new Error('Error al limpiar ventas');
 
-        if (!response.ok) {
-            throw new Error(result.message || 'Error al limpiar ventas');
+            ventasDelDia = [];
+            totalVentas = 0;
+            actualizarPanelVentas();
+            mostrarNotificacion('Ventas eliminadas correctamente', 'success');
+        } catch (error) {
+            console.error('Error:', error);
+            mostrarNotificacion('Error al limpiar ventas', 'error');
         }
-
-        // Actualizar la interfaz manualmente
-        ventasDelDia = [];
-        totalVentas = 0;
-        document.getElementById('lista-ventas').innerHTML = '<div class="sin-ventas">No hay ventas registradas hoy</div>';
-        document.getElementById('total-ventas').textContent = '0.00 €';
-        document.getElementById('contador-ventas').textContent = '0';
-
-        // Mostrar notificación
-        const notificacion = document.createElement('div');
-        notificacion.className = 'notificacion success';
-        notificacion.innerHTML = '<i class="fas fa-check-circle"></i> Ventas eliminadas correctamente';
-        document.body.appendChild(notificacion);
-        setTimeout(() => notificacion.remove(), 3000);
-
-    } catch (error) {
-        console.error('Error:', error);
-        const notificacion = document.createElement('div');
-        notificacion.className = 'notificacion error';
-        notificacion.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
-        document.body.appendChild(notificacion);
-        setTimeout(() => notificacion.remove(), 3000);
     }
-}
 
     async function verificarDiaNuevo() {
         try {
@@ -465,31 +488,25 @@ async function limpiarVentas() {
         }
     }
 
-    // ===================== FUNCIÓN EXPORTAR PDF (NUEVA) =====================
-    async function generarPDF() {
+    async function exportarPDF() {
         try {
-            // Verificar si hay ventas
             if (ventasDelDia.length === 0) {
                 throw new Error('No hay ventas para generar PDF');
             }
     
-            // Crear PDF
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Estilo profesional
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(18);
             doc.setTextColor(40, 40, 40);
             doc.text('Reporte de Ventas - FutStore', 105, 20, { align: 'center' });
             
-            // Información de la tienda
             doc.setFontSize(12);
             doc.setTextColor(80, 80, 80);
             doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
             doc.text(`Hora: ${new Date().toLocaleTimeString()}`, 14, 36);
             
-            // Encabezados de tabla
             doc.setFontSize(12);
             doc.setTextColor(255, 255, 255);
             doc.setFillColor(58, 83, 155);
@@ -499,13 +516,11 @@ async function limpiarVentas() {
             doc.text('Precio', 160, 51);
             doc.text('Total', 180, 51);
             
-            // Detalle de ventas
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
             let y = 60;
             
             ventasDelDia.forEach(venta => {
-                // Salto de página si es necesario
                 if (y > 270) {
                     doc.addPage();
                     y = 20;
@@ -519,45 +534,15 @@ async function limpiarVentas() {
                 y += 10;
             });
             
-            // Total
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
             doc.text(`Total del día: ${totalVentas.toFixed(2)} €`, 180, y + 15, { align: 'right' });
             
-            // Guardar
             doc.save(`Ventas_FutStore_${new Date().toISOString().split('T')[0]}.pdf`);
     
         } catch (error) {
             console.error('Error al generar PDF:', error);
-            const notificacion = document.createElement('div');
-            notificacion.className = 'notificacion error';
-            notificacion.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${error.message}`;
-            document.body.appendChild(notificacion);
-            setTimeout(() => notificacion.remove(), 3000);
+            mostrarNotificacion(error.message, 'error');
         }
-    }
-    
-    // Asignar eventos - DEBEN ESTAR EN TU CÓDIGO ACTUAL
-    document.getElementById('btn-limpiar-ventas').addEventListener('click', limpiarVentas);
-    document.getElementById('btn-descargar-pdf').addEventListener('click', generarPDF);
-    
-    // Función auxiliar para cargar scripts dinámicamente
-    function cargarScript(url) {
-        return new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = url;
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
-    
-    // Función auxiliar para convertir Blob a Base64 (opcional para logos)
-    function blobToBase64(blob) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-        });
     }
 });

@@ -450,3 +450,69 @@
     min-width: 600px; /* Ancho mínimo para forzar scroll en móviles */
     border-collapse: collapse;
   }
+
+  /* Estilos para los filtros */
+.filtro-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+  }
+  
+  #busqueda {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .filtro-tipos h4 {
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .tipos-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .tipo-btn {
+    padding: 8px 16px;
+    background: #e9ecef;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+  }
+  
+  .tipo-btn.active {
+    background: #007bff;
+    color: white;
+  }
+  
+  .tipo-btn:hover {
+    opacity: 0.9;
+  }
+
+  .tipo-btn {
+    padding: 8px 16px;
+    background: #e9ecef; /* Color de fondo inactivo */
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    color: #495057; /* Color de texto inactivo */
+  }
+  
+  .tipo-btn.active {
+    background: #007bff; /* Color de fondo activo */
+    color: white; /* Color de texto activo */
+  }
+  
+  .tipo-btn:hover {
+    background: #dee2e6; /* Color al pasar el mouse */
+  }
