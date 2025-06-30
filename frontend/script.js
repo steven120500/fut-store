@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const tablaVentas = document.getElementById('tabla-ventas');
     const btnExportarPDF = document.getElementById('btn-exportar-pdf');
 
-    // Elementos para filtrado por tipo
+    // Elementos para filtrado
     const filtroTipoBtns = document.querySelectorAll('.tipo-btn');
+    const filtroTallaBtns = document.querySelectorAll('.talla-btn');
     const btnAplicarFiltro = document.getElementById('aplicar-filtro-tipo');
 
     // Inicialización
@@ -67,13 +68,23 @@ document.addEventListener('DOMContentLoaded', function() {
             filtroTipoBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
                     this.classList.toggle('active');
-                    aplicarFiltroTipo();
+                    aplicarFiltrosCombinados();
+                });
+            });
+        }
+
+        // Eventos para filtrado por talla (nuevo)
+        if (filtroTallaBtns.length > 0) {
+            filtroTallaBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                    aplicarFiltrosCombinados();
                 });
             });
         }
 
         if (btnAplicarFiltro) {
-            btnAplicarFiltro.addEventListener('click', aplicarFiltroTipo);
+            btnAplicarFiltro.addEventListener('click', aplicarFiltrosCombinados);
         }
     }
 
@@ -300,28 +311,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===================== FUNCIONES DE FILTRADO =====================
-    function aplicarFiltroTipo() {
+    function aplicarFiltrosCombinados() {
+        const textoBusqueda = inputBusqueda?.value.toLowerCase() || '';
         const tiposActivos = Array.from(document.querySelectorAll('.tipo-btn.active'))
-            .map(btn => btn.dataset.tipo);
-        
-        if (tiposActivos.length === 0) {
-            // Si no hay filtros seleccionados, mostrar todo
-            document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
-                tr.style.display = '';
-            });
-            return;
-        }
+                               .map(btn => btn.dataset.tipo);
+        const tallasActivas = Array.from(document.querySelectorAll('.talla-btn.active'))
+                                .map(btn => btn.dataset.talla);
 
-        // Ocultar todos los elementos primero
         document.querySelectorAll('#cuerpo-tabla tr').forEach(tr => {
-            tr.style.display = 'none';
-        });
+            const equipo = tr.cells[0].textContent.toLowerCase();
+            const jugador = tr.cells[1].textContent.toLowerCase();
+            const tipo = tr.dataset.tipo || '';
+            const talla = tr.cells[4].textContent.trim(); // Columna de talla
 
-        // Mostrar solo los que coinciden con los tipos seleccionados
-        tiposActivos.forEach(tipo => {
-            document.querySelectorAll(`#cuerpo-tabla tr[data-tipo="${tipo}"]`).forEach(tr => {
-                tr.style.display = '';
-            });
+            const coincideTexto = !textoBusqueda || 
+                                equipo.includes(textoBusqueda) || 
+                                jugador.includes(textoBusqueda);
+            
+            const coincideTipo = !tiposActivos.length || tiposActivos.includes(tipo);
+            const coincideTalla = !tallasActivas.length || tallasActivas.includes(talla);
+
+            tr.style.display = (coincideTexto && coincideTipo && coincideTalla) ? '' : 'none';
         });
     }
 
@@ -347,11 +357,18 @@ document.addEventListener('DOMContentLoaded', function() {
         inputBusqueda.value = '';
         inventarioFiltrado = null;
         renderizarTabla();
+        
         // Resetear botones de tipo
         document.querySelectorAll('.tipo-btn').forEach(btn => {
-            btn.classList.add('active');
+            btn.classList.remove('active');
         });
-        aplicarFiltroTipo();
+        
+        // Resetear botones de talla (nuevo)
+        document.querySelectorAll('.talla-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        aplicarFiltrosCombinados();
     }
 
     // ===================== FUNCIONES AUXILIARES =====================
