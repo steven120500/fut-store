@@ -1,5 +1,17 @@
 const API_BASE_URL = 'https://fut-store.onrender.com/api';  // Usa HTTPS
 
+// Cargar jsPDF dinámicamente si no está disponible
+if (typeof jsPDF === 'undefined') {
+  const script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  script.onload = () => {
+    console.log('jsPDF cargado correctamente');
+    // Asignar a la variable global
+    window.jsPDF = window.jspdf.jsPDF;
+  };
+  document.head.appendChild(script);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Variables de estado
     let inventario = [];
@@ -73,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Eventos para filtrado por talla (nuevo)
+        // Eventos para filtrado por talla
         if (filtroTallaBtns.length > 0) {
             filtroTallaBtns.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -363,7 +375,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.classList.remove('active');
         });
         
-        // Resetear botones de talla (nuevo)
+        // Resetear botones de talla
         document.querySelectorAll('.talla-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -493,6 +505,8 @@ document.addEventListener('DOMContentLoaded', function() {
     async function verificarDiaNuevo() {
         try {
             const response = await fetch(`${API_BASE_URL}/sales/check-new-day`);
+            if (!response.ok) throw new Error('Error al verificar día nuevo');
+            
             const { esNuevoDia, ventas } = await response.json();
 
             if (esNuevoDia) {
@@ -507,23 +521,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function exportarPDF() {
         try {
-            if (ventasDelDia.length === 0) {
-                throw new Error('No hay ventas para generar PDF');
+            // Verificar si jsPDF está disponible
+            if (typeof jsPDF === 'undefined') {
+                // Intentar cargar jsPDF dinámicamente
+                await cargarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+                // Asignar a la variable global
+                window.jsPDF = window.jspdf.jsPDF;
+                
+                if (typeof jsPDF === 'undefined') {
+                    throw new Error('No se pudo cargar la librería para generar PDF');
+                }
             }
-    
-            const { jsPDF } = window.jspdf;
+
+            // Verificar que hay ventas
+            if (!ventasDelDia || ventasDelDia.length === 0) {
+                throw new Error('No hay ventas registradas para generar el PDF');
+            }
+
+            // Crear PDF
             const doc = new jsPDF();
             
+            // Configuración inicial
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(18);
             doc.setTextColor(40, 40, 40);
             doc.text('Reporte de Ventas - FutStore', 105, 20, { align: 'center' });
             
+            // Información de fecha/hora
             doc.setFontSize(12);
             doc.setTextColor(80, 80, 80);
             doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 14, 30);
             doc.text(`Hora: ${new Date().toLocaleTimeString()}`, 14, 36);
             
+            // Encabezados de tabla
             doc.setFontSize(12);
             doc.setTextColor(255, 255, 255);
             doc.setFillColor(58, 83, 155);
@@ -533,11 +563,15 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.text('Precio', 160, 51);
             doc.text('Total', 180, 51);
             
+            // Detalle de ventas
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
             let y = 60;
             
-            ventasDelDia.forEach(venta => {
+            const ventasOrdenadas = [...ventasDelDia].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            
+            ventasOrdenadas.forEach(venta => {
+                // Salto de página si es necesario
                 if (y > 270) {
                     doc.addPage();
                     y = 20;
@@ -551,15 +585,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 y += 10;
             });
             
+            // Total
             doc.setFontSize(12);
             doc.setFont(undefined, 'bold');
             doc.text(`Total del día: ${totalVentas.toFixed(2)} €`, 180, y + 15, { align: 'right' });
             
-            doc.save(`Ventas_FutStore_${new Date().toISOString().split('T')[0]}.pdf`);
-    
+            // Guardar
+            const fecha = new Date().toISOString().split('T')[0];
+            doc.save(`Ventas_FutStore_${fecha}.pdf`);
+
         } catch (error) {
             console.error('Error al generar PDF:', error);
-            mostrarNotificacion(error.message, 'error');
+            mostrarNotificacion(`Error al generar PDF: ${error.message}`, 'error');
         }
+    }
+
+    // Función auxiliar para cargar scripts dinámicamente
+    function cargarScript(url) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = url;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Error al cargar el script: ${url}`));
+            document.head.appendChild(script);
+        });
     }
 });
