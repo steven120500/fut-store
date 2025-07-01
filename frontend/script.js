@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let totalVentas = 0;
     let articuloEditandoId = null;
     let inventarioFiltrado = null;
+    let isUILocked = false; // Variable para controlar el bloqueo de UI
 
     // Elementos del DOM
     const form = document.getElementById('form-articulo');
@@ -48,8 +49,38 @@ document.addEventListener('DOMContentLoaded', function() {
     cargarDatosIniciales();
     setupEventListeners();
 
+    // ===================== FUNCIONES DE BLOQUEO DE UI =====================
+    function lockUI(message = 'Procesando...') {
+        if (isUILocked) return;
+        isUILocked = true;
+        
+        // Crear elemento de bloqueo
+        const blocker = document.createElement('div');
+        blocker.className = 'screen-block';
+        blocker.innerHTML = `
+            <div class="spinner-container">
+                <i class="fas fa-spinner spinner"></i>
+                <div class="spinner-text">${message}</div>
+            </div>
+        `;
+        blocker.id = 'ui-blocker';
+        
+        document.body.appendChild(blocker);
+        document.body.style.overflow = 'hidden';
+    }
+
+    function unlockUI() {
+        isUILocked = false;
+        const blocker = document.getElementById('ui-blocker');
+        if (blocker) {
+            blocker.remove();
+        }
+        document.body.style.overflow = '';
+    }
+
     // ===================== FUNCIONES PRINCIPALES =====================
     async function cargarDatosIniciales() {
+        lockUI('Cargando datos iniciales...');
         try {
             await Promise.all([
                 cargarInventario(),
@@ -59,6 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error cargando datos iniciales:', error);
             mostrarNotificacion('Error al cargar datos iniciales', 'error');
+        } finally {
+            unlockUI();
         }
     }
 
@@ -102,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===================== FUNCIONES DE INVENTARIO =====================
     async function cargarInventario() {
+        lockUI('Cargando inventario...');
         try {
             const response = await fetch(`${API_BASE_URL}/products`);
             if (!response.ok) throw new Error('Error al cargar inventario');
@@ -110,6 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error cargando inventario:', error);
             mostrarNotificacion('Error al cargar inventario', 'error');
+        } finally {
+            unlockUI();
         }
     }
 
@@ -127,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datosFormulario = obtenerDatosFormulario();
         if (!validarFormulario(datosFormulario)) return;
 
+        lockUI('Agregando artículo...');
         try {
             const response = await fetch(`${API_BASE_URL}/products`, {
                 method: 'POST',
@@ -147,12 +184,15 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error:', error);
             mostrarNotificacion(error.message, 'error');
+        } finally {
+            unlockUI();
         }
     }
 
     async function eliminarArticulo(id) {
         if (!confirm('¿Está seguro de eliminar este artículo?')) return;
     
+        lockUI('Eliminando artículo...');
         try {
             const response = await fetch(`${API_BASE_URL}/products/${id}`, {
                 method: 'DELETE'
@@ -170,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error eliminando:', error);
             mostrarNotificacion('Error al eliminar artículo', 'error');
+        } finally {
+            unlockUI();
         }
     }
 
@@ -177,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const datosFormulario = obtenerDatosFormulario();
         if (!validarFormulario(datosFormulario)) return;
 
+        lockUI('Actualizando artículo...');
         try {
             const response = await fetch(`${API_BASE_URL}/products/${id}`, {
                 method: 'PUT',
@@ -198,6 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error actualizando:', error);
             mostrarNotificacion('Error al actualizar artículo', 'error');
+        } finally {
+            unlockUI();
         }
     }
 
@@ -237,6 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===================== FUNCIONES DE VENTAS =====================
     async function cargarYMostrarVentasDelDia() {
+        lockUI('Cargando ventas...');
         try {
             const response = await fetch(`${API_BASE_URL}/sales/today`);
             if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
@@ -249,6 +295,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error("Error al cargar ventas:", error);
             mostrarError("Error al cargar las ventas. Intente nuevamente.");
+        } finally {
+            unlockUI();
         }
     }
 
@@ -259,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
     
+        lockUI('Registrando venta...');
         try {
             const ventaData = {
                 productoId: id,
@@ -294,6 +343,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error en el proceso de venta:', error);
             mostrarNotificacion(`Error: ${error.message}`, 'error');
+        } finally {
+            unlockUI();
         }
     }
 
@@ -351,36 +402,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const busqueda = inputBusqueda.value.trim().toLowerCase();
         if (!busqueda) return;
 
-        inventarioFiltrado = inventario.filter(item =>
-            (item.equipo && item.equipo.toLowerCase().includes(busqueda)) ||
-            (item.jugador && item.jugador.toLowerCase().includes(busqueda)) ||
-            (item.tipo && item.tipo.toLowerCase().includes(busqueda))
-        );
+        lockUI('Filtrando artículos...');
+        try {
+            inventarioFiltrado = inventario.filter(item =>
+                (item.equipo && item.equipo.toLowerCase().includes(busqueda)) ||
+                (item.jugador && item.jugador.toLowerCase().includes(busqueda)) ||
+                (item.tipo && item.tipo.toLowerCase().includes(busqueda))
+            );
 
-        renderizarTabla(inventarioFiltrado);
+            renderizarTabla(inventarioFiltrado);
+        } finally {
+            unlockUI();
+        }
     }
 
     function filtrarBajoStock() {
-        inventarioFiltrado = inventario.filter(item => item.cantidad <= 1);
-        renderizarTabla(inventarioFiltrado);
+        lockUI('Filtrando bajo stock...');
+        try {
+            inventarioFiltrado = inventario.filter(item => item.cantidad <= 1);
+            renderizarTabla(inventarioFiltrado);
+        } finally {
+            unlockUI();
+        }
     }
 
     function resetearFiltros() {
-        inputBusqueda.value = '';
-        inventarioFiltrado = null;
-        renderizarTabla();
-        
-        // Resetear botones de tipo
-        document.querySelectorAll('.tipo-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        // Resetear botones de talla
-        document.querySelectorAll('.talla-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        
-        aplicarFiltrosCombinados();
+        lockUI('Restableciendo filtros...');
+        try {
+            inputBusqueda.value = '';
+            inventarioFiltrado = null;
+            renderizarTabla();
+            
+            // Resetear botones de tipo
+            document.querySelectorAll('.tipo-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Resetear botones de talla
+            document.querySelectorAll('.talla-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            aplicarFiltrosCombinados();
+        } finally {
+            unlockUI();
+        }
     }
 
     // ===================== FUNCIONES AUXILIARES =====================
@@ -485,6 +551,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function limpiarVentas() {
         if (!confirm('¿Estás seguro de eliminar TODAS las ventas del día?')) return;
         
+        lockUI('Limpiando ventas...');
         try {
             const response = await fetch(`${API_BASE_URL}/sales/clear`, {
                 method: 'DELETE'
@@ -499,10 +566,13 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error:', error);
             mostrarNotificacion('Error al limpiar ventas', 'error');
+        } finally {
+            unlockUI();
         }
     }
 
     async function verificarDiaNuevo() {
+        lockUI('Verificando día nuevo...');
         try {
             const response = await fetch(`${API_BASE_URL}/sales/check-new-day`);
             if (!response.ok) throw new Error('Error al verificar día nuevo');
@@ -516,10 +586,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error('Error verificando día nuevo:', error);
+        } finally {
+            unlockUI();
         }
     }
 
     async function exportarPDF() {
+        lockUI('Generando PDF...');
         try {
             // Verificar si jsPDF está disponible
             if (typeof jsPDF === 'undefined') {
@@ -597,6 +670,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error al generar PDF:', error);
             mostrarNotificacion(`Error al generar PDF: ${error.message}`, 'error');
+        } finally {
+            unlockUI();
         }
     }
 
