@@ -40,8 +40,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// Permitir preflight
-app.options('*', cors());
 
 /* -------- body parsers -------- */
 app.use(express.json({ limit: '10mb' }));
