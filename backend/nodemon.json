@@ -1,4 +1,0 @@
-{
-    "ignore": ["node_modules/", ".env"],
-    "watch": ["server.js", "routes/", "models/"]
-  }
