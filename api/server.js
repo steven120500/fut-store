@@ -21,15 +21,29 @@ app.set('trust proxy', 1);                  // útil en Render/Proxies
 /* -------- middlewares globales -------- */
 app.use(compression());                     // gzip/brotli
 
-// Restringe origin a tu sitio (ajusta URL del front)
+// CORS con manejo de origenes
+const allowedOrigins = [
+  'https://fut-store-frontend.onrender.com',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-  origin: [
-    'https://fut-store.onrender.com',
-    'http://localhost:5173'
-  ],
+  origin: (origin, callback) => {
+    // Permitir requests sin origin (como curl o Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('No permitido por CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
 }));
 
-// Si no envías imágenes en el body, 10MB es suficiente
+// Permitir preflight
+app.options('*', cors());
+
+/* -------- body parsers -------- */
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
