@@ -24,7 +24,7 @@ app.use(compression());                     // gzip/brotli
 // Restringe origin a tu sitio (ajusta URL del front)
 app.use(cors({
   origin: [
-    'https://chemasport-er.onrender.com',
+    'https://fut-store.onrender.com',
     'http://localhost:5173'
   ],
 }));
