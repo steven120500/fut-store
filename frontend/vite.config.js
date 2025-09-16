@@ -11,8 +11,8 @@ export default defineConfig({
       // Archivos estáticos que quieras incluir tal cual
       includeAssets: ['favicon.svg', 'robots.txt', 'apple-touch-icon.png'],
       manifest: {
-        name: 'ChemaSport ER',
-        short_name: 'ChemaSport',
+        name: 'FutStore',
+        short_name: 'FutStore',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
@@ -50,7 +50,7 @@ export default defineConfig({
           // API de productos: red primero y caché de respaldo
           {
             urlPattern: ({ url }) =>
-              url.origin.includes('chemas-sport-er-backend.onrender.com') &&
+              url.origin.includes('https://fut-store.onrender.com') &&
               url.pathname.startsWith('/api/products'),
             handler: 'NetworkFirst',
             options: {
