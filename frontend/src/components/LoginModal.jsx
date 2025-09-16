@@ -21,7 +21,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     const endpoint = isRegister ? 'register' : 'login';
 
     try {
-      const res = await fetch(`https://chemas-sport-er-backend.onrender.com/api/auth/${endpoint}`,{
+      const res = await fetch(`https://fut-store.onrender.com/api/auth/${endpoint}`,{
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

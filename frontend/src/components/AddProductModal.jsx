@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import tallaPorTipo from "../utils/tallaPorTipo";
 
 // ===== Config =====
-const API_BASE = import.meta.env.VITE_API_BASE || "https://chemas-sport-er-backend.onrender.com";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://fut-store.onrender.com";
 const MAX_IMAGES = 2;
 const MAX_WIDTH = 1000;   // reescala si la imagen es más ancha
 const QUALITY = 0.75;     // calidad WebP

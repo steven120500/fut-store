@@ -22,7 +22,7 @@ import HistoryModal from './components/HistoryModal';
 import Medidas from './components/Medidas'; // ⬅️ Medidas
 import { FaChevronLeft,FaChevronRight } from 'react-icons/fa';
 
-const API_BASE = "https://chemas-sport-er-backend.onrender.com";
+const API_BASE = "https://fut-store.onrender.com";
 
 // helper para páginas 1 ... (page-2) (page-1) [page] (page+1) (page+2) ... last
 function buildPages(page, pages) {

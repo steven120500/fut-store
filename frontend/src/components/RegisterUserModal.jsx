@@ -24,7 +24,7 @@ export default function RegisterUserModal({ onClose }) {
       const payload = { username, password, roles: selectedRoles };
 
       const res = await fetch(
-        "https://chemas-sport-er-backend.onrender.com/api/auth/register",
+        "https://fut-store.onrender.com/api/auth/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

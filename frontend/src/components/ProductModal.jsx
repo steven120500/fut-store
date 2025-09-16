@@ -4,7 +4,7 @@ import { FaWhatsapp, FaTimes } from 'react-icons/fa';
 import { toast as toastHOT } from 'react-hot-toast';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-const API_BASE = 'https://chemas-sport-er-backend.onrender.com';
+const API_BASE = 'https://fut-store.onrender.com';
 
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
