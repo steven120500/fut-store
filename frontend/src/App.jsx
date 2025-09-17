@@ -1,3 +1,4 @@
+// App.jsx
 import { Toaster } from 'react-hot-toast';
 import React, { useEffect, useRef, useState } from 'react';
 import Header from './components/Header';
@@ -8,10 +9,9 @@ import AddProductModal from './components/AddProductModal';
 import LoginModal from './components/LoginModal';
 import RegisterUserModal from './components/RegisterUserModal';
 import Footer from './components/Footer';
-import FloatingWhatsapp from './components/FloatingWhatsapp';
 import LoadingOverlay from './components/LoadingOverlay';
 import tallaPorTipo from './utils/tallaPorTipo';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
@@ -19,20 +19,16 @@ import TopBanner from './components/TopBanner';
 import UserDropdown from './components/UserDropDown';
 import UserListModal from './components/UserListModal';
 import HistoryModal from './components/HistoryModal';
-import Medidas from './components/Medidas'; // ⬅️ Medidas
-import { FaChevronLeft,FaChevronRight } from 'react-icons/fa';
+import Medidas from './components/Medidas';
 
 const API_BASE = "https://fut-store.onrender.com";
+const GOLD = '#d4af37';
 
-// helper para páginas 1 ... (page-2) (page-1) [page] (page+1) (page+2) ... last
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
-  return [...out]
-    .filter(n => n >= 1 && n <= pages)
-    .sort((a, b) => a - b);
+  return [...out].filter(n => n >= 1 && n <= pages).sort((a, b) => a - b);
 }
 
-// ✅ Normaliza el id (_id o id) a string
 const getPid = (p) => String(p?._id ?? p?.id ?? '');
 
 function App() {
@@ -46,9 +42,8 @@ function App() {
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
   const [showUserListModal, setShowUserListModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [showMedidas, setShowMedidas] = useState(false); // ⬅️ Medidas
+  const [showMedidas, setShowMedidas] = useState(false);
 
-  // --- estados de paginación ---
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -61,7 +56,7 @@ function App() {
     showRegisterUserModal ||
     showUserListModal ||
     showHistoryModal ||
-    showMedidas; // ⬅️ Medidas
+    showMedidas;
 
   const [user, setUser] = useState(() => {
     try {
@@ -86,26 +81,21 @@ function App() {
     toast.success("Sesión cerrada correctamente");
   };
 
-  // --- cargar productos con paginación y filtros ---
   const fetchProducts = async (opts = {}) => {
-    const p  = opts.page ?? page;
-    const q  = (opts.q ?? searchTerm).trim();
+    const p = opts.page ?? page;
+    const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
-
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(p),
         limit: String(limit),
-        ...(q  ? { q }        : {}),
+        ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
       });
-
-      // 🔧 FIX: interpolación correcta
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error('HTTP ' + res.status);
-
-      const json = await res.json(); // { items,total,page,pages,limit }
+      const json = await res.json();
       setProducts(json.items);
       setTotal(json.total);
       setPage(json.page);
@@ -118,19 +108,17 @@ function App() {
     }
   };
 
-  // ⬆️ scroll al top al cambiar de página
   const pageTopRef = useRef(null);
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType });
     if (pageTopRef.current) {
-      pageTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      pageTopRef.current.scrollIntoView({ behavior: 'smooth' });
     } else {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, searchTerm, filterType]);
 
-  // ✅ Actualiza lista y el producto abierto en el modal
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
       setProducts(prev => prev.filter(p => getPid(p) !== String(deletedId)));
@@ -138,33 +126,13 @@ function App() {
       toast.success("Producto eliminado correctamente");
       return;
     }
-
     setProducts(prev =>
       prev.map(p => (getPid(p) === getPid(updatedProduct) ? { ...p, ...updatedProduct } : p))
     );
-
-    // Mantén el modal sincronizado con los datos nuevos
     setSelectedProduct(prev =>
       prev && getPid(prev) === getPid(updatedProduct) ? { ...prev, ...updatedProduct } : prev
     );
-
     toast.success("Producto actualizado correctamente");
-  };
-
-  const handleLoginClick = () => {
-    setShowLogin(true);
-  };
-
-  const handleLoginSuccess = (userData) => {
-    setUser(userData);
-    setShowLogin(false);
-    toast.success('Bienvenido');
-  };
-
-  const handleRegisterClick = () => {
-    setTimeout(() => {
-      setShowRegisterUserModal(true);
-    }, 100);
   };
 
   const filteredProducts = products.filter((product) => {
@@ -176,49 +144,17 @@ function App() {
   return (
     <>
       <div ref={pageTopRef} />
-
-      {showRegisterUserModal && (
-        <RegisterUserModal
-          onClose={() => {
-            setShowRegisterUserModal(false);
-          }}
-        />
-      )}
-
-      {showUserListModal && (
-        <UserListModal
-          open={showUserListModal}
-          onClose={() => setShowUserListModal(false)}
-        />
-      )}
-
-      {showHistoryModal && (
-        <HistoryModal
-          open={showHistoryModal}
-          onClose={() => setShowHistoryModal(false)}
-          isSuperUser={user?.isSuperUser === true}
-          roles={user?.roles || []}
-        />
-      )}
-
-      {/* Modal Medidas */}
-      {showMedidas && (
-        <Medidas
-          open={showMedidas}
-          onClose={() => setShowMedidas(false)}
-          currentType={filterType || 'Todos'}
-        />
-      )}
-
+      {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
+      {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
+      {showHistoryModal && <HistoryModal open={showHistoryModal} onClose={() => setShowHistoryModal(false)} isSuperUser={user?.isSuperUser === true} roles={user?.roles || []} />}
+      {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || 'Todos'} />}
       <TopBanner />
-
       {loading && <LoadingOverlay message="Cargando productos..." />}
-
       {!anyModalOpen && (
         <Header
-          onLoginClick={handleLoginClick}
+          onLoginClick={() => setShowLogin(true)}
           onLogout={handleLogout}
-          onLogoClick={()=>{
+          onLogoClick={() => {
             setFilterType("");
             setSearchTerm("");
             setPage(1);
@@ -231,17 +167,16 @@ function App() {
           canSeeHistory={canSeeHistory}
         />
       )}
-
       {canAdd && !anyModalOpen && (
         <button
-          className="fixed bottom-6 right-6 bg-black text-white p-4 rounded-full shadow-lg hover:bg-gray-800 transition z-50"
+          className="fixed bottom-6 right-6 text-black p-4 rounded-full shadow-lg transition z-50"
           onClick={() => setShowAddModal(true)}
           title="Añadir producto"
+          style={{ backgroundColor: GOLD }}
         >
           <FaPlus />
         </button>
       )}
-
       <FilterBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -251,19 +186,17 @@ function App() {
           setPage(1);
         }}
       />
-
-      {/* ⬇️ Bloque pregunta + botón Medidas */}
       <div className="px-4 mt-2 mb-4 flex items-center justify-center gap-3">
         <span className="text-sm sm:text-base text-gray-700">¿Querés saber tu talla?</span>
         <button
           onClick={() => setShowMedidas(true)}
-          className="bg-black text-white px-2 py-1 rounded hover:bg-gray-800 font-semibold tracking-tight"
+          className="px-3 py-1 rounded font-semibold tracking-tight"
+          style={{ backgroundColor: GOLD, color: 'black' }}
           title="Ver medidas"
         >
           Medidas
         </button>
       </div>
-
       <div className="px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
         {filteredProducts.map((product) => (
           <ProductCard
@@ -273,7 +206,6 @@ function App() {
           />
         ))}
       </div>
-
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ''}`}
@@ -285,7 +217,6 @@ function App() {
           user={user}
         />
       )}
-
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -298,7 +229,6 @@ function App() {
           onCancel={() => setShowAddModal(false)}
         />
       )}
-
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -309,32 +239,15 @@ function App() {
             setShowLogin(false);
             toast.success('Bienvenido');
           }}
-          onRegisterClick={handleRegisterClick}
+          onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)}
         />
       )}
-
-      {showRegisterUserModal && (
-        <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
-      )}
-
-      {canSeeHistory && (
-        <button onClick={() => setShowHistoryModal(true)} style={{ display: 'none' }} />
-      )}
-
-      {/* --- Paginación --- */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
-           
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50"
-              title="Anterior"
-            >
-             <FaChevronLeft/>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50" title="Anterior">
+              <FaChevronLeft />
             </button>
-
             {(() => {
               const nums = buildPages(page, pages);
               return nums.map((n, i) => {
@@ -346,8 +259,12 @@ function App() {
                     <button
                       onClick={() => setPage(n)}
                       className={`px-2 text-sm py-0.5 rounded border ${
-                        n === page ? "bg-black text-white" : "hover:bg-gray-100"
+                        n === page ? "text-black" : "hover:bg-gray-100"
                       }`}
+                      style={{
+                        backgroundColor: n === page ? GOLD : 'transparent',
+                        borderColor: n === page ? GOLD : '#ccc',
+                      }}
                     >
                       {n}
                     </button>
@@ -355,23 +272,13 @@ function App() {
                 );
               });
             })()}
-
-            <button
-              onClick={() => setPage(p => Math.min(pages, p + 1))}
-              disabled={page === pages}
-              className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50"
-              title="Siguiente"
-            >
-              <FaChevronRight/>
-
+            <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50" title="Siguiente">
+              <FaChevronRight />
             </button>
-            
           </nav>
         </div>
       )}
-
       <Footer />
-      {!anyModalOpen && <FloatingWhatsapp />}
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />
     </>

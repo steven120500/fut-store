@@ -83,3 +83,27 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes blink {
+  0%, 100% { border-color: transparent }
+  50% { border-color: #d4af37 }
+}
+
+.typing-effect {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  color: #d4af37;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 3px solid #d4af37;
+  width: 0;
+  animation:
+    typing 2s steps(8, end) forwards,
+    blink 0.75s step-end infinite;
+}

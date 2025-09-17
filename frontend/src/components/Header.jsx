@@ -15,7 +15,7 @@ export default function Header({
 }) {
   return (
     <header className="bg-white shadow-md px-4 sm:px-6 py-3 sm:py-4 relative">
-      {/* Fila superior (siempre): logo izq, usuario der */}
+      {/* Fila superior: logo izq, usuario der */}
       <div className="flex items-center justify-between">
         {/* Logo como botón */}
         <button
@@ -23,7 +23,8 @@ export default function Header({
           className="focus:outline-none bg-white"
           title="Volver al inicio"
         >
-          <img src={logo} alt="Logo Chemas Sport" className="h-14 sm:h-20" />
+          {/* Logo aquí si querés usarlo */}
+          {/* <img src={logo} alt="Logo FutStore" className="h-8 sm:h-10" /> */}
         </button>
 
         {/* Botón de usuario o Login */}
@@ -49,13 +50,12 @@ export default function Header({
         </div>
       </div>
 
-      
       {/* Título */}
-      <div className="text-center">
-      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900">
-        ChemaSport ER
-      </h1>
-    </div>
+      <div className="mt-2">
+      <h1 className="typing-effect">
+  FutStore
+</h1>
+      </div>
     </header>
   );
 }
