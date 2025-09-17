@@ -34,12 +34,12 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #ffffff;
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: #ffffff;
 }
 
 h1 {
@@ -60,7 +60,7 @@ button {
 }
 
 button:hover {
-  border-color: #646cff;
+  border-color: #d4af37;
 }
 
 button:focus,
@@ -76,7 +76,7 @@ button:focus-visible {
   }
 
   a:hover {
-    color: #747bff;
+    color: #d4af37;
   }
 
   button {
@@ -97,13 +97,13 @@ button:focus-visible {
 .typing-effect {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 2rem;
+  font-size: 3rem;
   color: #d4af37;
   white-space: nowrap;
   overflow: hidden;
   border-right: 3px solid #d4af37;
   width: 0;
   animation:
-    typing 2s steps(8, end) forwards,
+    typing 10s steps(8, end) forwards,
     blink 0.75s step-end infinite;
 }

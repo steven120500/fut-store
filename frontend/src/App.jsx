@@ -1,8 +1,6 @@
-// App.jsx
 import { Toaster } from 'react-hot-toast';
 import React, { useEffect, useRef, useState } from 'react';
 import Header from './components/Header';
-import FilterBar from './components/FilterBar';
 import ProductCard from './components/ProductCard';
 import ProductModal from './components/ProductModal';
 import AddProductModal from './components/AddProductModal';
@@ -16,7 +14,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 import TopBanner from './components/TopBanner';
-import UserDropdown from './components/UserDropDown';
 import UserListModal from './components/UserListModal';
 import HistoryModal from './components/HistoryModal';
 import Medidas from './components/Medidas';
@@ -70,7 +67,6 @@ function App() {
 
   const isSuperUser = user?.isSuperUser || false;
   const canSeeHistory = user?.isSuperUser || user?.roles?.includes('history');
-  const canClearHistory = user?.isSuperUser;
   const canAdd = user?.isSuperUser || user?.roles?.includes("add");
   const canEdit = user?.isSuperUser || user?.roles?.includes("edit");
   const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
@@ -159,12 +155,21 @@ function App() {
             setSearchTerm("");
             setPage(1);
           }}
+          onFilterChange={(newType) => {
+            setFilterType(newType);
+            setPage(1);
+          }}
+          onSearch={(term) => {
+            setSearchTerm(term);
+            setPage(1);
+          }}
+          onMedidasClick={() => setShowMedidas(true)}
           user={user}
-          isSuperUser={user?.isSuperUser}
+          isSuperUser={isSuperUser}
+          canSeeHistory={canSeeHistory}
           setShowRegisterUserModal={setShowRegisterUserModal}
           setShowUserListModal={setShowUserListModal}
           setShowHistoryModal={setShowHistoryModal}
-          canSeeHistory={canSeeHistory}
         />
       )}
       {canAdd && !anyModalOpen && (
@@ -177,26 +182,6 @@ function App() {
           <FaPlus />
         </button>
       )}
-      <FilterBar
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterType={filterType}
-        setFilterType={(t) => {
-          setFilterType(t);
-          setPage(1);
-        }}
-      />
-      <div className="px-4 mt-2 mb-4 flex items-center justify-center gap-3">
-        <span className="text-sm sm:text-base text-gray-700">¿Querés saber tu talla?</span>
-        <button
-          onClick={() => setShowMedidas(true)}
-          className="px-3 py-1 rounded font-semibold tracking-tight"
-          style={{ backgroundColor: GOLD, color: 'black' }}
-          title="Ver medidas"
-        >
-          Medidas
-        </button>
-      </div>
       <div className="px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
         {filteredProducts.map((product) => (
           <ProductCard
