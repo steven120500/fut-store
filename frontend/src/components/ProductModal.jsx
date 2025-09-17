@@ -520,7 +520,7 @@ export default function ProductModal({
         </div>
 
         {/* WhatsApp (comentado) */}
-        {/*
+        {
         <a 
           href={`https://wa.me/50660369857?text=${encodeURIComponent(
             `¡Hola! Me interesa la camiseta ${product?.name} ${product?.type} con valor de ₡${product?.price}. ¿Está disponible?`
@@ -533,7 +533,7 @@ export default function ProductModal({
           <FaWhatsapp className="mr-2" />
           Enviar mensaje por WhatsApp
         </a>
-        */}
+        }
       </div>
     </div>
   );

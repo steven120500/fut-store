@@ -13,7 +13,6 @@ import { FaPlus, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
-import TopBanner from './components/TopBanner';
 import UserListModal from './components/UserListModal';
 import HistoryModal from './components/HistoryModal';
 import Medidas from './components/Medidas';
@@ -144,7 +143,7 @@ function App() {
       {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
       {showHistoryModal && <HistoryModal open={showHistoryModal} onClose={() => setShowHistoryModal(false)} isSuperUser={user?.isSuperUser === true} roles={user?.roles || []} />}
       {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || 'Todos'} />}
-      <TopBanner />
+      
       {loading && <LoadingOverlay message="Cargando productos..." />}
       {!anyModalOpen && (
         <Header
@@ -171,7 +170,12 @@ function App() {
           setShowUserListModal={setShowUserListModal}
           setShowHistoryModal={setShowHistoryModal}
         />
+
+        
       )}
+      <div className="pt-48 pt-4">
+          
+          </div>
       {canAdd && !anyModalOpen && (
         <button
           className="fixed bottom-6 right-6 text-black p-4 rounded-full shadow-lg transition z-50"

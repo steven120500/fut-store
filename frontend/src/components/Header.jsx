@@ -1,6 +1,8 @@
 import logo from "../assets/logo.png";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { FaBars } from "react-icons/fa";
+import { LiaRulerSolid } from "react-icons/lia";
+import { FiPhoneCall } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 
 const GOLD = "#d4af37";
@@ -38,41 +40,36 @@ export default function Header({
   };
 
   return (
-    <header
-      className="mb-12 shadow-md px-4 sm:px-6 py-4 relative"
-      style={{ backgroundColor: GOLD }}
-    >
+    <header className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50" style={{ backgroundColor: GOLD }}>
       <div className="flex items-center justify-between">
         {/* IZQUIERDA */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* LOGO */}
           <button
             onClick={onLogoClick}
             title="Volver al inicio"
-            className="focus:outline-none focus:ring-0"
+            className="focus:outline-none"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "1.9rem",
+            }}
+            
           >
-            <img
-              src={logo}
-              alt="Logo"
-              className="h-20 sm:h-24"
-              style={{ borderRadius: "0px" }}
-            />
+            <img src={logo} alt="Logo" className="h-12 sm:h-16" />
           </button>
 
           {/* CATEGORÍAS */}
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="text-black font-semibold flex items-center gap-1 px-4 py-1.5 rounded-md focus:outline-none focus:ring-0"
+              className="text-black text-xs sm:text-lg font-semibold flex items-center gap-1 px-2 sm:px-4 py-1 rounded"
               style={{ backgroundColor: GOLD }}
             >
               Categorías <IoMdArrowDropdown />
             </button>
             {showDropdown && (
-              <div
-                className="absolute left-0 mt-2 w-44 rounded shadow z-10"
-                style={{ backgroundColor: GOLD }}
-              >
+              <div className="absolute left-0 mt-1 w-36 sm:w-44 rounded shadow z-50 bg-white">
                 {[
                   "Player",
                   "Fan",
@@ -86,9 +83,7 @@ export default function Header({
                   <button
                     key={type}
                     onClick={() => handleTypeClick(type)}
-                    className="w-full text-left px-4 py-2 hover:bg-yellow-200 text-sm focus:outline-none focus:ring-0"
-                    style={{ backgroundColor: GOLD }}
-                    
+                    className="w-full text-left px-3 py-1.5 hover:bg-yellow-200 text-xs sm:text-sm"
                   >
                     {type}
                   </button>
@@ -100,28 +95,29 @@ export default function Header({
           {/* MEDIDAS */}
           <button
             onClick={onMedidasClick}
-            className="text-black font-semibold px-4 py-1.5 rounded-md focus:outline-none focus:ring-0"
+            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
-            Medidas
+            <LiaRulerSolid size={18} />
+            <span className="hidden sm:inline">Medidas</span>
           </button>
 
           {/* CONTACTO */}
           <button
             onClick={() => alert("Pronto podrás contactarnos.")}
-            className="text-black font-semibold px-4 py-1.5 rounded-md focus:outline-none focus:ring-0"
+            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
-            Contacto
+            <FiPhoneCall size={18} />
+            <span className="hidden sm:inline">Contacto</span>
           </button>
         </div>
 
-        {/* BOTÓN DE MENÚ (SLIDE) */}
+        {/* BOTÓN MENÚ */}
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
-            title="Menú"
-            className="rounded-full p-3 shadow-lg transition text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-0"
+            className="rounded-full p-2 sm:text-lg  shadow-md bg-black hover:bg-gray-800 text-white"
           >
             <FaBars size={18} />
           </button>
@@ -138,8 +134,13 @@ export default function Header({
           >
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-black font-bold text-xl mb-4 focus:outline-none focus:ring-0"
-              style={{ backgroundColor: GOLD }}
+              className="text-black font-bold text-xl mb-4"
+              style={{
+                backgroundColor: "#DABB52",
+                color: "#000",
+                fontSize: "0.9rem",
+              }}
+              
             >
               ✕
             </button>
@@ -152,8 +153,13 @@ export default function Header({
                       setShowRegisterUserModal(true);
                       setSidebarOpen(false);
                     }}
-                    className="block text-left w-full mb-2 text-black hover:underline"
-                    style={{ backgroundColor: GOLD }}
+                    className="block w-full mb-2 text-left text-black"
+                    style={{
+                      backgroundColor: "#DABB52",
+                      color: "#000",
+                      fontSize: "0.9rem",
+                    }}
+                    
                   >
                     Agregar usuario
                   </button>
@@ -164,8 +170,13 @@ export default function Header({
                       setShowUserListModal(true);
                       setSidebarOpen(false);
                     }}
-                    className="block text-left w-full mb-2 text-black hover:underline"
-                    style={{ backgroundColor: GOLD }}
+                    className="block w-full mb-2 text-left text-black"
+                    style={{
+                      backgroundColor: "#DABB52",
+                      color: "#000",
+                      fontSize: "0.9rem",
+                    }}
+                    
                   >
                     Ver usuarios
                   </button>
@@ -176,8 +187,13 @@ export default function Header({
                       setShowHistoryModal(true);
                       setSidebarOpen(false);
                     }}
-                    className="block text-left w-full mb-2 text-black hover:underline"
-                    style={{ backgroundColor: GOLD }}
+                    className="block w-full mb-2 text-left text-black"
+                    style={{
+                      backgroundColor: "#DABB52",
+                      color: "#000",
+                      fontSize: "0.9rem",
+                    }}
+                    
                   >
                     Historial
                   </button>
@@ -187,8 +203,13 @@ export default function Header({
                     onLogout();
                     setSidebarOpen(false);
                   }}
-                  className="block text-left w-full text-red-600 font-semibold hover:underline mt-4"
-                  style={{ backgroundColor: GOLD }}
+                  className="block w-full mt-4 text-left text-red-600 font-semibold"
+                  style={{
+                    backgroundColor: "#DABB52",
+                    color: "#000",
+                    fontSize: "0.9rem",
+                  }}
+                  
                 >
                   Cerrar sesión
                 </button>
@@ -199,7 +220,7 @@ export default function Header({
                   onLoginClick();
                   setSidebarOpen(false);
                 }}
-                className="block text-left w-full text-black font-semibold hover:underline"
+                className="block w-full text-left text-black font-semibold hover:underline"
               >
                 Iniciar sesión
               </button>
