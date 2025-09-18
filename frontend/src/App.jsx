@@ -216,12 +216,12 @@ function App() {
       {/* Barra de búsqueda + filtro */}
       <div
         ref={pageTopRef}
-        className="relative w-full bg-white shadow-sm z-0 pt-4 pb-2 sm:pb-4 px-4 sm:px-6 flex items-center gap-2"
+        className="relative w-[100px] bg-white shadow-sm z-7 pt-4 pb-2 sm:pb-4 px-4 sm:px-6 flex items-center gap-2"
       >
         <input
           type="text"
           placeholder="Buscar productos..."
-          className="flex-1 sm:w-[200px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+          className="flex-1 sm:w-[100px] px-6 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-m"
           onChange={(e) => {
             setSearchTerm(e.target.value);
             setPage(1);

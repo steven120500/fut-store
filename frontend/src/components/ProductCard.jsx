@@ -23,7 +23,7 @@ export default function ProductCard({ product, onClick }) {
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      className="relative bg-white shadow-md hover:shadow-lg transition cursor-pointer overflow-hidden w-full"
+      className="relative bg-white z-0 shadow-md hover:shadow-lg transition cursor-pointer overflow-hidden w-full"
       onClick={() => onClick(product)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

@@ -529,7 +529,7 @@ export default function ProductModal({
           )}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto flex justify-center items-center text-center mt-4 font-bold"
+          className="mb-12 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition w-full sm:w-auto flex justify-center items-center text-center font-bold"
           title="Enviar mensaje por WhatsApp"
         >
           <FaWhatsapp className="mr-2" />

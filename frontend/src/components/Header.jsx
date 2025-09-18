@@ -135,106 +135,108 @@ export default function Header({
 
       {/* SIDEBAR */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-50"
+  <div
+    className="fixed inset-0 z-[100] bg-black/40"
+    onClick={() => setSidebarOpen(false)}
+  >
+    {/* Panel */}
+    <div
+      className="fixed top-0 right-0 h-full w-72 sm:w-80 shadow-xl"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        className="relative h-full overflow-y-auto pt-14 p-5"
+        style={{ backgroundColor: GOLD }}
+      >
+        {/* X: ahora posicionada dentro del panel */}
+        <button
           onClick={() => setSidebarOpen(false)}
+          aria-label="Cerrar menú"
+          className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9 bg-black text-white hover:bg-gray-800 transition"
+          title="Cerrar"
+          style={{
+            backgroundColor: "#d4af37",
+            color: "#000",
+            fontSize: "0.9rem",
+          }}
         >
-          <div
-            className="fixed top-0 right-0 w-64 h-full shadow-lg p-5 overflow-y-auto"
-            style={{ backgroundColor: GOLD }}
-            onClick={(e) => e.stopPropagation()}
-          >
+          ✕
+        </button>
+
+        {/* Opciones */}
+        {user ? (
+          <>
+            {isSuperUser && (
+              <button
+                onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }}
+                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
+                style={{
+                  backgroundColor: "#DABB52",
+                  color: "#000",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Agregar usuario
+              </button>
+            )}
+
+            {isSuperUser && (
+              <button
+                onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }}
+                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
+                style={{
+                  backgroundColor: "#DABB52",
+                  color: "#000",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Ver usuarios
+              </button>
+            )}
+
+            {canSeeHistory && (
+              <button
+                onClick={() => { setShowHistoryModal(true); setSidebarOpen(false); }}
+                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
+                style={{
+                  backgroundColor: "#DABB52",
+                  color: "#000",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Historial
+              </button>
+            )}
+
             <button
-              onClick={() => setSidebarOpen(false)}
-              className="fixed top-0 right-0 text-black font-bold text-xl mt-6"
+              onClick={() => { onLogout(); setSidebarOpen(false); }}
+              className="w-full text-left mt-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-red-700 font-semibold"
               style={{
                 backgroundColor: "#DABB52",
                 color: "#000",
                 fontSize: "0.9rem",
               }}
             >
-              ✕
+              Cerrar sesión
             </button>
-
-            {user ? (
-              <>
-                {isSuperUser && (
-                  <button
-                    onClick={() => {
-                      setShowRegisterUserModal(true);
-                      setSidebarOpen(false);
-                    }}
-                    className="block w-full mb-2 text-left text-black mt-16"
-                    style={{
-                      backgroundColor: "#DABB52",
-                      color: "#000",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Agregar usuario
-                  </button>
-                )}
-                {isSuperUser && (
-                  <button
-                    onClick={() => {
-                      setShowUserListModal(true);
-                      setSidebarOpen(false);
-                    }}
-                    className="block w-full mb-2 text-left text-black"
-                    style={{
-                      backgroundColor: "#DABB52",
-                      color: "#000",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Ver usuarios
-                  </button>
-                )}
-                {canSeeHistory && (
-                  <button
-                    onClick={() => {
-                      setShowHistoryModal(true);
-                      setSidebarOpen(false);
-                    }}
-                    className="block w-full mb-2 text-left text-black"
-                    style={{
-                      backgroundColor: "#DABB52",
-                      color: "#000",
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    Historial
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    onLogout();
-                    setSidebarOpen(false);
-                  }}
-                  className="block w-full text-left text-red-600 font-semibold"
-                  style={{
-                    backgroundColor: "#DABB52",
-                    color: "#000",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Cerrar sesión
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={() => {
-                  onLoginClick();
-                  setSidebarOpen(false);
-                }}
-                className="block w-full text-left text-black font-semibold hover:underline"
-              >
-                Iniciar sesión
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <button
+            onClick={() => { onLoginClick(); setSidebarOpen(false); }}
+            className="w-full text-left px-4 py-2 rounded-lg bg-black/60 hover:bg-black/80 font-semibold"
+            style={{
+              backgroundColor: "#DABB52",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
+          >
+            Iniciar sesión
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* MODAL CONTACTO */}
       {showContacto && (
