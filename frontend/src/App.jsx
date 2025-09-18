@@ -213,36 +213,34 @@ function App() {
         </div>
       </section>
 
-      {/* BARRA DE BÚSQUEDA + FILTROS (más corta y a la derecha) */}
-<div className="sticky top-[72px] sm:top-[96px] z-[45] bg-white/95 backdrop-blur px-4 py-3">
-  <div className="flex items-center justify-end gap-2">
-    {/* input más pequeño en móvil */}
+    {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
+<div className="sticky top-[96px] z-40 bg-white/80 backdrop-blur px-4 sm:px-6 py-3">
+  <div className="mx-auto max-w-7xl flex items-center gap-3">
+    {/* Input: pequeño en móvil, grande en desktop */}
     <input
       type="text"
       placeholder="Buscar productos..."
-      className="w-[62%] sm:w-[360px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
       value={searchTerm}
-      onChange={(e) => {
-        setSearchTerm(e.target.value);
-        setPage(1);
-        // 👇 evita el scroll a la cabecera al filtrar
-        // (si tenías lógica que scrolleaba arriba, no la llames aquí)
-      }}
+      onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+      className="
+        w-2/3 sm:w-3/4 md:w-[420px] lg:w-[560px]
+        h-10 px-4 border border-gray-300 rounded-md
+        focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm
+      "
     />
 
     {/* Botón Filtros (igual estilo que Categorías) */}
     <div className="relative">
       <button
-        onClick={() => setShowFilters?.((v) => !v)}
+        onClick={() => setShowFilters((v) => !v)}
         className="flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-black"
         style={{ backgroundColor: '#d4af37' }}
         title="Filtros"
       >
-        <span className="inline-block w-0 h-0 border-l-4 border-r-4 border-b-8 border-transparent border-b-black" />
+        <FaFilter className="text-black" />
         {filterType ? `Filtros · ${filterType}` : 'Filtros'}
       </button>
 
-      {/* Dropdown alineado a la derecha para que no se salga en móvil */}
       {showFilters && (
         <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-50">
           {['Player','Fan','Mujer','Niño','Retro','Abrigos','Nacional','Todos'].map(t => (

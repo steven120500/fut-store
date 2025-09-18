@@ -152,10 +152,10 @@ export default function Header({
         <button
           onClick={() => setSidebarOpen(false)}
           aria-label="Cerrar menú"
-          className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9 bg-black text-white hover:bg-gray-800 transition"
+          className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9 "
           title="Cerrar"
           style={{
-            backgroundColor: "#",
+            backgroundColor: "#d4af37",
             color: "#000",
             fontSize: "0.9rem",
           }}
