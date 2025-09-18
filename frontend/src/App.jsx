@@ -83,13 +83,17 @@ function App() {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
+
+    // ⬅️ FIX: si es "Ofertas", no enviar "type" al backend
+    const effectiveType = tp === "Ofertas" ? "" : tp;
+
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(p),
         limit: String(limit),
         ...(q ? { q } : {}),
-        ...(tp ? { type: tp } : {}),
+        ...(effectiveType ? { type: effectiveType } : {}),
       });
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -135,9 +139,20 @@ function App() {
     toast.success("Producto actualizado correctamente");
   };
 
+  // 🔹 Filtro de productos (incluye ofertas)
   const filteredProducts = products.filter((product) => {
-    const matchName = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType = filterType ? product.type === filterType : true;
+    const matchName = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    let matchType = true;
+    if (filterType && filterType !== "Ofertas") {
+      matchType = product.type === filterType;
+    }
+    if (filterType === "Ofertas") {
+      matchType = product.discountPrice != null;
+    }
+
     return matchName && matchType;
   });
 
@@ -149,6 +164,7 @@ function App() {
     "Retro",
     "Abrigos",
     "Nacional",
+    "Ofertas",
     "Todos",
   ];
 
@@ -213,54 +229,57 @@ function App() {
         </div>
       </section>
 
-    {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
-<div className="sticky top-[96px] z-40 bg-white/80 backdrop-blur px-4 sm:px-6 py-3">
-  <div className="mx-auto max-w-7xl flex items-center gap-3">
-    {/* Input: pequeño en móvil, grande en desktop */}
-    <input
-      type="text"
-      placeholder="Buscar productos..."
-      value={searchTerm}
-      onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-      className="
-        w-2/3 sm:w-3/4 md:w-[420px] lg:w-[560px]
-        h-10 px-4 border border-gray-300 rounded-md
-        focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm
-      "
-    />
+      {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
+      <div className="sticky top-[96px] z-40 bg-white/80 backdrop-blur px-4 sm:px-6 py-3">
+        <div className="mx-auto max-w-7xl flex items-center gap-3">
+          {/* Input: pequeño en móvil, grande en desktop */}
+          <input
+            type="text"
+            placeholder="Buscar productos..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
+            className="
+              w-2/3 sm:w-3/4 md:w-[420px] lg:w-[560px]
+              h-10 px-4 border border-gray-300 rounded-md
+              focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm
+            "
+          />
 
-    {/* Botón Filtros (igual estilo que Categorías) */}
-    <div className="relative">
-      <button
-        onClick={() => setShowFilters((v) => !v)}
-        className="flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-black"
-        style={{ backgroundColor: '#d4af37' }}
-        title="Filtros"
-      >
-        <FaFilter className="text-black" />
-        {filterType ? `Filtros · ${filterType}` : 'Filtros'}
-      </button>
-
-      {showFilters && (
-        <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-50">
-          {['Player','Fan','Mujer','Niño','Retro','Abrigos','Nacional','Todos'].map(t => (
+          {/* Botón Filtros */}
+          <div className="relative">
             <button
-              key={t}
-              onClick={() => {
-                setFilterType(t === 'Todos' ? '' : t);
-                setShowFilters(false);
-                setPage(1);
-              }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-yellow-100"
+              onClick={() => setShowFilters((v) => !v)}
+              className="flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-black"
+              style={{ backgroundColor: "#d4af37" }}
+              title="Filtros"
             >
-              {t}
+              <FaFilter className="text-black" />
+              {filterType ? `Filtros · ${filterType}` : "Filtros"}
             </button>
-          ))}
+
+            {showFilters && (
+              <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-50">
+                {filterOptions.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => {
+                      setFilterType(t === "Todos" ? "" : t);
+                      setShowFilters(false);
+                      setPage(1);
+                    }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-yellow-100"
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      )}
-    </div>
-  </div>
-</div>
+      </div>
 
       {canAdd && !anyModalOpen && (
         <button

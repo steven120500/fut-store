@@ -37,7 +37,7 @@ export default function ProductCard({ product, onClick }) {
         {/* Badge Oferta */}
         {hasDiscount && (
           <span
-            className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md"
+            className="absolute top-2 right-2 bg-red-600 text-white text-M font-bold px-4 py-2 rounded shadow-md"
           >
             Oferta
           </span>

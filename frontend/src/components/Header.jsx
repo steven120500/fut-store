@@ -1,7 +1,5 @@
 import logo from "../assets/logo.png";
-import { IoMdArrowDropdown } from "react-icons/io";
-import { FaBars } from "react-icons/fa";
-import { FaTimes } from "react-icons/fa";
+import { FaBars, FaTimes } from "react-icons/fa";
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
@@ -22,28 +20,11 @@ export default function Header({
   onMedidasClick,
   setFilterType,
 }) {
-  const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [showContacto, setShowContacto] = useState(false); // 🔹 estado para mostrar Contacto
-  const dropdownRef = useRef(null);
+  const [showContacto, setShowContacto] = useState(false);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleTypeClick = (type) => {
-    setFilterType(type === "Todos" ? null : type);
-    setShowDropdown(false);
-
-    if (type === "Todos") {
-      onLogoClick?.();
-    }
+  const handleOfertasClick = () => {
+    setFilterType("Ofertas"); // 🔹 señalamos que solo se muestren ofertas
   };
 
   return (
@@ -60,7 +41,7 @@ export default function Header({
             title="Volver al inicio"
             className="focus:outline-none"
             style={{
-              backgroundColor: "#d4af37",
+              backgroundColor: GOLD,
               color: "#000",
               fontSize: "1.9rem",
             }}
@@ -68,38 +49,14 @@ export default function Header({
             <img src={logo} alt="Logo" className="h-12 sm:h-20" />
           </button>
 
-          {/* CATEGORÍAS */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className="text-black text-xs sm:text-lg font-semibold flex items-center gap-1 px-2 sm:px-4 py-1 rounded"
-              style={{ backgroundColor: GOLD }}
-            >
-              Categorías <IoMdArrowDropdown />
-            </button>
-            {showDropdown && (
-              <div className="absolute left-0 mt-1 w-36 sm:w-44 rounded shadow z-50 bg-white">
-                {[
-                  "Player",
-                  "Fan",
-                  "Mujer",
-                  "Niño",
-                  "Retro",
-                  "Abrigos",
-                  "Nacional",
-                  "Todos",
-                ].map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => handleTypeClick(type)}
-                    className="w-full text-left px-3 py-1.5 hover:bg-yellow-200 text-xs sm:text-sm"
-                  >
-                    {type}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* OFERTAS */}
+          <button
+            onClick={handleOfertasClick}
+            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded"
+            style={{ backgroundColor: GOLD }}
+          >
+            Ofertas
+          </button>
 
           {/* MEDIDAS */}
           <button
@@ -113,7 +70,7 @@ export default function Header({
 
           {/* CONTACTO */}
           <button
-            onClick={() => setShowContacto(true)} // 🔹 abre modal Contacto
+            onClick={() => setShowContacto(true)}
             className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
@@ -135,108 +92,98 @@ export default function Header({
 
       {/* SIDEBAR */}
       {sidebarOpen && (
-  <div
-    className="fixed inset-0 z-[100] bg-black/40"
-    onClick={() => setSidebarOpen(false)}
-  >
-    {/* Panel */}
-    <div
-      className="fixed top-0 right-0 h-full w-72 sm:w-80 shadow-xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div
-        className="relative h-full overflow-y-auto pt-14 p-5"
-        style={{ backgroundColor: GOLD }}
-      >
-        {/* X: ahora posicionada dentro del panel */}
-        <button
+        <div
+          className="fixed inset-0 z-[100] bg-black/40"
           onClick={() => setSidebarOpen(false)}
-          aria-label="Cerrar menú"
-          className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9 "
-          title="Cerrar"
-          style={{
-            backgroundColor: "#d4af37",
-            color: "#000",
-            fontSize: "0.9rem",
-          }}
         >
-          ✕
-        </button>
-
-        {/* Opciones */}
-        {user ? (
-          <>
-            {isSuperUser && (
-              <button
-                onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }}
-                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
-                style={{
-                  backgroundColor: "#DABB52",
-                  color: "#000",
-                  fontSize: "0.9rem",
-                }}
-              >
-                Agregar usuario
-              </button>
-            )}
-
-            {isSuperUser && (
-              <button
-                onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }}
-                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
-                style={{
-                  backgroundColor: "#DABB52",
-                  color: "#000",
-                  fontSize: "0.9rem",
-                }}
-              >
-                Ver usuarios
-              </button>
-            )}
-
-            {canSeeHistory && (
-              <button
-                onClick={() => { setShowHistoryModal(true); setSidebarOpen(false); }}
-                className="w-full text-left mb-3 px-4 py-2 rounded-lg bg-white/50 hover:bg-white/70"
-                style={{
-                  backgroundColor: "#DABB52",
-                  color: "#000",
-                  fontSize: "0.9rem",
-                }}
-              >
-                Historial
-              </button>
-            )}
-
-            <button
-              onClick={() => { onLogout(); setSidebarOpen(false); }}
-              className="w-full text-left mt-2 px-4 py-2 rounded-lg bg-white/40 hover:bg-white/60 text-red-700 font-semibold"
-              style={{
-                backgroundColor: "#DABB52",
-                color: "#000",
-                fontSize: "0.9rem",
-              }}
-            >
-              Cerrar sesión
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => { onLoginClick(); setSidebarOpen(false); }}
-            className="w-full text-left px-4 py-2 rounded-lg bg-black/60 hover:bg-black/80 font-semibold"
-            style={{
-              backgroundColor: "#DABB52",
-              color: "#000",
-              fontSize: "0.9rem",
-            }}
+          {/* Panel */}
+          <div
+            className="fixed top-0 right-0 h-full w-72 sm:w-80 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            Iniciar sesión
-          </button>
-        )}
-      </div>
-    </div>
-  </div>
-)}
+            <div
+              className="relative h-full overflow-y-auto pt-14 p-5"
+              style={{ backgroundColor: GOLD }}
+            >
+              {/* X */}
+              <button
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Cerrar menú"
+                className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9"
+                style={{ backgroundColor: GOLD, color: "#000" }}
+              >
+                ✕
+              </button>
+
+              {/* Opciones */}
+              {user ? (
+                <>
+                  {isSuperUser && (
+                    <button
+                      onClick={() => {
+                        setShowRegisterUserModal(true);
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
+                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                    >
+                      Agregar usuario
+                    </button>
+                  )}
+
+                  {isSuperUser && (
+                    <button
+                      onClick={() => {
+                        setShowUserListModal(true);
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
+                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                    >
+                      Ver usuarios
+                    </button>
+                  )}
+
+                  {canSeeHistory && (
+                    <button
+                      onClick={() => {
+                        setShowHistoryModal(true);
+                        setSidebarOpen(false);
+                      }}
+                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
+                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                    >
+                      Historial
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => {
+                      onLogout();
+                      setSidebarOpen(false);
+                    }}
+                    className="w-full text-left mt-2 px-4 py-2 rounded-lg text-red-700 font-semibold"
+                    style={{ backgroundColor: "#DABB52", color: "#000" }}
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    onLoginClick();
+                    setSidebarOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 rounded-lg font-semibold"
+                  style={{ backgroundColor: "#DABB52", color: "#000" }}
+                >
+                  Iniciar sesión
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CONTACTO */}
       {showContacto && (
@@ -245,11 +192,7 @@ export default function Header({
             <button
               onClick={() => setShowContacto(false)}
               className="absolute top-2 right-2 text-black font-bold"
-              style={{
-                backgroundColor: "#d4af37",
-                color: "#000",
-                fontSize: "0.9rem",
-              }}
+              style={{ backgroundColor: GOLD, color: "#000" }}
             >
               <FaTimes size={18} />
             </button>
