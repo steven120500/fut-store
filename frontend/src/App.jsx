@@ -16,7 +16,7 @@ import "./index.css";
 import UserListModal from "./components/UserListModal";
 import HistoryModal from "./components/HistoryModal";
 import Medidas from "./components/Medidas";
-import fotofondo from "./assets/fotofondo.jpg";
+import fotofondo from "./assets/fotofondo.JPG";
 
 const API_BASE = "https://fut-store.onrender.com";
 const GOLD = "#d4af37";
