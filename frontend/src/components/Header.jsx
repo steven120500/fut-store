@@ -155,7 +155,7 @@ export default function Header({
           className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9 bg-black text-white hover:bg-gray-800 transition"
           title="Cerrar"
           style={{
-            backgroundColor: "#d4af37",
+            backgroundColor: "#",
             color: "#000",
             fontSize: "0.9rem",
           }}

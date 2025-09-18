@@ -213,47 +213,56 @@ function App() {
         </div>
       </section>
 
-      {/* Barra de búsqueda + filtro */}
-      <div
-        ref={pageTopRef}
-        className="relative w-[100px] bg-white shadow-sm z-7 pt-4 pb-2 sm:pb-4 px-4 sm:px-6 flex items-center gap-2"
+      {/* BARRA DE BÚSQUEDA + FILTROS (más corta y a la derecha) */}
+<div className="sticky top-[72px] sm:top-[96px] z-[45] bg-white/95 backdrop-blur px-4 py-3">
+  <div className="flex items-center justify-end gap-2">
+    {/* input más pequeño en móvil */}
+    <input
+      type="text"
+      placeholder="Buscar productos..."
+      className="w-[62%] sm:w-[360px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+      value={searchTerm}
+      onChange={(e) => {
+        setSearchTerm(e.target.value);
+        setPage(1);
+        // 👇 evita el scroll a la cabecera al filtrar
+        // (si tenías lógica que scrolleaba arriba, no la llames aquí)
+      }}
+    />
+
+    {/* Botón Filtros (igual estilo que Categorías) */}
+    <div className="relative">
+      <button
+        onClick={() => setShowFilters?.((v) => !v)}
+        className="flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-black"
+        style={{ backgroundColor: '#d4af37' }}
+        title="Filtros"
       >
-        <input
-          type="text"
-          placeholder="Buscar productos..."
-          className="flex-1 sm:w-[100px] px-6 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-m"
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setPage(1);
-          }}
-        />
-        <div className="relative">
-          <button
-            className="flex items-center gap-2 px-4 py-2 rounded-md text-black font-semibold"
-            style={{ backgroundColor: GOLD }}
-            onClick={() => setShowFilters((prev) => !prev)}
-          >
-            <FaFilter /> {filterType || "Filtros"}
-          </button>
-          {showFilters && (
-            <div className="absolute mt-2 w-40 bg-white rounded shadow-lg z-50">
-              {filterOptions.map((type) => (
-                <button
-                  key={type}
-                  onClick={() => {
-                    setFilterType(type === "Todos" ? "" : type);
-                    setPage(1);
-                    setShowFilters(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-200"
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          )}
+        <span className="inline-block w-0 h-0 border-l-4 border-r-4 border-b-8 border-transparent border-b-black" />
+        {filterType ? `Filtros · ${filterType}` : 'Filtros'}
+      </button>
+
+      {/* Dropdown alineado a la derecha para que no se salga en móvil */}
+      {showFilters && (
+        <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-50">
+          {['Player','Fan','Mujer','Niño','Retro','Abrigos','Nacional','Todos'].map(t => (
+            <button
+              key={t}
+              onClick={() => {
+                setFilterType(t === 'Todos' ? '' : t);
+                setShowFilters(false);
+                setPage(1);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-yellow-100"
+            >
+              {t}
+            </button>
+          ))}
         </div>
-      </div>
+      )}
+    </div>
+  </div>
+</div>
 
       {canAdd && !anyModalOpen && (
         <button
