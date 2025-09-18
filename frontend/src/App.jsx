@@ -169,13 +169,25 @@ function App() {
           setShowRegisterUserModal={setShowRegisterUserModal}
           setShowUserListModal={setShowUserListModal}
           setShowHistoryModal={setShowHistoryModal}
+          setFilterType={setFilterType}
         />
-
-        
       )}
-      <div className="pt-48 pt-4">
-          
-          </div>
+
+      <div className="pt-20 sm:pt-40" />
+
+      {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
+      <div className="w-full bg-white shadow-sm z-40 pt-4 pb-2 sm:pb-4 px-4 sm:px-6 mt-[72px] sm:mt-[96px]">
+        <input
+          type="text"
+          placeholder="Buscar productos..."
+          className="w-full sm:w-[300px] px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
+
       {canAdd && !anyModalOpen && (
         <button
           className="fixed bottom-6 right-6 text-black p-4 rounded-full shadow-lg transition z-50"

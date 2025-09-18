@@ -271,16 +271,21 @@ export default function ProductModal({
         <button
           onClick={onClose}
           className="absolute mr-2 top-12 right-2 text-white bg-black rounded p-1"
+          style={{
+            backgroundColor: "#d4af37",
+            color: "#000",
+            fontSize: "1.9rem",
+          }}
           title="Cerrar"
         >
           <FaTimes size={30} />
         </button>
 
         {/* Encabezado */}
-        <div className="mt-16 mb-2 text-center">
+        <div className="mt-16 mb-2 text-left">
           {isEditing && canEdit ? (
             <>
-              <label className="block text-xs text-gray-500 mb-1">Tipo</label>
+              <label className=" text-lg text-gray-500 mb-1">Tipo</label>
               <select
                 value={editedType}
                 onChange={(e) => setEditedType(e.target.value)}
@@ -304,7 +309,12 @@ export default function ProductModal({
               <span className="block text-xs uppercase tracking-wide text-gray-500 font-semibold">
                 {viewProduct?.type}
               </span>
-              <h2 className="text-xl font-extrabold font-sans ">{viewProduct?.name}</h2>
+              <h2
+  className="text-xl font-extrabold"
+  style={{ color: '#d4af37', fontFamily: 'Poppins, sans-serif' }}
+>
+  {viewProduct?.name}
+</h2>
             </>
           )}
         </div>
@@ -404,7 +414,7 @@ export default function ProductModal({
         )}
 
         {/* Precio */}
-        <div className="mt-2 text-base text-center sm:text-lg md:text-2xl font-semibold tracking-tight text-black">
+        <div className="mt-2 text-base text-right sm:text-lg md:text-2xl font-semibold tracking-tight text-black">
           {isEditing ? (
             <input
               type="number"
@@ -417,51 +427,33 @@ export default function ProductModal({
           )}
         </div>
 
-        {/* 🆕 Selector Stock / Bodega (solo si puede editar) */}
-        {canEdit && (
-          <div className="mt-4 mb-2 flex items-center justify-center gap-2">
-            <button
-              className={`px-3 py-1 rounded border text-sm ${invMode === 'stock' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
-              onClick={() => setInvMode('stock')}
-              type="button"
-              title="Ver/editar stock disponible"
-            >
-              Stock
-            </button>
-            <button
-              className={`px-3 py-1 rounded border text-sm ${invMode === 'bodega' ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
-              onClick={() => setInvMode('bodega')}
-              type="button"
-              title="Ver/editar inventario en bodega"
-            >
-              Bodega
-            </button>
-          </div>
-        )}
-
+        
         {/* Tallas / Inventario según modo */}
-        <div className="mb-0">
-          <p className="text-center font-semibold mb-6">
-            {invMode === 'stock' ? 'Stock por talla:' : 'Bodega por talla:'}
+        <div className="mb-2">
+          <p className="text-left font-semibold mb-6">
+            {invMode === 'stock' ? 'Stock por talla disponible:' : 'Bodega por talla:'}
           </p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid gap-2">
             {tallasVisibles.map((talla) => {
               const inv = getInventoryToShow();
               return (
-                <div key={talla} className="text-center border rounded p-2">
-                  <label className="block text-sm font-medium">{talla}</label>
-                  {isEditing ? (
-                    <input
-                      type="number"
-                      min="0"
-                      className="w-full border border-gray-300 rounded px-1 text-center"
-                      value={inv[talla] === 0 ? '' : (inv[talla] ?? '')}
-                      onChange={(e) => handleStockChange(talla, e.target.value)}
-                    />
-                  ) : (
-                    <p className="text-xs">{inv[talla] || 0} disponibles</p>
-                  )}
-                </div>
+                <div
+    key={talla}
+    className="mb-0 flex justify-between items-center  border-[#d4af37] rounded-md px-2 py-1 text-[#d4af37] text-m font-semibold"
+  >
+    <span className="uppercase tracking-wide">{talla}</span>
+    {isEditing ? (
+      <input
+        type="number"
+        min="0"
+        className="w-16 border border-gray-300 rounded px-1 text-center text-m text-black"
+        value={inv[talla] === 0 ? '' : inv[talla] ?? ''}
+        onChange={(e) => handleStockChange(talla, e.target.value)}
+      />
+    ) : (
+      <span>{inv[talla] || 0}</span>
+    )}
+  </div>
               );
             })}
           </div>

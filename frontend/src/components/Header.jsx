@@ -35,12 +35,19 @@ export default function Header({
   }, []);
 
   const handleTypeClick = (type) => {
-    setFilterType(type === "Todos" ? "" : type);
+    setFilterType(type === "Todos" ? null : type); // <- Este cambio activa el filtrado correctamente
     setShowDropdown(false);
+
+    if (type === "Todos"){
+      onLogoClick?.();
+    }
   };
 
   return (
-    <header className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50" style={{ backgroundColor: GOLD }}>
+    <header
+      className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50"
+      style={{ backgroundColor: GOLD }}
+    >
       <div className="flex items-center justify-between">
         {/* IZQUIERDA */}
         <div className="flex items-center gap-2 sm:gap-4">
@@ -54,9 +61,8 @@ export default function Header({
               color: "#000",
               fontSize: "1.9rem",
             }}
-            
           >
-            <img src={logo} alt="Logo" className="h-12 sm:h-16" />
+            <img src={logo} alt="Logo" className="h-12 sm:h-20" />
           </button>
 
           {/* CATEGORÍAS */}
@@ -126,7 +132,10 @@ export default function Header({
 
       {/* SIDEBAR */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50" onClick={() => setSidebarOpen(false)}>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-50"
+          onClick={() => setSidebarOpen(false)}
+        >
           <div
             className="fixed top-0 right-0 w-64 h-full shadow-lg p-5 overflow-y-auto"
             style={{ backgroundColor: GOLD }}
@@ -134,13 +143,12 @@ export default function Header({
           >
             <button
               onClick={() => setSidebarOpen(false)}
-              className="text-black font-bold text-xl mb-4"
+              className="fixed top-0 right-0 text-black font-bold text-xl mt-6"
               style={{
                 backgroundColor: "#DABB52",
                 color: "#000",
                 fontSize: "0.9rem",
               }}
-              
             >
               ✕
             </button>
@@ -153,13 +161,12 @@ export default function Header({
                       setShowRegisterUserModal(true);
                       setSidebarOpen(false);
                     }}
-                    className="block w-full mb-2 text-left text-black"
+                    className="block w-full mb-2 text-left text-black mt-16"
                     style={{
                       backgroundColor: "#DABB52",
                       color: "#000",
                       fontSize: "0.9rem",
                     }}
-                    
                   >
                     Agregar usuario
                   </button>
@@ -176,7 +183,6 @@ export default function Header({
                       color: "#000",
                       fontSize: "0.9rem",
                     }}
-                    
                   >
                     Ver usuarios
                   </button>
@@ -193,7 +199,6 @@ export default function Header({
                       color: "#000",
                       fontSize: "0.9rem",
                     }}
-                    
                   >
                     Historial
                   </button>
@@ -203,13 +208,12 @@ export default function Header({
                     onLogout();
                     setSidebarOpen(false);
                   }}
-                  className="block w-full mt-4 text-left text-red-600 font-semibold"
+                  className="block w-full  text-left text-red-600 font-semibold"
                   style={{
                     backgroundColor: "#DABB52",
                     color: "#000",
                     fontSize: "0.9rem",
                   }}
-                  
                 >
                   Cerrar sesión
                 </button>
