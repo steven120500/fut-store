@@ -10,6 +10,7 @@ const MAX_IMAGES = 2;
 const MAX_WIDTH = 1000;
 const QUALITY = 0.75;
 
+// 🔹 Convierte File -> WebP
 async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) {
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -45,6 +46,7 @@ async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) 
   return blob;
 }
 
+// 🔹 Convierte src a Blob
 async function srcToBlob(src) {
   if (!src) throw new Error("Imagen sin src");
 
@@ -75,6 +77,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [images, setImages] = useState([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [discountPrice, setDiscountPrice] = useState(""); // 🔹 nuevo campo
   const [type, setType] = useState("Player");
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
@@ -125,20 +128,12 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     }
   };
 
-  const handleImageDrop = async (e) => {
-    e.preventDefault();
-    if (!e.dataTransfer?.files?.length) return;
-    await handleFiles(e.dataTransfer.files);
-  };
-
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     await handleFiles([file]);
     e.target.value = "";
   };
-
-  const handleDragOver = (e) => e.preventDefault();
 
   const handleRemoveImage = (index) => {
     setImages((prev) => {
@@ -176,6 +171,11 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       const formData = new FormData();
       formData.append("name", name.trim());
       formData.append("price", String(price).trim());
+
+      if (discountPrice) {
+        formData.append("discountPrice", String(discountPrice).trim());
+      }
+
       formData.append("type", type.trim());
       formData.append("stock", JSON.stringify(stock));
 
@@ -186,9 +186,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
 
       const res = await fetch(`${API_BASE}/api/products`, {
         method: "POST",
-        headers: {
-          "x-user": displayName,
-        },
+        headers: { "x-user": displayName },
         body: formData,
       });
 
@@ -203,7 +201,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Error guardando el producto");
-      alert("Error guardando el producto");
     } finally {
       setLoading(false);
     }
@@ -213,28 +210,25 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     <div
       ref={modalRef}
       className="mt-32 mb-24 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6"
-      onDrop={handleImageDrop}
-      onDragOver={handleDragOver}
     >
-      <div className="relative bg-white pt-15 p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      <div className="relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+        {/* Botón cerrar */}
         <button
           onClick={onCancel}
-          className="absolute top-6 right-2 text-white hover:text-gray-800 bg-black rounded p-1"
-          style={{
-            backgroundColor: "#d4af37",
-            color: "#000",
-            fontSize: "1.9rem",
-          }}
+          className="absolute top-6 right-2 text-white bg-black rounded p-1"
+          style={{ backgroundColor: "#d4af37", color: "#000" }}
         >
           <FaTimes size={30} />
         </button>
 
         <h2 className="text-lg font-semibold mb-4">Agregar producto</h2>
 
+        {/* Info imágenes */}
         <p className="text-gray-500 mb-2">
           Arrastrá y soltá hasta {MAX_IMAGES} imagen(es) o hacé clic para seleccionar (se convertirán a WebP)
         </p>
 
+        {/* Previews */}
         <div className="flex gap-2 justify-center flex-wrap mb-3">
           {images.map((img, i) => (
             <div key={`preview-${i}`} className="relative">
@@ -242,11 +236,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
               <button
                 onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
                 className="absolute -top-1 -right-1 text-white text-xs rounded-full px-1"
-                style={{
-                  backgroundColor: "#d4af37",
-                  color: "#000",
-                  fontSize: "1.9rem",
-                }}
+                style={{ backgroundColor: "#d4af37", color: "#000" }}
               >
                 ✕
               </button>
@@ -254,6 +244,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </div>
 
+        {/* Input imagen */}
         {images.length < MAX_IMAGES && (
           <div className="mb-4">
             <button
@@ -273,6 +264,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </div>
         )}
 
+        {/* Nombre */}
         <input
           type="text"
           placeholder="Nombre del producto"
@@ -281,14 +273,25 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
+        {/* Precio normal */}
         <input
           type="text"
-          placeholder="Precio (₡)"
+          placeholder="Precio normal (₡)"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
+        {/* Precio con descuento (opcional) */}
+        <input
+          type="text"
+          placeholder="Precio con descuento (opcional)"
+          value={discountPrice}
+          onChange={(e) => setDiscountPrice(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
+        />
+
+        {/* Tipo */}
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
@@ -299,6 +302,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </select>
 
+        {/* Tallas */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {tallas.map((size) => (
             <label key={size} className="text-center">
@@ -314,29 +318,20 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </div>
 
+        {/* Botones */}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 bg-[#d4af37] text-white py-2 rounded hover:brightness-110 transition disabled:opacity-60"
-            style={{
-              backgroundColor: "#d4af37",
-              color: "#000",
-              fontSize: "0.9rem",
-            }}
+            className="flex-1 bg-[#d4af37] text-black py-2 rounded hover:brightness-110 transition disabled:opacity-60"
           >
             {loading ? "Agregando..." : "Agregar producto"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-[#d4af37] text-[#d4af37] rounded hover:bg-red"
-            style={{
-              backgroundColor: "#d4af37",
-              color: "#000",
-              fontSize: "0.9rem",
-            }}
+            className="px-4 py-2 border border-[#d4af37] text-[#d4af37] rounded hover:bg-gray-100"
           >
             Cancelar
           </button>

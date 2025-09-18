@@ -53,6 +53,9 @@ const productSchema = new mongoose.Schema(
     name:  { type: String, required: true, trim: true, maxlength: 150 },
     price: { type: Number, required: true, min: 0 },
 
+    // 👇 Nuevo: precio con descuento (opcional)
+    discountPrice: { type: Number, min: 0, default: null },
+
     // Compatibilidad con el front (principal para cards/listas)
     imageSrc: { type: String, trim: true, maxlength: 600, validate: imageAnyValidator },
 
@@ -77,6 +80,9 @@ productSchema.pre('validate', function (next) {
   if (typeof this.price === 'number' && Number.isFinite(this.price)) {
     this.price = Math.trunc(this.price);
   }
+  if (typeof this.discountPrice === 'number' && Number.isFinite(this.discountPrice)) {
+    this.discountPrice = Math.trunc(this.discountPrice);
+  }
   next();
 });
 
@@ -85,6 +91,7 @@ productSchema.index({ createdAt: -1 });
 productSchema.index({ name: 1 });
 productSchema.index({ type: 1 });
 productSchema.index({ price: 1, createdAt: -1 });
+productSchema.index({ discountPrice: 1 }); // 👈 extra para consultas rápidas
 
 // ===== Limpieza de salida JSON/Objeto =====
 productSchema.set('toJSON', {

@@ -40,6 +40,7 @@ function diffProduct(prev, next) {
   const ch = [];
   if (prev.name  !== next.name)  ch.push(`nombre: "${prev.name}" -> "${next.name}"`);
   if (prev.price !== next.price) ch.push(`precio: ${prev.price} -> ${next.price}`);
+  if (prev.discountPrice !== next.discountPrice) ch.push(`precio oferta: ${prev.discountPrice} -> ${next.discountPrice}`);
   if (prev.type  !== next.type)  ch.push(`tipo: "${prev.type}" -> "${next.type}"`);
   ch.push(...diffInv('stock',  prev.stock,  next.stock));
   ch.push(...diffInv('bodega', prev.bodega, next.bodega));
@@ -94,7 +95,7 @@ router.post('/', upload.any(), async (req, res) => {
     } catch { stock = {}; }
     const cleanStock = sanitizeInv(stock);
 
-    // ⬇️ NUEVO: parsear bodega si viene
+    // Parsear bodega
     let bodega = {};
     try {
       if (typeof req.body.bodega === 'string') bodega = JSON.parse(req.body.bodega);
@@ -105,14 +106,15 @@ router.post('/', upload.any(), async (req, res) => {
     const product = await Product.create({
       name : String(req.body.name || '').trim(),
       price: Number(req.body.price),
+      discountPrice: req.body.discountPrice ? Number(req.body.discountPrice) : null, // ⬅️ NUEVO
       type : String(req.body.type || '').trim(),
       stock: cleanStock,
-      bodega: cleanBodega,   // ⬅️ NUEVO
+      bodega: cleanBodega,
       imageSrc,
       images,
     });
 
-    // Historial (no bloquear si falla)
+    // Historial
     try {
       await History.create({
         user:  whoDidIt(req),
@@ -148,7 +150,7 @@ router.put('/:id', async (req, res) => {
       nextStock = sanitizeInv(incomingStock);
     }
 
-    // -------- BODEGA (NUEVO) --------
+    // -------- BODEGA --------
     let incomingBodega = req.body.bodega;
     if (typeof incomingBodega === 'string') {
       try { incomingBodega = JSON.parse(incomingBodega); } catch { incomingBodega = undefined; }
@@ -163,15 +165,18 @@ router.put('/:id', async (req, res) => {
       name : typeof req.body.name  === 'string' ? req.body.name.trim().slice(0,150) : prev.name,
       type : typeof req.body.type  === 'string' ? req.body.type.trim().slice(0,40)  : prev.type,
       price: Number.isFinite(Number(req.body.price)) ? Math.trunc(Number(req.body.price)) : prev.price,
+      discountPrice: req.body.discountPrice !== undefined && req.body.discountPrice !== '' 
+        ? Math.trunc(Number(req.body.discountPrice)) 
+        : prev.discountPrice, // ⬅️ NUEVO
       stock: nextStock,
-      bodega: nextBodega, // ⬅️ NUEVO
+      bodega: nextBodega,
     };
 
+    // -------- IMÁGENES --------
     if (req.body.imageSrc  !== undefined) update.imageSrc  = req.body.imageSrc  || '';
     if (req.body.imageSrc2 !== undefined) update.imageSrc2 = req.body.imageSrc2 || '';
     if (req.body.imageAlt  !== undefined) update.imageAlt  = req.body.imageAlt  || '';
 
-    // -------- IMÁGENES --------
     let incomingImages = req.body.images;
     if (typeof incomingImages === 'string') {
       try { incomingImages = JSON.parse(incomingImages); } catch { incomingImages = undefined; }
@@ -206,14 +211,6 @@ router.put('/:id', async (req, res) => {
       update.images    = normalized;
       update.imageSrc  = normalized[0]?.url || '';
       update.imageSrc2 = normalized[1]?.url || '';
-    } else {
-      // Compatibilidad: si solo te mandan imageSrc/imageSrc2, reflejarlas en images
-      if (req.body.imageSrc !== undefined || req.body.imageSrc2 !== undefined) {
-        const imgs = [update.imageSrc, update.imageSrc2]
-          .filter(Boolean)
-          .map(url => ({ url, public_id: (prev.images || []).find(i => i.url === url)?.public_id || null }));
-        update.images = imgs;
-      }
     }
 
     const updated = await Product.findByIdAndUpdate(
@@ -253,7 +250,7 @@ router.delete('/:id', async (req, res) => {
 
     for (const img of product.images || []) {
       if (img.public_id) {
-        try { await cloudinary.uploader.destroy(img.public_id); } catch { /* ignore */ }
+        try { await cloudinary.uploader.destroy(img.public_id); } catch {}
       }
     }
 
@@ -300,8 +297,8 @@ router.get('/', async (req, res) => {
     if (q) find.name = { $regex: q, $options: 'i' };
     if (type) find.type = type;
 
-    // ⬇️ añadimos bodega a la proyección
-    const projection = 'name price type imageSrc images stock bodega createdAt';
+    // ⬇️ añadimos discountPrice y bodega a la proyección
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt';
 
     const [items, total] = await Promise.all([
       Product.find(find)

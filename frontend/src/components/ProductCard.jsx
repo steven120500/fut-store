@@ -1,3 +1,4 @@
+// src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -20,6 +21,9 @@ export default function ProductCard({ product, onClick }) {
     ? cldUrl(product.images[0].url, 640, H)
     : null;
 
+  const hasDiscount =
+    product.discountPrice && Number(product.discountPrice) > 0;
+
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
@@ -29,7 +33,16 @@ export default function ProductCard({ product, onClick }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Imagen con efecto de acercamiento */}
-      <div className="w-full h-[300px] bg-gray-100 overflow-hidden">
+      <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
+        {/* Badge Oferta */}
+        {hasDiscount && (
+          <span
+            className="absolute top-2 left-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded shadow-md"
+          >
+            Oferta
+          </span>
+        )}
+
         <motion.img
           src={imgMain}
           alt={product.name}
@@ -43,7 +56,7 @@ export default function ProductCard({ product, onClick }) {
       </div>
 
       {/* Info */}
-      <div className="flex flex-col justify-between h-[110px]">
+      <div className="flex flex-col justify-between h-[130px]">
         {/* Tipo */}
         {product.type && (
           <div className="flex justify-center mb-2">
@@ -60,14 +73,32 @@ export default function ProductCard({ product, onClick }) {
           </div>
         )}
 
-        {/* Nombre y precio */}
-        <div className="flex p-4 justify-between items-center">
+        {/* Nombre y precios */}
+        <div className="flex p-4 justify-between items-start">
+          {/* Nombre */}
           <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 line-clamp-2 text-left">
             {product.name}
           </h3>
-          <p className="text-base sm:text-lg md:text-xl font-semibold text-right text-black">
-            ₡{product.price?.toLocaleString("de-DE") || product.price}
-          </p>
+
+          {/* Precios */}
+          <div className="text-right">
+            {hasDiscount ? (
+              <>
+                <p className="text-sm sm:text-base line-through text-gray-500">
+                  ₡{product.price?.toLocaleString("de-DE") || product.price}
+                </p>
+                <p className="text-base sm:text-lg md:text-xl font-bold text-red-600">
+                  ₡
+                  {product.discountPrice?.toLocaleString("de-DE") ||
+                    product.discountPrice}
+                </p>
+              </>
+            ) : (
+              <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
+                ₡{product.price?.toLocaleString("de-DE") || product.price}
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
