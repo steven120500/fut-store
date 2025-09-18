@@ -1,9 +1,11 @@
 import logo from "../assets/logo.png";
 import { IoMdArrowDropdown } from "react-icons/io";
 import { FaBars } from "react-icons/fa";
+import { FaTimes } from "react-icons/fa";
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
+import Contacto from "./Contacto"; // 🔹 Importa el nuevo componente
 
 const GOLD = "#d4af37";
 
@@ -22,6 +24,7 @@ export default function Header({
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showContacto, setShowContacto] = useState(false); // 🔹 estado para mostrar Contacto
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -35,10 +38,10 @@ export default function Header({
   }, []);
 
   const handleTypeClick = (type) => {
-    setFilterType(type === "Todos" ? null : type); // <- Este cambio activa el filtrado correctamente
+    setFilterType(type === "Todos" ? null : type);
     setShowDropdown(false);
 
-    if (type === "Todos"){
+    if (type === "Todos") {
       onLogoClick?.();
     }
   };
@@ -50,7 +53,7 @@ export default function Header({
     >
       <div className="flex items-center justify-between">
         {/* IZQUIERDA */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap sm:gap-4">
           {/* LOGO */}
           <button
             onClick={onLogoClick}
@@ -110,7 +113,7 @@ export default function Header({
 
           {/* CONTACTO */}
           <button
-            onClick={() => alert("Pronto podrás contactarnos.")}
+            onClick={() => setShowContacto(true)} // 🔹 abre modal Contacto
             className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
@@ -123,7 +126,7 @@ export default function Header({
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full p-2 sm:text-lg  shadow-md bg-black hover:bg-gray-800 text-white"
+            className="rounded-full p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
           >
             <FaBars size={18} />
           </button>
@@ -208,7 +211,7 @@ export default function Header({
                     onLogout();
                     setSidebarOpen(false);
                   }}
-                  className="block w-full  text-left text-red-600 font-semibold"
+                  className="block w-full text-left text-red-600 font-semibold"
                   style={{
                     backgroundColor: "#DABB52",
                     color: "#000",
@@ -229,6 +232,27 @@ export default function Header({
                 Iniciar sesión
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CONTACTO */}
+      {showContacto && (
+        <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg relative w-80 sm:w-96">
+            <button
+              onClick={() => setShowContacto(false)}
+              className="absolute top-2 right-2 text-black font-bold"
+              style={{
+                backgroundColor: "#d4af37",
+                color: "#000",
+                fontSize: "0.9rem",
+              }}
+            >
+              <FaTimes size={18} />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center">Contáctanos</h2>
+            <Contacto />
           </div>
         </div>
       )}

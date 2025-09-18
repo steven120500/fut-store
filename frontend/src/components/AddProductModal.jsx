@@ -5,17 +5,12 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import tallaPorTipo from "../utils/tallaPorTipo";
 
-// ===== Config =====
 const API_BASE = import.meta.env.VITE_API_BASE || "https://fut-store.onrender.com";
 const MAX_IMAGES = 2;
-const MAX_WIDTH = 1000;   // reescala si la imagen es más ancha
-const QUALITY = 0.75;     // calidad WebP
+const MAX_WIDTH = 1000;
+const QUALITY = 0.75;
 
-// ===== Helpers =====
-
-// Convierte File -> Blob WebP (reescala si hace falta)
 async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) {
-  // (1) File -> dataURL
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("No se pudo leer la imagen"));
@@ -23,15 +18,13 @@ async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) 
     reader.readAsDataURL(file);
   });
 
-  // (2) dataURL -> Image
   const img = await new Promise((resolve, reject) => {
     const i = new Image();
     i.onload = () => resolve(i);
-    i.onerror = () => reject(new Error("Formato de imagen no soportado"));
+    i.onerror = () => reject(new Error("Formato no soportado"));
     i.src = dataUrl;
   });
 
-  // (3) Canvas + posible reescalado
   const canvas = document.createElement("canvas");
   const ratio = img.width > maxWidth ? maxWidth / img.width : 1;
   canvas.width = Math.round(img.width * ratio);
@@ -39,7 +32,6 @@ async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) 
   const ctx = canvas.getContext("2d");
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-  // (4) Canvas -> Blob WebP (fallback PNG si el browser no soporta webp)
   const blob = await new Promise((resolve) => {
     const tryType = "image/webp";
     canvas.toBlob(
@@ -53,18 +45,15 @@ async function convertToWebpBlob(file, maxWidth = MAX_WIDTH, quality = QUALITY) 
   return blob;
 }
 
-// Convierte distintos tipos de src a Blob: data:, blob:, http(s)
 async function srcToBlob(src) {
   if (!src) throw new Error("Imagen sin src");
 
-  // blob: u http(s): -> usan fetch
   if (src.startsWith("blob:") || src.startsWith("http")) {
     const r = await fetch(src);
     if (!r.ok) throw new Error("No se pudo leer blob/url");
     return await r.blob();
   }
 
-  // data:...base64,... -> decodificar a mano
   if (src.startsWith("data:")) {
     const parts = src.split(",");
     if (parts.length < 2) throw new Error("dataURL inválido");
@@ -83,18 +72,11 @@ async function srcToBlob(src) {
 }
 
 export default function AddProductModal({ onAdd, onCancel, user }) {
-  const [images, setImages] = useState([]); // [{ blob, previewUrl }]
+  const [images, setImages] = useState([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [type, setType] = useState("Player");
-
-  // 👉 Estados separados para cada inventario
   const [stock, setStock] = useState({});
-  const [bodega, setBodega] = useState({});
-
-  // 👉 Modo visible (no borra lo ya escrito en el otro)
-  const [mode, setMode] = useState("stock"); // 'stock' | 'bodega'
-
   const [loading, setLoading] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -104,7 +86,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "auto";
-      // limpiar objectURLs
       setImages((prev) => {
         prev.forEach((it) => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
         return [];
@@ -114,7 +95,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
 
   const tallas = useMemo(() => tallaPorTipo[type] || [], [type]);
 
-  // ===== Imágenes =====
   const handleFiles = async (filesLike) => {
     const files = Array.from(filesLike).slice(0, MAX_IMAGES - images.length);
     if (files.length === 0) return;
@@ -155,7 +135,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     const file = e.target.files?.[0];
     if (!file) return;
     await handleFiles([file]);
-    // permite volver a elegir el mismo archivo
     e.target.value = "";
   };
 
@@ -171,16 +150,11 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     });
   };
 
-  // ====== Inventarios ======
-  const visibleInv = mode === "stock" ? stock : bodega;
-  const setVisibleInv = mode === "stock" ? setStock : setBodega;
-
   const handleInvChange = (size, value) => {
     const n = Math.max(0, parseInt(value, 10) || 0);
-    setVisibleInv((prev) => ({ ...prev, [size]: n }));
+    setStock((prev) => ({ ...prev, [size]: n }));
   };
 
-  // ====== Submit ======
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -188,7 +162,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     try {
       setLoading(true);
 
-      // Validaciones simples
       if (!name.trim() || !price || !type.trim()) {
         toast.error("Completá nombre, precio y tipo.");
         return;
@@ -204,12 +177,8 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       formData.append("name", name.trim());
       formData.append("price", String(price).trim());
       formData.append("type", type.trim());
-
-      // ⬇️ Enviar AMBOS inventarios (da igual en cuál modo estés al guardar)
       formData.append("stock", JSON.stringify(stock));
-      formData.append("bodega", JSON.stringify(bodega));
 
-      // 👉 adjunta TODAS las imágenes con la misma key 'images'
       for (let i = 0; i < images.length; i++) {
         const blob = images[i].blob || (await srcToBlob(images[i].src));
         formData.append("images", blob, `product-${i}.webp`);
@@ -220,7 +189,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         headers: {
           "x-user": displayName,
         },
-        body: formData, // NO pongas Content-Type aquí
+        body: formData,
       });
 
       if (!res.ok) {
@@ -229,9 +198,8 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       }
 
       const data = await res.json();
-
-      onAdd?.(data);   // refresca lista
-      onCancel?.();    // cierra modal
+      onAdd?.(data);
+      onCancel?.();
     } catch (err) {
       console.error(err);
       toast.error(err.message || "Error guardando el producto");
@@ -252,13 +220,17 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         <button
           onClick={onCancel}
           className="absolute top-6 right-2 text-white hover:text-gray-800 bg-black rounded p-1"
+          style={{
+            backgroundColor: "#d4af37",
+            color: "#000",
+            fontSize: "1.9rem",
+          }}
         >
           <FaTimes size={30} />
         </button>
 
         <h2 className="text-lg font-semibold mb-4">Agregar producto</h2>
 
-        {/* Zona de imágenes */}
         <p className="text-gray-500 mb-2">
           Arrastrá y soltá hasta {MAX_IMAGES} imagen(es) o hacé clic para seleccionar (se convertirán a WebP)
         </p>
@@ -269,7 +241,12 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
               <img src={img.previewUrl} alt={`preview-${i}`} className="w-24 h-24 object-cover rounded" />
               <button
                 onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
-                className="absolute -top-1 -right-1 bg-black text-white text-xs rounded-full px-1"
+                className="absolute -top-1 -right-1 text-white text-xs rounded-full px-1"
+                style={{
+                  backgroundColor: "#d4af37",
+                  color: "#000",
+                  fontSize: "1.9rem",
+                }}
               >
                 ✕
               </button>
@@ -296,7 +273,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </div>
         )}
 
-        {/* Nombre */}
         <input
           type="text"
           placeholder="Nombre del producto"
@@ -305,7 +281,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
-        {/* Precio */}
         <input
           type="text"
           placeholder="Precio (₡)"
@@ -314,31 +289,16 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
-        {/* Tipo */}
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
+          className="w-full px-4 py-2 border border-gray-300 rounded mb-6"
         >
           {Object.keys(tallaPorTipo).map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
 
-        {/* Selector de inventario (no borra lo ingresado al cambiar) */}
-        <div className="mb-3">
-          <label className="block text-xs text-gray-500 mb-1">Inventario a editar</label>
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded"
-          >
-            <option value="stock">Stock (visible)</option>
-            <option value="bodega">Bodega</option>
-          </select>
-        </div>
-
-        {/* Stock/Bodega por talla (según modo) */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {tallas.map((size) => (
             <label key={size} className="text-center">
@@ -346,7 +306,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
               <input
                 type="number"
                 min="0"
-                value={visibleInv[size] ?? ""}
+                value={stock[size] ?? ""}
                 onChange={(e) => handleInvChange(size, e.target.value)}
                 className="w-full px-2 py-1 border border-gray-300 rounded text-center"
               />
@@ -354,17 +314,30 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </div>
 
-        {/* Botones */}
         <div className="flex gap-2">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800 transition disabled:opacity-60"
+            className="flex-1 bg-[#d4af37] text-white py-2 rounded hover:brightness-110 transition disabled:opacity-60"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
           >
             {loading ? "Agregando..." : "Agregar producto"}
           </button>
-          <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 border border-[#d4af37] text-[#d4af37] rounded hover:bg-red"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
+          >
             Cancelar
           </button>
         </div>

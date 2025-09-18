@@ -153,6 +153,11 @@ export default function HistoryModal({ open, onClose, isSuperUser = false }) {
             onClick={onClose}
             className="text-white hover:text-gray-800 bg-black rounded p-1"
             title="Cerrar"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "1.9rem",
+            }}
           >
             <FaTimes size={30} />
           </button>

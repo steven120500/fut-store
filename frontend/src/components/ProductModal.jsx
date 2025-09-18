@@ -347,13 +347,23 @@ export default function ProductModal({
               <>
                 <button
                   onClick={() => setIdx(i => (i - 1 + localImages.length) % localImages.length)}
-                  className="absolute left-0 z-10 bg-black text-white  px-3 py-1 rounded-full shadow-md text-l"
+                  className="absolute left-0 z-10  text-white  px-3 py-1 rounded-full shadow-md text-l"
+                  style={{
+                    backgroundColor: "#d4af37",
+                    color: "#000",
+                    fontSize: "1.5rem",
+                  }}
                 >
                   <FaChevronLeft/>
                 </button>
                 <button
                   onClick={() => setIdx(i => (i + 1) % localImages.length)}
                   className="absolute right-0 z-10 bg-black text-white px-3 py-1 rounded-full shadow-md text-l"
+                  style={{
+                    backgroundColor: "#d4af37",
+                    color: "#000",
+                    fontSize: "1.5rem",
+                  }}
                 >
                   <FaChevronRight/>
                 </button>
