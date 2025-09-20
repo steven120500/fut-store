@@ -232,7 +232,7 @@ export default function ProductModal({
     <div className="mt-10 mb-16 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6">
       <div
         ref={modalRef}
-        className="relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto"
+        className="pt-12 pb-24 relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto"
       >
         {/* Botón cerrar */}
         <button

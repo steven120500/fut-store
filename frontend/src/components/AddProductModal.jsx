@@ -211,7 +211,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       ref={modalRef}
       className="mt-28 mb-24 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6"
     >
-      <div className="relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      <div className="pt-12 pb-24 relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
         {/* Botón cerrar */}
         <button
           onClick={onCancel}
