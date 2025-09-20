@@ -73,7 +73,7 @@ export default function ProductCard({ product, onClick }) {
         {/* Nombre y precios */}
         <div className="flex p-4 justify-between items-start">
           {/* Nombre */}
-          <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 line-clamp-2 text-left">
+          <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 line-clamp-2 text-left">
             {product.name}
           </h3>
 

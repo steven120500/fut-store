@@ -295,9 +295,15 @@ router.get('/', async (req, res) => {
 
     const find = {};
     if (q) find.name = { $regex: q, $options: 'i' };
-    if (type) find.type = type;
 
-    // ⬇️ añadimos discountPrice y bodega a la proyección
+    // 👇 Caso especial: Ofertas
+    if (type === 'Ofertas') {
+      find.discountPrice = { $ne: null, $gt: 0 };
+    } else if (type) {
+      find.type = type;
+    }
+
+    // añadimos discountPrice y bodega a la proyección
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt';
 
     const [items, total] = await Promise.all([

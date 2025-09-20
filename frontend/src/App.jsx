@@ -84,16 +84,13 @@ function App() {
     const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
 
-    // ⬅️ FIX: si es "Ofertas", no enviar "type" al backend
-    const effectiveType = tp === "Ofertas" ? "" : tp;
-
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: String(p),
         limit: String(limit),
         ...(q ? { q } : {}),
-        ...(effectiveType ? { type: effectiveType } : {}),
+        ...(tp ? { type: tp } : {}), // 👈 ahora sí mandamos Ofertas al backend
       });
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -113,10 +110,17 @@ function App() {
   const pageTopRef = useRef(null);
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType });
+
     if (pageTopRef.current) {
-      pageTopRef.current.scrollIntoView({ behavior: "smooth" });
+      const rect = pageTopRef.current.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+      const targetY = rect.top + scrollTop;
+      window.scrollTo({
+        top: targetY - 200,
+        behavior: "smooth",
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, limit, searchTerm, filterType]);
 
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
@@ -139,22 +143,10 @@ function App() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtro de productos (incluye ofertas)
-  const filteredProducts = products.filter((product) => {
-    const matchName = product.name
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    let matchType = true;
-    if (filterType && filterType !== "Ofertas") {
-      matchType = product.type === filterType;
-    }
-    if (filterType === "Ofertas") {
-      matchType = product.discountPrice != null;
-    }
-
-    return matchName && matchType;
-  });
+  // 🔹 Filtro frontend (solo por nombre, el resto ya lo hace el backend)
+  const filteredProducts = products.filter((product) =>
+    product.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const filterOptions = [
     "Player",
@@ -232,7 +224,7 @@ function App() {
       {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
       <div className="sticky top-[96px] z-40 bg-white/80 backdrop-blur px-4 sm:px-6 py-3">
         <div className="mx-auto max-w-7xl flex items-center gap-3">
-          {/* Input: pequeño en móvil, grande en desktop */}
+          {/* Input */}
           <input
             type="text"
             placeholder="Buscar productos..."
@@ -291,7 +283,12 @@ function App() {
           <FaPlus />
         </button>
       )}
-      <div className="px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
+
+      {/* LISTA DE PRODUCTOS */}
+      <div
+        ref={pageTopRef}
+        className="px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
+      >
         {filteredProducts.map((product) => (
           <ProductCard
             key={getPid(product)}
@@ -300,6 +297,7 @@ function App() {
           />
         ))}
       </div>
+
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -311,6 +309,7 @@ function App() {
           user={user}
         />
       )}
+
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -323,6 +322,7 @@ function App() {
           onCancel={() => setShowAddModal(false)}
         />
       )}
+
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -338,6 +338,8 @@ function App() {
           }
         />
       )}
+
+      {/* PAGINACIÓN */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
@@ -394,6 +396,7 @@ function App() {
           </nav>
         </div>
       )}
+
       <Footer />
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />
