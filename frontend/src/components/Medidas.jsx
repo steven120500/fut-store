@@ -7,7 +7,7 @@ import { FaTimes } from "react-icons/fa";
 import fanImg from "../assets/Fan.png";
 import playerImg from "../assets/Player.png";
 
-export default function Medidas({ open, onClose, currentType = "Todos" }) {
+export default function Medidas({ open, onClose }) {
   if (!open) return null;
 
   // Bloquea el scroll del body
@@ -19,16 +19,11 @@ export default function Medidas({ open, onClose, currentType = "Todos" }) {
     };
   }, []);
 
-  // Solo Player y Fan
+  // Siempre mostrar Player y Fan
   const CATALOG = [
     { key: "Player", label: "Player", img: playerImg },
     { key: "Fan", label: "Fan", img: fanImg },
   ];
-
-  const sections =
-    currentType && currentType !== "Todos"
-      ? CATALOG.filter((s) => s.key === currentType && s.img)
-      : CATALOG.filter((s) => s.img);
 
   const modal = (
     <div className="fixed inset-0 z-[2147483647] overflow-y-auto">
@@ -62,7 +57,7 @@ export default function Medidas({ open, onClose, currentType = "Todos" }) {
 
           {/* Body */}
           <div className="p-5 max-h-[85vh] overflow-y-auto">
-            {sections.map(({ key, label, img }) => (
+            {CATALOG.map(({ key, label, img }) => (
               <div key={key} className="mb-8 last:mb-0">
                 <h4 className="text-base sm:text-lg font-bold text-center mb-3">
                   {label}

@@ -396,8 +396,8 @@ export default function ProductModal({
           rel="noopener noreferrer"
           className="mt-4 block bg-green-600 text-white py-2 rounded text-center font-bold"
         >
-          <FaWhatsapp className="inline mr-2" />
-          WhatsApp
+            <FaWhatsapp className="inline mr-2" />
+            Enviar mensaje por WhatsApp
         </a>
       </div>
     </div>
