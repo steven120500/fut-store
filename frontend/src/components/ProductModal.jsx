@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { toast as toastHOT } from 'react-hot-toast';
 
 const API_BASE = 'https://fut-store.onrender.com';
 
@@ -10,9 +9,8 @@ const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 
-/* ---------- SOLO PARA AHORRAR ANCHO DE BANDA ---------- */
-const MODAL_IMG_MAX_W = 800; // ancho tope para la imagen grande del modal
-const THUMB_MAX_W     = 240; // ancho tope para miniaturas en modo edición
+const MODAL_IMG_MAX_W = 800;
+const THUMB_MAX_W     = 240;
 
 function transformCloudinary(url, maxW) {
   try {
@@ -27,7 +25,6 @@ function transformCloudinary(url, maxW) {
     return url;
   }
 }
-/* ------------------------------------------------------ */
 
 function isLikelyObjectId(v) {
   return typeof v === 'string' && /^[0-9a-fA-F]{24}$/.test(v);
@@ -43,7 +40,6 @@ export default function ProductModal({
 }) {
   const modalRef = useRef(null);
 
-  // -------- Estado base / edición --------
   const [viewProduct, setViewProduct] = useState(product);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -56,7 +52,6 @@ export default function ProductModal({
   const [editedType,   setEditedType]   = useState(product?.type || 'Player');
   const [loading,      setLoading]      = useState(false);
 
-  // -------- Galería --------
   const galleryFromProduct = useMemo(() => {
     if (Array.isArray(product?.images) && product.images.length > 0) {
       return product.images
@@ -74,7 +69,6 @@ export default function ProductModal({
   const hasMany = localImages.length > 1;
   const currentSrc = localImages[idx]?.src || '';
 
-  // Sincroniza cuando cambie el producto desde afuera
   useEffect(() => {
     setViewProduct(product);
     setEditedName(product?.name || '');
@@ -93,13 +87,11 @@ export default function ProductModal({
     setIdx(0);
   }, [product]);
 
-  // bloquear scroll del body mientras el modal está abierto
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'auto'; };
   }, []);
 
-  // -------- Guardar --------
   const handleSave = async () => {
     if (loading) return;
 
@@ -114,9 +106,13 @@ export default function ProductModal({
       const displayName = user?.username || user?.email || 'FutStore';
 
       const priceInt = Math.max(0, parseInt(editedPrice, 10) || 0);
-      const discountInt = editedDiscountPrice
-        ? Math.max(0, parseInt(editedDiscountPrice, 10) || 0)
-        : null;
+
+      // 👇 Nueva lógica: no guardar 0 ni vacío
+      let discountInt = null;
+      if (editedDiscountPrice !== '' && !isNaN(Number(editedDiscountPrice))) {
+        const val = parseInt(editedDiscountPrice, 10);
+        if (val > 0) discountInt = val;
+      }
 
       const clean = (obj) =>
         Object.fromEntries(
@@ -393,7 +389,7 @@ export default function ProductModal({
 
         {/* WhatsApp */}
         <a
-          href={`https://wa.me/50660369857?text=${encodeURIComponent(
+          href={`https://wa.me/50672327096?text=${encodeURIComponent(
             `¡Hola! Me interesa la camiseta ${product?.name} ${product?.type}.`
           )}`}
           target="_blank"

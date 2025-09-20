@@ -7,16 +7,12 @@ const KID_SIZES   = ['16','18','20','22','24','26','28'];
 const ALL_SIZES   = new Set([...ADULT_SIZES, ...KID_SIZES]);
 
 // ===== Validadores =====
-
-// Acepta: null/undefined | dataURL base64 | URL http(s) (Cloudinary)
 const imageAnyValidator = {
   validator(v) {
-    if (v == null) return true; // permite null/undefined
+    if (v == null) return true;
     if (typeof v !== 'string') return false;
 
-    // dataURL base64 con extensión válida
     const isData = /^data:image\/(png|jpe?g|webp|heic|heif);base64,/i.test(v);
-    // URL http(s)
     const isHttp = /^https?:\/\/\S+/i.test(v);
 
     return isData || isHttp;
@@ -24,7 +20,6 @@ const imageAnyValidator = {
   message: 'Imagen inválida: debe ser data URL base64 o una URL http(s).'
 };
 
-// stock y bodega deben ser { talla: cantidad>=0 } con tallas válidas
 const stockValidator = {
   validator(obj) {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
@@ -38,11 +33,11 @@ const stockValidator = {
   message: 'Inventario inválido. Debe ser un objeto { talla: cantidad>=0 } con tallas válidas.'
 };
 
-// ===== Sub-esquema para imágenes (Cloudinary) =====
+// ===== Sub-esquema para imágenes =====
 const ImageSchema = new mongoose.Schema(
   {
-    public_id: { type: String, trim: true },  // id en Cloudinary
-    url:       { type: String, trim: true }   // secure_url
+    public_id: { type: String, trim: true },
+    url:       { type: String, trim: true }
   },
   { _id: false }
 );
@@ -53,36 +48,33 @@ const productSchema = new mongoose.Schema(
     name:  { type: String, required: true, trim: true, maxlength: 150 },
     price: { type: Number, required: true, min: 0 },
 
-    // 👇 Nuevo: precio con descuento (opcional)
+    // 👇 Precio de descuento opcional
     discountPrice: { type: Number, min: 0, default: null },
 
-    // Compatibilidad con el front (principal para cards/listas)
     imageSrc: { type: String, trim: true, maxlength: 600, validate: imageAnyValidator },
+    images:   { type: [ImageSchema], default: [] },
 
-    // Nuevo: arreglo de imágenes subidas a Cloudinary
-    images: { type: [ImageSchema], default: [] },
-
-    // Stock por talla (visible en la tienda)
     stock: { type: Object, required: true, validate: stockValidator },
 
-    // Nuevo: inventario de bodega (invisible al cliente, solo admins)
-    bodega: { type: Object, default: {}, validate: stockValidator },
-
-    // Tipo de producto (ej. Player, Fan, Mujer, Niño...)
     type: { type: String, required: true, trim: true, maxlength: 40 }
   },
   { timestamps: true }
 );
 
 // ===== Hooks =====
-// Redondea precio a entero si viene con decimales
 productSchema.pre('validate', function (next) {
   if (typeof this.price === 'number' && Number.isFinite(this.price)) {
     this.price = Math.trunc(this.price);
   }
-  if (typeof this.discountPrice === 'number' && Number.isFinite(this.discountPrice)) {
+
+  // 👇 Si discountPrice está vacío, lo dejamos en null en vez de 0
+  if (this.discountPrice == null || this.discountPrice === '') {
+    this.discountPrice = null;
+  } else if (typeof this.discountPrice === 'number' && Number.isFinite(this.discountPrice)) {
     this.discountPrice = Math.trunc(this.discountPrice);
+    if (this.discountPrice <= 0) this.discountPrice = null; // evita guardar 0
   }
+
   next();
 });
 
@@ -91,9 +83,9 @@ productSchema.index({ createdAt: -1 });
 productSchema.index({ name: 1 });
 productSchema.index({ type: 1 });
 productSchema.index({ price: 1, createdAt: -1 });
-productSchema.index({ discountPrice: 1 }); // 👈 extra para consultas rápidas
+productSchema.index({ discountPrice: 1 });
 
-// ===== Limpieza de salida JSON/Objeto =====
+// ===== Limpieza de salida =====
 productSchema.set('toJSON', {
   virtuals: false,
   versionKey: false,

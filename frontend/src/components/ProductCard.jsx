@@ -21,8 +21,7 @@ export default function ProductCard({ product, onClick }) {
     ? cldUrl(product.images[0].url, 640, H)
     : null;
 
-  const hasDiscount =
-    product.discountPrice && Number(product.discountPrice) > 0;
+  const hasDiscount = Number(product.discountPrice) > 0;
 
   return (
     <motion.div
@@ -36,9 +35,7 @@ export default function ProductCard({ product, onClick }) {
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
         {/* Badge Oferta */}
         {hasDiscount && (
-          <span
-            className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded shadow-md"
-          >
+          <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded shadow-md">
             Oferta
           </span>
         )}
@@ -85,17 +82,15 @@ export default function ProductCard({ product, onClick }) {
             {hasDiscount ? (
               <>
                 <p className="text-sm sm:text-base line-through text-gray-500">
-                  ₡{product.price?.toLocaleString("de-DE") || product.price}
+                  ₡{Number(product.price).toLocaleString("de-DE")}
                 </p>
                 <p className="text-base sm:text-lg md:text-xl font-bold text-red-600">
-                  ₡
-                  {product.discountPrice?.toLocaleString("de-DE") ||
-                    product.discountPrice}
+                  ₡{Number(product.discountPrice).toLocaleString("de-DE")}
                 </p>
               </>
             ) : (
               <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
-                ₡{product.price?.toLocaleString("de-DE") || product.price}
+                ₡{Number(product.price).toLocaleString("de-DE")}
               </p>
             )}
           </div>
