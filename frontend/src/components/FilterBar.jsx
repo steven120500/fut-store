@@ -26,12 +26,12 @@ export default function FilterBar({
   };
 
   return (
-    <div className="w-full px-4 py-3 bg-white relative z-30 shadow flex flex-col gap-3">
+    <div className="w-full px-4 py-3 bg-white relative z-0 shadow flex flex-col gap-3">
       
       {/* 🔍 Barra de búsqueda */}
       <input
         type="text"
-        placeholder="Buscar productos..."
+        placeholder="Buscar por equipo o jugador..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="w-full px-3 py-2 border rounded-md"
@@ -50,14 +50,14 @@ export default function FilterBar({
               setShowTipos(!showTipos);
               setShowTallas(false);
             }}
-            className="px-4 py-2 border rounded-md bg-[#d4af37] text-black font-medium"
+            className="px-4 py-2 border rounded-md bg-[#9E8F91] text-black font-medium"
             style={{
-              backgroundColor: "#d4af37",
+              backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "0.9rem",
             }}
           >
-            {filterType || "Tipos"}
+            {filterType || "Version"}
           </button>
           {showTipos && (
             <div className="absolute mt-1 w-40 bg-white border rounded-md shadow z-40">
@@ -84,9 +84,9 @@ export default function FilterBar({
               setShowTallas(!showTallas);
               setShowTipos(false);
             }}
-            className="px-4 py-2 border rounded-md bg-[#d4af37] text-black font-medium"
+            className="px-4 py-2 border rounded-md bg-[#9E8F91] text-black font-medium"
             style={{
-              backgroundColor: "#d4af37",
+              backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "0.9rem",
             }}

@@ -25,7 +25,7 @@ import { SeasonProvider, useSeason } from "./components/SeasonContext";
 import FilterBar from "./components/FilterBar";
 
 const API_BASE = "https://fut-store.onrender.com";
-const GOLD = "#d4af37";
+const GOLD = "#9E8F91";
 
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);

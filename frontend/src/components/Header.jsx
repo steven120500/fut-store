@@ -5,7 +5,7 @@ import { FiPhoneCall } from "react-icons/fi";
 import { useState, useEffect, useRef } from "react";
 import Contacto from "./Contacto"; // 🔹 Importa el nuevo componente
 
-const GOLD = "#d4af37";
+const GOLD = "#9E8F91";
 
 export default function Header({
   onLoginClick,
@@ -125,7 +125,7 @@ export default function Header({
                         setSidebarOpen(false);
                       }}
                       className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                      style={{ backgroundColor: "#574C4D", color: "#000" }}
                     >
                       Agregar usuario
                     </button>
@@ -138,7 +138,7 @@ export default function Header({
                         setSidebarOpen(false);
                       }}
                       className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                      style={{ backgroundColor: "#574C4D", color: "#000" }}
                     >
                       Ver usuarios
                     </button>
@@ -151,7 +151,7 @@ export default function Header({
                         setSidebarOpen(false);
                       }}
                       className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#DABB52", color: "#000" }}
+                      style={{ backgroundColor: "#574C4D", color: "#000" }}
                     >
                       Historial
                     </button>
@@ -163,7 +163,7 @@ export default function Header({
                       setSidebarOpen(false);
                     }}
                     className="w-full text-left mt-2 px-4 py-2 rounded-lg text-red-700 font-semibold"
-                    style={{ backgroundColor: "#DABB52", color: "#000" }}
+                    style={{ backgroundColor: "#574C4D", color: "#000" }}
                   >
                     Cerrar sesión
                   </button>
@@ -175,7 +175,7 @@ export default function Header({
                     setSidebarOpen(false);
                   }}
                   className="w-full text-left px-4 py-2 rounded-lg font-semibold"
-                  style={{ backgroundColor: "#DABB52", color: "#000" }}
+                  style={{ backgroundColor: "#574C4D", color: "#000" }}
                 >
                   Iniciar sesión
                 </button>

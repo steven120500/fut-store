@@ -40,7 +40,7 @@ export default function Medidas({ open, onClose }) {
             title="Cerrar"
             aria-label="Cerrar"
             style={{
-              backgroundColor: "#d4af37",
+              backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "1.9rem",
             }}

@@ -238,7 +238,7 @@ export default function ProductModal({
         <button
           onClick={onClose}
           className="absolute mr-2 top-12 right-2 text-white bg-black rounded p-1"
-          style={{ backgroundColor: "#d4af37", color: "#000" }}
+          style={{ backgroundColor: "#9E8F91", color: "#000" }}
           title="Cerrar"
         >
           <FaTimes size={30} />
@@ -287,7 +287,7 @@ export default function ProductModal({
           ) : (
             <>
               <span className="block text-xs uppercase text-gray-500">{viewProduct?.type}</span>
-              <h2 className="text-xl font-extrabold" style={{ color: '#d4af37' }}>
+              <h2 className="text-xl font-extrabold" style={{ color: '#9E8F91' }}>
                 {viewProduct?.name}
               </h2>
             </>
@@ -304,12 +304,12 @@ export default function ProductModal({
               <>
                 <button onClick={() => setIdx(i => (i - 1 + localImages.length) % localImages.length)}
                   className="absolute left-0 px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "#d4af37" }}>
+                  style={{ backgroundColor: "#9E8F91" }}>
                   <FaChevronLeft/>
                 </button>
                 <button onClick={() => setIdx(i => (i + 1) % localImages.length)}
                   className="absolute right-0 px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "#d4af37" }}>
+                  style={{ backgroundColor: "#9E8F91" }}>
                   <FaChevronRight/>
                 </button>
               </>

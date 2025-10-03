@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { FiEye, FiEyeOff, FiX } from 'react-icons/fi';
 import 'react-toastify/dist/ReactToastify.css';
 
-const GOLD = '#d4af37';
+const GOLD = '#9E8F91';
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   const [username, setUsername] = useState('');

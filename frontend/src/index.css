@@ -60,7 +60,7 @@ button {
 }
 
 button:hover {
-  border-color: #d4af37;
+  border-color: #9E8F91;
 }
 
 button:focus,
@@ -76,7 +76,7 @@ button:focus-visible {
   }
 
   a:hover {
-    color: #d4af37;
+    color: #9E8F91;
   }
 
   button {
@@ -91,17 +91,17 @@ button:focus-visible {
 
 @keyframes blink {
   0%, 100% { border-color: transparent }
-  50% { border-color: #d4af37 }
+  50% { border-color: #9E8F91 }
 }
 
 .typing-effect {
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   font-size: 3rem;
-  color: #d4af37;
+  color: #9E8F91;
   white-space: nowrap;
   overflow: hidden;
-  border-right: 3px solid #d4af37;
+  border-right: 3px solid #9E8F91;
   width: 0;
   animation:
     typing 10s steps(8, end) forwards,

@@ -154,7 +154,7 @@ export default function HistoryModal({ open, onClose, isSuperUser = false }) {
             className="text-white hover:text-gray-800 bg-black rounded p-1"
             title="Cerrar"
             style={{
-              backgroundColor: "#d4af37",
+              backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "1.9rem",
             }}

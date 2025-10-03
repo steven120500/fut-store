@@ -78,7 +78,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
             <div
               className="text-sm text-center font-bold px-4 py-1 w-full shadow-md"
               style={{
-                backgroundColor: "#d4af37",
+                backgroundColor: "#9E8F91",
                 color: "#000",
                 fontSize: "0.9rem",
               }}
@@ -120,7 +120,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
               </p>
             )}
             {lowStockSizes.length > 0 && (
-              <p className="text-yellow-600 flex items-center gap-1">
+              <p className="text-gray-600 flex items-center gap-1">
                 ⚠️ Queda 1 en tallas {lowStockSizes.join(", ")}
               </p>
             )}

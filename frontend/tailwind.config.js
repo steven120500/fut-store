@@ -10,7 +10,7 @@ module.exports = {
         poppins: ["Poppins", "sans-serif"],
       },
       colors: {
-        gold: "#d4af37",
+        gold: "#9E8F91",
         halloween: "#FF7518",
       },
     },

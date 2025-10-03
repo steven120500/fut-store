@@ -216,7 +216,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         <button
           onClick={onCancel}
           className="absolute top-6 right-2 text-white bg-black rounded p-1"
-          style={{ backgroundColor: "#d4af37", color: "#000" }}
+          style={{ backgroundColor: "#9E8F91", color: "#000" }}
         >
           <FaTimes size={30} />
         </button>
@@ -324,14 +324,19 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 bg-[#d4af37] text-black py-2 rounded hover:brightness-110 transition disabled:opacity-60"
+            className="flex-1 bg-[#9E8F91] text-black py-2 rounded hover:brightness-110 transition disabled:opacity-60"
+            style={{
+              backgroundColor: "#9E8F91",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
           >
             {loading ? "Agregando..." : "Agregar producto"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-[#d4af37] text-[#d4af37] rounded hover:bg-gray-100"
+            className="px-4 py-2 border border-[#9E8F91] text-[#9E8F91] rounded hover:bg-gray-100"
           >
             Cancelar
           </button>

@@ -12,7 +12,7 @@ export default function Contacto() {
           rel="noopener noreferrer"
           className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
           style={{
-            backgroundColor: "#d4af37",
+            backgroundColor: "#9E8F91",
             color: "#000",
             fontSize: "1.9rem",
           }}
@@ -26,7 +26,7 @@ export default function Contacto() {
           rel="noopener noreferrer"
           className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
           style={{
-            backgroundColor: "#d4af37",
+            backgroundColor: "#9E8F91",
             color: "#000",
             fontSize: "1.9rem",
           }}
@@ -40,7 +40,7 @@ export default function Contacto() {
           rel="noopener noreferrer"
           className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
           style={{
-            backgroundColor: "#d4af37",
+            backgroundColor: "#9E8F91",
             color: "#000",
             fontSize: "1.9rem",
           }}
