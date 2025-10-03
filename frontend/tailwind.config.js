@@ -1,17 +1,27 @@
-/** @type {import('tailwindcss').Config} */
-export default {
+// tailwind.config.js
+module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}"
+    "./src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
       fontFamily: {
-        poppins: ['Poppins', 'sans-serif'],
+        poppins: ["Poppins", "sans-serif"],
+      },
+      colors: {
+        gold: "#d4af37",
+        halloween: "#FF7518",
       },
     },
   },
-  plugins: [
-    require('tailwind-scrollbar'),
+  safelist: [
+    "text-gold",
+    "bg-gold",
+    "text-halloween",
+    "bg-halloween",
   ],
-}
+  plugins: [
+    require("tailwind-scrollbar"),
+  ],
+};

@@ -9,7 +9,7 @@ import RegisterUserModal from "./components/RegisterUserModal";
 import Footer from "./components/Footer";
 import LoadingOverlay from "./components/LoadingOverlay";
 import tallaPorTipo from "./utils/tallaPorTipo";
-import { FaPlus, FaChevronLeft, FaChevronRight, FaFilter } from "react-icons/fa";
+import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
@@ -17,6 +17,12 @@ import UserListModal from "./components/UserListModal";
 import HistoryModal from "./components/HistoryModal";
 import Medidas from "./components/Medidas";
 import fotofondo from "./assets/fotofondo.JPG";
+
+// 🎃 Contexto de temporada
+import { SeasonProvider, useSeason } from "./components/SeasonContext";
+
+// nuevo FilterBar
+import FilterBar from "./components/FilterBar";
 
 const API_BASE = "https://fut-store.onrender.com";
 const GOLD = "#d4af37";
@@ -28,12 +34,15 @@ function buildPages(page, pages) {
 
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
-function App() {
+// 🔹 Componente principal
+function AppContent() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
+  const [filterSizes, setFilterSizes] = useState([]); // << tallas
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
@@ -45,8 +54,6 @@ function App() {
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const pages = Math.max(1, Math.ceil(total / limit));
-
-  const [showFilters, setShowFilters] = useState(false);
 
   const anyModalOpen =
     !!selectedProduct ||
@@ -83,6 +90,7 @@ function App() {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
+    const sizes = (opts.sizes ?? filterSizes).join(",");
 
     setLoading(true);
     try {
@@ -90,7 +98,8 @@ function App() {
         page: String(p),
         limit: String(limit),
         ...(q ? { q } : {}),
-        ...(tp ? { type: tp } : {}), // 👈 ahora sí mandamos Ofertas al backend
+        ...(tp ? { type: tp } : {}),
+        ...(sizes ? { sizes } : {}),
       });
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -109,19 +118,17 @@ function App() {
 
   const pageTopRef = useRef(null);
   useEffect(() => {
-    fetchProducts({ page, q: searchTerm, type: filterType });
-
+    fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
     if (pageTopRef.current) {
       const rect = pageTopRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
       const targetY = rect.top + scrollTop;
       window.scrollTo({
         top: targetY - 200,
         behavior: "smooth",
       });
     }
-  }, [page, limit, searchTerm, filterType]);
+  }, [page, limit, searchTerm, filterType, filterSizes]);
 
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
@@ -143,25 +150,17 @@ function App() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtro frontend (solo por nombre, el resto ya lo hace el backend)
+  // 🔹 Filtro frontend
   const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filterOptions = [
-    "Player",
-    "Fan",
-    "Mujer",
-    "Niño",
-    "Retro",
-    "Abrigos",
-    "Nacional",
-    "Ofertas",
-    "Todos",
-  ];
+  const theme = useSeason();
 
   return (
+    
     <>
+      {/* Modales */}
       {showRegisterUserModal && (
         <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
       )}
@@ -207,71 +206,40 @@ function App() {
           setFilterType={setFilterType}
         />
       )}
+      
 
-      {/* Imagen de fondo */}
+      {/* Imagen de fondo de bienvenida */}
       <section
         className="relative w-full h-screen bg-cover bg-center flex items-center justify-center"
-        style={{ backgroundImage: `url(${fotofondo})` }}
+        style={
+          theme.backgroundImage
+            ? { backgroundImage: `url(${theme.backgroundImage})` }
+            : { backgroundImage: `url(${fotofondo})` }
+        }
       >
         <div className="absolute inset-0 bg-black/70"></div>
-        <div className="relative z-o bg-black/50 p-6 rounded-lg animate-fadeIn">
-          <h1 className="text-3xl z-0 sm:text-5xl font-bold text-white text-center">
-            Bienvenido a <span style={{ color: GOLD }}>FutStore</span>
-          </h1>
+        <div className="relative z-10 p-6 rounded-lg animate-fadeIn">
+        <h1 className="text-3xl sm:text-5xl font-bold text-center">
+  <span className={`${theme.textColor}`}>Bienvenido a </span>
+  <span className={`${theme.brandColor}`}>FutStore</span>
+</h1>
+
+          {theme.message && (
+            <p className="text-lg text-center mt-2">{theme.message}</p>
+          )}
         </div>
+        {theme.decorations}
       </section>
 
-      {/* BARRA DE BÚSQUEDA DEBAJO DEL HEADER */}
-      <div className="sticky top-[96px] z-40 bg-white/80 backdrop-blur px-4 sm:px-6 py-3">
-        <div className="mx-auto max-w-7xl flex items-center gap-3">
-          {/* Input */}
-          <input
-            type="text"
-            placeholder="Buscar productos..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            className="
-              w-2/3 sm:w-3/4 md:w-[420px] lg:w-[560px]
-              h-10 px-4 border border-gray-300 rounded-md
-              focus:outline-none focus:ring-2 focus:ring-yellow-500 text-sm
-            "
-          />
-
-          {/* Botón Filtros */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFilters((v) => !v)}
-              className="flex items-center gap-2 px-3 py-2 rounded-md font-semibold text-black"
-              style={{ backgroundColor: "#d4af37" }}
-              title="Filtros"
-            >
-              <FaFilter className="text-black" />
-              {filterType ? `Filtros · ${filterType}` : "Filtros"}
-            </button>
-
-            {showFilters && (
-              <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow z-50">
-                {filterOptions.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setFilterType(t === "Todos" ? "" : t);
-                      setShowFilters(false);
-                      setPage(1);
-                    }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-yellow-100"
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* 🔎 Barra de búsqueda + filtros */}
+      <FilterBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        filterSizes={filterSizes}
+        setFilterSizes={setFilterSizes}
+      />
 
       {canAdd && !anyModalOpen && (
         <button
@@ -291,6 +259,7 @@ function App() {
       >
         {filteredProducts.map((product) => (
           <ProductCard
+            canEdit={canEdit}
             key={getPid(product)}
             product={product}
             onClick={() => setSelectedProduct(product)}
@@ -349,7 +318,7 @@ function App() {
               className="px-2 py-1 text-sm text-white  rounded border disabled:opacity-50"
               title="Anterior"
               style={{
-                backgroundColor: "#d4af37",
+                backgroundColor: GOLD,
                 color: "#000",
                 fontSize: "1.5rem",
               }}
@@ -386,7 +355,7 @@ function App() {
               className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50"
               title="Siguiente"
               style={{
-                backgroundColor: "#d4af37",
+                backgroundColor: GOLD,
                 color: "#000",
                 fontSize: "1.5rem",
               }}
@@ -404,4 +373,11 @@ function App() {
   );
 }
 
-export default App;
+// 🔹 App envuelto con el SeasonProvider
+export default function App() {
+  return (
+    <SeasonProvider season="default">
+      <AppContent />
+    </SeasonProvider>
+  );
+}

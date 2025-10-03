@@ -13,7 +13,7 @@ const cldUrl = (url, w, h) => {
   );
 };
 
-export default function ProductCard({ product, onClick }) {
+export default function ProductCard({ product, onClick, user, canEdit }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const H = 700;
@@ -23,6 +23,25 @@ export default function ProductCard({ product, onClick }) {
 
   const hasDiscount = Number(product.discountPrice) > 0;
 
+  // 🔹 Definir tallas según tipo
+  const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
+  const tallasNino = ["16", "18", "20", "22", "24", "26", "28"];
+
+  const isNiño = product.type?.toLowerCase() === "niño";
+  const ALL_SIZES = isNiño ? tallasNino : tallasAdulto;
+
+  // 🔹 Crear stock con todas las tallas posibles (si falta → null)
+  const stockEntries = ALL_SIZES.map(size => [size, product.stock?.[size] ?? null]);
+
+  // 🔹 Clasificación
+  const soldOutSizes = stockEntries
+    .filter(([_, qty]) => qty == null || qty <= 0)
+    .map(([size]) => size);
+
+  const lowStockSizes = stockEntries
+    .filter(([_, qty]) => qty === 1)
+    .map(([size]) => size);
+
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
@@ -31,9 +50,8 @@ export default function ProductCard({ product, onClick }) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Imagen con efecto de acercamiento */}
+      {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
-        {/* Badge Oferta */}
         {hasDiscount && (
           <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded shadow-md">
             Oferta
@@ -53,7 +71,7 @@ export default function ProductCard({ product, onClick }) {
       </div>
 
       {/* Info */}
-      <div className="flex flex-col justify-between h-[130px]">
+      <div className="flex flex-col justify-between h-auto p-4">
         {/* Tipo */}
         {product.type && (
           <div className="flex justify-center mb-2">
@@ -70,31 +88,44 @@ export default function ProductCard({ product, onClick }) {
           </div>
         )}
 
-        {/* Nombre y precios */}
-        <div className="flex p-4 justify-between items-start">
-          {/* Nombre */}
-          <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 line-clamp-2 text-left">
-            {product.name}
-          </h3>
+        {/* Nombre */}
+        <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 line-clamp-2 text-left">
+          {product.name}
+        </h3>
 
-          {/* Precios */}
-          <div className="text-right">
-            {hasDiscount ? (
-              <>
-                <p className="text-sm sm:text-base line-through text-gray-500">
-                  ₡{Number(product.price).toLocaleString("de-DE")}
-                </p>
-                <p className="text-base sm:text-lg md:text-xl font-bold text-red-600">
-                  ₡{Number(product.discountPrice).toLocaleString("de-DE")}
-                </p>
-              </>
-            ) : (
-              <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
+        {/* Precios */}
+        <div className="text-right">
+          {hasDiscount ? (
+            <>
+              <p className="text-sm sm:text-base line-through text-gray-500">
                 ₡{Number(product.price).toLocaleString("de-DE")}
+              </p>
+              <p className="text-base sm:text-lg md:text-xl font-bold text-red-600">
+                ₡{Number(product.discountPrice).toLocaleString("de-DE")}
+              </p>
+            </>
+          ) : (
+            <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
+              ₡{Number(product.price).toLocaleString("de-DE")}
+            </p>
+          )}
+        </div>
+
+        {/* 🔹 Avisos de stock SOLO para admins */}
+        {canEdit && (
+          <div className="mt-2 text-xs space-y-1">
+            {soldOutSizes.length > 0 && (
+              <p className="text-red-600 flex items-center gap-1">
+                ⚠️ Agotado en tallas {soldOutSizes.join(", ")}
+              </p>
+            )}
+            {lowStockSizes.length > 0 && (
+              <p className="text-yellow-600 flex items-center gap-1">
+                ⚠️ Queda 1 en tallas {lowStockSizes.join(", ")}
               </p>
             )}
           </div>
-        </div>
+        )}
       </div>
     </motion.div>
   );

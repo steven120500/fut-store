@@ -122,3 +122,12 @@ button:focus-visible {
 .animate-fadeInUp {
   animation: fadeInUp 1s ease-out forwards;
 }
+
+@keyframes fall {
+  to {
+    transform: translateY(100vh);
+  }
+}
+.animate-fall {
+  animation: fall linear infinite;
+}

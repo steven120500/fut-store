@@ -167,7 +167,7 @@ router.put('/:id', async (req, res) => {
       price: Number.isFinite(Number(req.body.price)) ? Math.trunc(Number(req.body.price)) : prev.price,
       discountPrice: req.body.discountPrice !== undefined && req.body.discountPrice !== '' 
         ? Math.trunc(Number(req.body.discountPrice)) 
-        : prev.discountPrice, // ⬅️ NUEVO
+        : prev.discountPrice,
       stock: nextStock,
       bodega: nextBodega,
     };
@@ -292,6 +292,7 @@ router.get('/', async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
     const q     = (req.query.q || '').trim();
     const type  = (req.query.type || '').trim();
+    const sizes = (req.query.sizes || '').trim(); // 👈 NUEVO
 
     const find = {};
     if (q) find.name = { $regex: q, $options: 'i' };
@@ -301,6 +302,16 @@ router.get('/', async (req, res) => {
       find.discountPrice = { $ne: null, $gt: 0 };
     } else if (type) {
       find.type = type;
+    }
+
+    // 👇 NUEVO: filtrar por tallas (stock > 0)
+    if (sizes) {
+      const sizesArray = sizes.split(',').map(s => s.trim()).filter(Boolean);
+      if (sizesArray.length > 0) {
+        find.$or = sizesArray.map(size => ({
+          [`stock.${size}`]: { $gt: 0 }
+        }));
+      }
     }
 
     // añadimos discountPrice y bodega a la proyección
