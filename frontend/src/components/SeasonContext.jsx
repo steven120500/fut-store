@@ -8,8 +8,8 @@ const THEMES = {
   default: {
     banner: "Bienvenido a FutStore",
     message: "",
-    textColor: "text-white  ",
-    brandColor: "text-yellow-500",   // 👈 usa la clase completa
+    textColor: "text-yellow-300  ",
+    brandColor: "text-yellow-300",   // 👈 usa la clase completa
     accent: "bg-gold text-black hover:bg-yellow-600",
     backgroundImage: fotofondo,
     decorations: null,
