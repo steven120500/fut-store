@@ -1,153 +1,130 @@
-import { motion } from "framer-motion";
-import { FaCheck } from "react-icons/fa";
+// src/components/FilterBar.jsx
+import React, { useState } from "react";
 
-const filterOptions = [
-  "Player",
-  "Fan",
-  "Mujer",
-  "Niño",
-  "Retro",
-  "Abrigos",
-  "Nacional",
-  "Ofertas",
-  "NBA",
-  "MLB",
-  "NFL",
-  "Todos",
+const tipos = [
+  "Player", "Fan", "Mujer", "Niño", "Retro", "Abrigos",
+  "Nacional", "Ofertas", "NBA", "MLB", "Todos"
 ];
 
-const tallaOptions = [
-  "16",
-  "18",
-  "20",
-  "22",
-  "24",
-  "26",
-  "28",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "3XL",
-  "4XL",
+const tallas = [
+  "16","18","20","22","24","26","28", // Niño
+  "S","M","L","XL","XXL","3XL","4XL"  // Adulto
 ];
 
-export default function FilterBar({
-  searchTerm,
-  setSearchTerm,
-  filterType,
-  setFilterType,
-  filterSizes,
-  setFilterSizes,
+export default function FilterBar({ 
+  searchTerm, setSearchTerm, 
+  filterType, setFilterType, 
+  filterSizes, setFilterSizes 
 }) {
+  const [showTipos, setShowTipos] = useState(false);
+  const [showTallas, setShowTallas] = useState(false);
+
+  const handleClear = () => {
+    setSearchTerm("");
+    setFilterType("");
+    setFilterSizes([]);
+  };
+
   return (
-    <div className="mt-4 flex flex-col items-center gap-4 mb-8">
-      {/* Input de búsqueda */}
-      <motion.input
+    <div className="w-full px-4 py-3 bg-white sticky top-0 z-30 shadow flex flex-col gap-3">
+      
+      {/* 🔍 Barra de búsqueda */}
+      <input
         type="text"
-        placeholder="Buscar por nombre o equipo"
-        className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#d4af37]"
+        placeholder="Buscar productos..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        className="w-full px-3 py-2 border rounded-md"
       />
 
-      {/* Botones de filtros */}
-      <motion.div
-        className="flex flex-wrap justify-center gap-2 w-full px-2"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-      >
-        {filterOptions.map((label) => {
-          const isActive =
-            filterType === label || (label === "Todos" && filterType === "");
-          return (
-            <button
-              key={label}
-              onClick={() => setFilterType(label === "Todos" ? "" : label)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md border transition whitespace-nowrap shadow-sm font-medium ${
-                isActive
-                  ? "bg-white text-black border-[#d4af37]"
-                  : "bg-white text-black border-gray-300 hover:border-[#d4af37] hover:text-[#d4af37]"
-              }`}
-              style={{
-                backgroundColor: "#d4af37",
-                color: "#000",
-                fontSize: "0.9rem",
-              }}
-            >
-              {/* Caja con check */}
-              <span
-                className={`w-5 h-5 flex items-center justify-center rounded-sm border ${
-                  isActive
-                    ? "bg-[#d4af37] border-[#d4af37]"
-                    : "border-[#d4af37] bg-white"
-                }`}
-                style={{
-                  backgroundColor: "#d4af37",
-                  color: "#000",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {isActive && <FaCheck className="text-black text-sm" />}
-              </span>
-              {label}
-            </button>
-          );
-        })}
-      </motion.div>
+      {/* 🔽 Ordenar por + botones */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
 
-      {/* Botones de tallas */}
-      <motion.div
-        className="flex flex-wrap justify-center gap-2 w-full px-2"
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        {tallaOptions.map((size) => {
-          const isActive = filterSizes.includes(size);
-          return (
-            <button
-              key={size}
-              onClick={() => {
-                setFilterSizes((prev) =>
-                  isActive ? prev.filter((s) => s !== size) : [...prev, size]
-                );
-              }}
-              className={`flex items-center gap-2 px-3 py-1 rounded-md border transition font-medium ${
-                isActive
-                  ? "bg-white text-black border-[#d4af37]"
-                  : "bg-white text-black border-gray-300 hover:border-[#d4af37] hover:text-[#d4af37]"
-              }`}
-              style={{
-                backgroundColor: "#d4af37",
-                color: "#000",
-                fontSize: "0.9rem",
-              }}
-            >
-              <span
-                className={`w-5 h-5 flex items-center justify-center rounded-sm border ${
-                  isActive
-                    ? "bg-[#d4af37] border-[#d4af37]"
-                    : " bg-white"
-                }`}
-                style={{
-                  backgroundColor: "#d4af37",
-                  color: "#000",
-                  fontSize: "0.9rem",
-                }}
-              >
-                {isActive && <FaCheck className="text-black text-sm" />}
-              </span>
-              {size}
-            </button>
-          );
-        })}
-      </motion.div>
+        {/* Texto ORDENAR POR */}
+        <span className="font-medium">Ordenar por:</span>
+
+        {/* Botón TIPOS */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowTipos(!showTipos);
+              setShowTallas(false);
+            }}
+            className="px-4 py-2 border rounded-md bg-[#d4af37] text-black font-medium"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
+          >
+            {filterType || "Tipos"}
+          </button>
+          {showTipos && (
+            <div className="absolute mt-1 w-40 bg-white border rounded-md shadow z-40">
+              {tipos.map((t) => (
+                <div
+                  key={t}
+                  className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => {
+                    setFilterType(t === "Todos" ? "" : t);
+                    setShowTipos(false);
+                  }}
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Botón TALLAS */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setShowTallas(!showTallas);
+              setShowTipos(false);
+            }}
+            className="px-4 py-2 border rounded-md bg-[#d4af37] text-black font-medium"
+            style={{
+              backgroundColor: "#d4af37",
+              color: "#000",
+              fontSize: "0.9rem",
+            }}
+          >
+            {filterSizes.length > 0 ? filterSizes.join(", ") : "Tallas"}
+          </button>
+          {showTallas && (
+            <div className="absolute mt-1 w-40 max-h-60 overflow-y-auto bg-white border rounded-md shadow z-40">
+              
+              {tallas.map((t) => (
+                <div
+                  key={t}
+                  className={`px-4 py-2 cursor-pointer ${
+                    filterSizes.includes(t) ? "bg-yellow-200 font-semibold" : "hover:bg-gray-200"
+                  }`}
+                  onClick={() => {
+                    if (filterSizes.includes(t)) {
+                      setFilterSizes(filterSizes.filter((s) => s !== t));
+                    } else {
+                      setFilterSizes([...filterSizes, t]);
+                    }
+                  }}
+                >
+                  {t}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ❌ Limpiar */}
+        <button
+          onClick={handleClear}
+          className="px-4 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700"
+        >
+          Limpiar
+        </button>
+      </div>
     </div>
   );
 }
