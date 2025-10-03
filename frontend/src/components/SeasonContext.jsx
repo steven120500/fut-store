@@ -8,8 +8,8 @@ const THEMES = {
   default: {
     banner: "Bienvenido a FutStore",
     message: "",
-    textColor: "text-white",
-    brandColor: "text-white",   // 👈 usa la clase completa
+    textColor: "text-white  ",
+    brandColor: "text-yellow-500",   // 👈 usa la clase completa
     accent: "bg-gold text-black hover:bg-yellow-600",
     backgroundImage: fotofondo,
     decorations: null,
@@ -18,7 +18,7 @@ const THEMES = {
     banner: "Bienvenido a FutStore",
     message: "10% OFF en todo por Halloween 🎃",
     textColor: "text-yellow-500", // Bienvenido a
-    brandColor: "text-yellow-500", // FutStore
+    brandColor: "text-green-400", // FutStore
     messageColor: "text-yellow-500",
     accent: "bg-yellow-500 text-yellow-500 hover:bg-yellow-600",
     backgroundImage: halloweenBg,

@@ -225,7 +225,7 @@ function AppContent() {
 </h1>
 
           {theme.message && (
-            <p className="text-lg text-center mt-2">{theme.message}</p>
+            <p className="text-lg text-center mt-2 text-white">{theme.message}</p>
           )}
         </div>
         {theme.decorations}
