@@ -218,7 +218,7 @@ function AppContent() {
         }
       >
         <div className="absolute inset-0 bg-black/70"></div>
-        <div className="relative z-10 p-6 rounded-lg animate-fadeIn">
+        <div className="relative z-0 p-6 rounded-lg animate-fadeIn">
         <h1 className="text-3xl sm:text-5xl font-bold text-center">
   <span className={`${theme.textColor}`}>Bienvenido a </span>
   <span className={`${theme.brandColor}`}>FutStore</span>
