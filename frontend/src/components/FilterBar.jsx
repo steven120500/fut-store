@@ -121,6 +121,11 @@ export default function FilterBar({
         <button
           onClick={handleClear}
           className="px-4 py-2 rounded-md bg-red-600 text-white font-medium hover:bg-red-700"
+          style={{
+            backgroundColor: "bg-red-600 text-white",
+            color: "",
+            fontSize: "0.9rem",
+          }}
         >
           Limpiar
         </button>
