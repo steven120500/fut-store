@@ -52,10 +52,10 @@ export default function Header({
           {/* OFERTAS */}
           <button
             onClick={handleOfertasClick}
-            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded"
+            className="text-red-600 text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded"
             style={{ backgroundColor: GOLD }}
           >
-            Ofertas
+            Ofertas 🏷️
           </button>
 
           {/* MEDIDAS */}

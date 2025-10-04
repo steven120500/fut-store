@@ -21,6 +21,9 @@ import fotofondo from "./assets/fotofondo.JPG";
 // 🎃 Contexto de temporada
 import { SeasonProvider, useSeason } from "./components/SeasonContext";
 
+// 🔹 Nuevo componente Bienvenido
+import Bienvenido from "./components/Bienvenido";
+
 // nuevo FilterBar
 import FilterBar from "./components/FilterBar";
 
@@ -158,7 +161,6 @@ function AppContent() {
   const theme = useSeason();
 
   return (
-    
     <>
       {/* Modales */}
       {showRegisterUserModal && (
@@ -206,7 +208,6 @@ function AppContent() {
           setFilterType={setFilterType}
         />
       )}
-      
 
       {/* Imagen de fondo de bienvenida */}
       <section
@@ -219,11 +220,8 @@ function AppContent() {
       >
         <div className="absolute inset-0 bg-black/70"></div>
         <div className="relative z-0 p-6 rounded-lg animate-fadeIn">
-        <h1 className="text-3xl sm:text-5xl font-bold text-center">
-  <span className={`${theme.textColor}`}>Bienvenido a </span>
-  <span className={`${theme.brandColor}`}>FutStore</span>
-</h1>
-
+          {/* 👉 Aquí usamos el componente Bienvenido */}
+          <Bienvenido />
           {theme.message && (
             <p className="text-lg text-center mt-2 text-white">{theme.message}</p>
           )}
