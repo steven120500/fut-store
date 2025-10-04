@@ -52,8 +52,8 @@ export default function Header({
           {/* OFERTAS */}
           <button
             onClick={handleOfertasClick}
-            className="text-red-600 text-m sm:text-xl font-semibold px-1 sm:px-1 py-1 rounded"
-            style={{ backgroundColor: GOLD }}
+            className="bg-red-600 text-white mr-2 text-m sm:text-xl font-semibold px-2 sm:px-1 py-2 rounded"
+           
           >
             Descuentos
           </button>
@@ -61,8 +61,8 @@ export default function Header({
           {/* MEDIDAS */}
           <button
             onClick={onMedidasClick}
-            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
-            style={{ backgroundColor: GOLD }}
+            className="text-white text-xs sm:text-lg mr-2  font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
+            style={{backgroundColor: "#574C4D", color: ""}}
           >
             <LiaRulerSolid size={24} />
             <span className="hidden sm:inline">Medidas</span>
@@ -71,8 +71,8 @@ export default function Header({
           {/* CONTACTO */}
           <button
             onClick={() => setShowContacto(true)}
-            className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
-            style={{ backgroundColor: GOLD }}
+            className="text-white text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
+            style={{ backgroundColor: "#574C4D", color: ""}}
           >
             <FiPhoneCall size={24} />
             <span className="hidden sm:inline">Contacto</span>
