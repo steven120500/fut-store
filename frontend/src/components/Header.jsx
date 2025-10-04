@@ -43,10 +43,10 @@ export default function Header({
             style={{
               backgroundColor: GOLD,
               color: "#000",
-              fontSize: "2.0rem",
+              fontSize: "1.0rem",
             }}
           >
-            <img src={logo} alt="Logo" className="h-15 sm:h-23" />
+            <img src={logo} alt="Logo" className="h-12 sm:h-20" />
           </button>
 
           {/* OFERTAS */}
@@ -194,9 +194,9 @@ export default function Header({
               className="absolute top-2 right-2 text-black font-bold"
               style={{ backgroundColor: GOLD, color: "#000" }}
             >
-              <FaTimes size={24} />
+              <FaTimes size={20} />
             </button>
-            <h2 className="text-xl font-bold mb-4 text-center">Contáctanos</h2>
+            <h2 className="text-l font-bold mb-4 text-center">Contáctanos</h2>
             <Contacto />
           </div>
         </div>
