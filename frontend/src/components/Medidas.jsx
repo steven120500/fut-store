@@ -26,7 +26,7 @@ export default function Medidas({ open, onClose }) {
   ];
 
   const modal = (
-    <div className="fixed inset-0 z-[2147483647] overflow-y-auto">
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
 

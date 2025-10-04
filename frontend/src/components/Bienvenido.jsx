@@ -24,7 +24,7 @@ export default function Bienvenido() {
   }, []);
 
   return (
-    <h1 className="text-3xl sm:text-5xl font-bold text-center text-gray-300 transition-all duration-700">
+    <h1 className="text-3xl sm:text-5xl font-bold pt-48 text-center text-gray-300 transition-all duration-700">
       {mensajes[index]}
     </h1>
   );

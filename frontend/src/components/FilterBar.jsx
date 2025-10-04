@@ -26,7 +26,7 @@ export default function FilterBar({
   };
 
   return (
-    <div className="w-full px-4 py-3 bg-white relative z-0 shadow flex flex-col gap-3">
+    <div className="w-full px-4 py-3 bg-white relative z-2 shadow flex flex-col gap-3">
       
       {/* 🔍 Barra de búsqueda */}
       <input

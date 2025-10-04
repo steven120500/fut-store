@@ -374,7 +374,7 @@ function AppContent() {
 // 🔹 App envuelto con el SeasonProvider
 export default function App() {
   return (
-    <SeasonProvider season="default">
+    <SeasonProvider season="defaultg">
       <AppContent />
     </SeasonProvider>
   );

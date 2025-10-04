@@ -43,19 +43,19 @@ export default function Header({
             style={{
               backgroundColor: GOLD,
               color: "#000",
-              fontSize: "1.9rem",
+              fontSize: "2.0rem",
             }}
           >
-            <img src={logo} alt="Logo" className="h-12 sm:h-20" />
+            <img src={logo} alt="Logo" className="h-15 sm:h-23" />
           </button>
 
           {/* OFERTAS */}
           <button
             onClick={handleOfertasClick}
-            className="text-red-600 text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded"
+            className="text-red-600 text-m sm:text-xl font-semibold px-1 sm:px-1 py-1 rounded"
             style={{ backgroundColor: GOLD }}
           >
-            Ofertas 🏷️
+            Descuentos
           </button>
 
           {/* MEDIDAS */}
@@ -64,7 +64,7 @@ export default function Header({
             className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
-            <LiaRulerSolid size={18} />
+            <LiaRulerSolid size={24} />
             <span className="hidden sm:inline">Medidas</span>
           </button>
 
@@ -74,7 +74,7 @@ export default function Header({
             className="text-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
             style={{ backgroundColor: GOLD }}
           >
-            <FiPhoneCall size={18} />
+            <FiPhoneCall size={24} />
             <span className="hidden sm:inline">Contacto</span>
           </button>
         </div>
@@ -194,7 +194,7 @@ export default function Header({
               className="absolute top-2 right-2 text-black font-bold"
               style={{ backgroundColor: GOLD, color: "#000" }}
             >
-              <FaTimes size={18} />
+              <FaTimes size={24} />
             </button>
             <h2 className="text-xl font-bold mb-4 text-center">Contáctanos</h2>
             <Contacto />
