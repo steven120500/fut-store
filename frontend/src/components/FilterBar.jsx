@@ -50,12 +50,12 @@ export default function FilterBar({
               setShowTipos(!showTipos);
               setShowTallas(false);
             }}
-            className="px-4 py-2 border rounded-md bg-[#9E8F91] text-black font-medium"
-            style={{
+            className="px-4 py-2 border rounded-md bg-yellow-600 text-black font-medium"
+            /*style={{
               backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "0.9rem",
-            }}
+            }}*/
           >
             {filterType || "Version"}
           </button>
@@ -84,12 +84,12 @@ export default function FilterBar({
               setShowTallas(!showTallas);
               setShowTipos(false);
             }}
-            className="px-4 py-2 border rounded-md bg-[#9E8F91] text-black font-medium"
-            style={{
+            className="px-4 py-2 border rounded-md bg-yellow-600 text-black font-medium"
+            /*style={{
               backgroundColor: "#9E8F91",
               color: "#000",
               fontSize: "0.9rem",
-            }}
+            }}*/
           >
             {filterSizes.length > 0 ? filterSizes.join(", ") : "Tallas"}
           </button>

@@ -313,13 +313,9 @@ function AppContent() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-2 py-1 text-sm text-white  rounded border disabled:opacity-50"
+              className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
               title="Anterior"
-              style={{
-                backgroundColor: GOLD,
-                color: "#000",
-                fontSize: "1.5rem",
-              }}
+          
             >
               <FaChevronLeft />
             </button>
@@ -350,13 +346,9 @@ function AppContent() {
             <button
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page === pages}
-              className="px-2 py-1 text-sm text-white bg-black rounded border disabled:opacity-50"
+              className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
               title="Siguiente"
-              style={{
-                backgroundColor: GOLD,
-                color: "#000",
-                fontSize: "1.5rem",
-              }}
+              
             >
               <FaChevronRight />
             </button>
@@ -374,7 +366,7 @@ function AppContent() {
 // 🔹 App envuelto con el SeasonProvider
 export default function App() {
   return (
-    <SeasonProvider season="defaultg">
+    <SeasonProvider season="halloween">
       <AppContent />
     </SeasonProvider>
   );

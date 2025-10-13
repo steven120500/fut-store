@@ -7,20 +7,20 @@ import User from './models/User.js';
 dotenv.config();
 await connectDB();
 
-const hashedPassword = await bcrypt.hash('1234', 10);
+const hashedPassword = await bcrypt.hash('1995', 10);
 
 const superUser = new User({
-  username: 'Steven',            // Usamos username, no email
+  username: 'Bety',            // Usamos username, no email
   password: hashedPassword,
   isSuperUser: true,
   roles: ['add', 'edit', 'delete'],
 });
 
 try {
-  const existingUser = await User.findOne({ username: 'Steven' });
+  const existingUser = await User.findOne({ username: 'Bety' });
   if (existingUser) {
     console.log('⚠️ Usuario ya existe, eliminando...');
-    await User.deleteOne({ username: 'Steven' });
+    await User.deleteOne({ username: 'Bety' });
   }
 
   await superUser.save();

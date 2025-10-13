@@ -16,7 +16,7 @@ const THEMES = {
   },
   halloween: {
     banner: "Bienvenido a FutStore",
-    message: "10% OFF en todo por Halloween 🎃",
+    message: "10% OFF en todo lo internacional 5% OFF en lo nacional por Halloween 🎃",
     textColor: "text-yellow-500", // Bienvenido a
     brandColor: "text-green-400", // FutStore
     messageColor: "text-yellow-500",

@@ -31,7 +31,10 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
   const ALL_SIZES = isNiño ? tallasNino : tallasAdulto;
 
   // 🔹 Crear stock con todas las tallas posibles (si falta → null)
-  const stockEntries = ALL_SIZES.map(size => [size, product.stock?.[size] ?? null]);
+  const stockEntries = ALL_SIZES.map((size) => [
+    size,
+    product.stock?.[size] ?? null,
+  ]);
 
   // 🔹 Clasificación
   const soldOutSizes = stockEntries
@@ -70,26 +73,19 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
         />
       </div>
 
+      {/* 🔸 Tipo — pegado directamente a la imagen */}
+      {product.type && (
+        <div className="w-full">
+          <div className="block w-full text-sm text-center text-purple-600 bg-yellow-600 font-bold py-1 shadow-md">
+            {product.type}
+          </div>
+        </div>
+      )}
+
       {/* Info */}
       <div className="flex flex-col justify-between h-auto p-4">
-        {/* Tipo */}
-        {product.type && (
-          <div className="flex justify-center mb-2">
-            <div
-              className="text-sm text-center font-bold px-4 py-1 w-full shadow-md"
-              style={{
-                backgroundColor: "#9E8F91",
-                color: "#000",
-                fontSize: "0.9rem",
-              }}
-            >
-              {product.type}
-            </div>
-          </div>
-        )}
-
         {/* Nombre */}
-        <h3 className="text-xs sm:text-sm md:text-base font-bold text-gray-900 line-clamp-2 text-left">
+        <h3 className="text-xs sm:text-sm md:text-base font-bold text-purple-600 line-clamp-2 text-left">
           {product.name}
         </h3>
 
@@ -105,7 +101,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
               </p>
             </>
           ) : (
-            <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
+            <p className="text-base sm:text-lg md:text-xl font-semibold text-yellow-600">
               ₡{Number(product.price).toLocaleString("de-DE")}
             </p>
           )}
