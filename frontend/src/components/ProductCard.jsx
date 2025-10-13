@@ -1,6 +1,8 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
+import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña
+import Zombie from "../assets/Zombie.png"; // 🧟‍♂️ Imagen de zombie
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -26,7 +28,6 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
   // 🔹 Definir tallas según tipo
   const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
   const tallasNino = ["16", "18", "20", "22", "24", "26", "28"];
-
   const isNiño = product.type?.toLowerCase() === "niño";
   const ALL_SIZES = isNiño ? tallasNino : tallasAdulto;
 
@@ -60,6 +61,28 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
             Oferta
           </span>
         )}
+
+        {/* 🕸️ Telaraña decorativa */}
+        <img
+          src={Araña}
+          alt="Telaraña decorativa"
+          className="absolute -top-14 -left-10 w-28 sm:w-60 md:w-60 pointer-events-none select-none z-10"
+          style={{
+            transform: "translate(-5px, -12px) rotate(-4deg)",
+            objectFit: "contain",
+          }}
+        />
+
+        {/* 🧟‍♂️ Zombie decorativo */}
+        <img
+          src={Zombie}
+          alt="Zombie decorativa"
+          className="absolute -bottom-20 -right-6 w-40 sm:w-60 md:w-80 pointer-events-none select-none z-10"
+          style={{
+            transform: "translate(-5px, -12px) rotate(-4deg)",
+            objectFit: "contain",
+          }}
+        />
 
         <motion.img
           src={imgMain}

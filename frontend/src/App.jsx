@@ -220,7 +220,6 @@ function AppContent() {
       >
         <div className="absolute inset-0 bg-black/70"></div>
         <div className="relative z-0 p-6 rounded-lg animate-fadeIn">
-          {/* 👉 Aquí usamos el componente Bienvenido */}
           <Bienvenido />
           {theme.message && (
             <p className="text-lg text-center mt-2 text-white">{theme.message}</p>
@@ -239,6 +238,7 @@ function AppContent() {
         setFilterSizes={setFilterSizes}
       />
 
+      {/* BOTÓN DE AGREGAR */}
       {canAdd && !anyModalOpen && (
         <button
           className="fixed bottom-6 right-6 text-black p-4 rounded-full shadow-lg transition z-50"
@@ -250,21 +250,37 @@ function AppContent() {
         </button>
       )}
 
-      {/* LISTA DE PRODUCTOS */}
-      <div
-        ref={pageTopRef}
-        className="px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
-      >
-        {filteredProducts.map((product) => (
-          <ProductCard
-            canEdit={canEdit}
-            key={getPid(product)}
-            product={product}
-            onClick={() => setSelectedProduct(product)}
-          />
-        ))}
+      {/* 🦇 LISTA DE PRODUCTOS CON FONDO DE MURCIÉLAGOS */}
+      <div className="relative w-full">
+        {/* Fondo decorativo */}
+        <img
+  src="/bats.png"
+  alt="Murciélagos"
+  className="absolute -top-48 -left-36 w-42 max-h-[300px] object-contain opacity-30 pointer-events-none select-none z-0"
+  style={{
+    objectPosition: "top right",
+    transform: "scale(1.5)", // agranda un poco sin perder calidad
+  }}
+/>
+
+
+        {/* Productos */}
+        <div
+          ref={pageTopRef}
+          className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
+        >
+          {filteredProducts.map((product) => (
+            <ProductCard
+              canEdit={canEdit}
+              key={getPid(product)}
+              product={product}
+              onClick={() => setSelectedProduct(product)}
+            />
+          ))}
+        </div>
       </div>
 
+      {/* PRODUCT MODAL */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -277,6 +293,7 @@ function AppContent() {
         />
       )}
 
+      {/* ADD PRODUCT MODAL */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -290,6 +307,7 @@ function AppContent() {
         />
       )}
 
+      {/* LOGIN */}
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -315,7 +333,6 @@ function AppContent() {
               disabled={page === 1}
               className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
               title="Anterior"
-          
             >
               <FaChevronLeft />
             </button>
@@ -348,7 +365,6 @@ function AppContent() {
               disabled={page === pages}
               className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
               title="Siguiente"
-              
             >
               <FaChevronRight />
             </button>
