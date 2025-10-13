@@ -78,7 +78,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
         <img
           src={"/Zombie.png"}
           alt="Zombie decorativa"
-          className="absolute -bottom-20 -right-6 w-40 sm:w-60 md:w-80 pointer-events-none select-none z-10"
+          className="absolute -bottom-20 -right-14 w-40 sm:w-60 md:w-80 pointer-events-none select-none z-10"
           style={{
             transform: "translate(-5px, -12px) rotate(-4deg)",
             objectFit: "contain",
