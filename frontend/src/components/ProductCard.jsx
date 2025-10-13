@@ -1,6 +1,7 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
+
 import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña
 import Zombie from "../assets/Zombie.png"; // 🧟‍♂️ Imagen de zombie
 
