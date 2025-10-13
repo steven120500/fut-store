@@ -61,7 +61,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
 
   return (
     <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
       onMouseDown={(e) => {
         // cerrar al dar click fuera de la tarjeta
         if (cardRef.current && !cardRef.current.contains(e.target)) onClose?.();
