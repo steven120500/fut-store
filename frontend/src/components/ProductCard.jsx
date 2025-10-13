@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 
 import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña
-import Zombie from "../assets/Zombie.png"; // 🧟‍♂️ Imagen de zombie ya bien
+
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -76,7 +76,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
 
         {/* 🧟‍♂️ Zombie decorativo */}
         <img
-          src={Zombie}
+          src={"/Zombie.png"}
           alt="Zombie decorativa"
           className="absolute -bottom-20 -right-6 w-40 sm:w-60 md:w-80 pointer-events-none select-none z-10"
           style={{
