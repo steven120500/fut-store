@@ -36,14 +36,10 @@ export default function Medidas({ open, onClose }) {
           {/* Botón cerrar */}
           <button
             onClick={onClose}
-            className="absolute top-11 right-3 p-2 rounded bg-black text-white hover:bg-gray-800"
+            className="absolute top-11 right-3 p-2 rounded fondo-plateado text-black hover:bg-gray-800"
             title="Cerrar"
             aria-label="Cerrar"
-            style={{
-              backgroundColor: "#9E8F91",
-              color: "#000",
-              fontSize: "1.9rem",
-            }}
+            
           >
             <FaTimes size={24} />
           </button>

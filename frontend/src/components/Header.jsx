@@ -1,8 +1,9 @@
 import logo from "../assets/logo.png";
+import FondoHeader from "../assets/FondoHeader.png"; // ✅ importamos la imagen de fondo
 import { FaBars, FaTimes } from "react-icons/fa";
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import Contacto from "./Contacto"; // 🔹 Importa el nuevo componente
 
 const GOLD = "#4CC27B";
@@ -23,14 +24,13 @@ export default function Header({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showContacto, setShowContacto] = useState(false);
 
-  const handleOfertasClick = () => {
-    setFilterType("Ofertas"); // 🔹 señalamos que solo se muestren ofertas
-  };
-
   return (
     <header
-      className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50"
-      style={{ backgroundColor: GOLD }}
+      className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
+        backgroundColor: GOLD, // fallback si no carga la imagen
+      }}
     >
       <div className="flex items-center justify-between">
         {/* IZQUIERDA */}
@@ -41,7 +41,7 @@ export default function Header({
             title="Volver al inicio"
             className="focus:outline-none"
             style={{
-              backgroundColor: GOLD,
+              backgroundColor: "transparent",
               color: "#000",
               fontSize: "1.0rem",
             }}
@@ -49,20 +49,10 @@ export default function Header({
             <img src={logo} alt="Logo" className="h-12 sm:h-20" />
           </button>
 
-          {/* OFERTAS */}
-          <button
-            onClick={handleOfertasClick}
-            className="bg-red-600 text-white mr-2 text-m sm:text-xl font-semibold px-2 sm:px-1 py-2 rounded"
-           
-          >
-            Descuentos
-          </button>
-
           {/* MEDIDAS */}
           <button
             onClick={onMedidasClick}
-            className="text-white text-xs sm:text-lg mr-2  font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
-            style={{backgroundColor: "#585075", color: ""}}
+            className="text-black text-xs sm:text-lg fondo-plateado mr-2 font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <LiaRulerSolid size={24} />
             <span className="hidden sm:inline">Medidas</span>
@@ -71,8 +61,7 @@ export default function Header({
           {/* CONTACTO */}
           <button
             onClick={() => setShowContacto(true)}
-            className="text-white text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
-            style={{ backgroundColor: "#585075", color: ""}}
+            className="text-black fondo-plateado text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <FiPhoneCall size={24} />
             <span className="hidden sm:inline">Contacto</span>
@@ -83,7 +72,7 @@ export default function Header({
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
+            className="rounded-full fondo-plateado p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
           >
             <FaBars size={18} />
           </button>
@@ -96,23 +85,30 @@ export default function Header({
           className="fixed inset-0 z-[100] bg-black/40"
           onClick={() => setSidebarOpen(false)}
         >
-          {/* Panel */}
           <div
             className="fixed top-0 right-0 h-full w-72 sm:w-80 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div
               className="relative h-full overflow-y-auto pt-14 p-5"
-              style={{ backgroundColor: GOLD }}
+              style={{
+                backgroundColor: GOLD,
+                backgroundImage: `url(${FondoHeader})`, // también el fondo aquí por coherencia
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
             >
-              {/* X */}
               <button
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Cerrar menú"
-                className="absolute top-3 right-3 grid place-items-center rounded-full w-9 h-9"
-                style={{ backgroundColor: GOLD, color: "#000" }}
+                className="absolute text-white text-center top-3 right-2 sm:right-3 grid place-items-center rounded-full w-9 h-9"
+                style={{
+                  backgroundColor: "transparent", // 🪄 sin fondo
+                  border: "none", 
+                  hover: "none",                // sin borde
+                }}
               >
-                ✕
+                <FaTimes size={20} />
               </button>
 
               {/* Opciones */}
@@ -124,8 +120,7 @@ export default function Header({
                         setShowRegisterUserModal(true);
                         setSidebarOpen(false);
                       }}
-                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#585075", color: "#000" }}
+                      className="w-full fondo-plateado text-left mb-3 px-4 py-2 rounded-lg"
                     >
                       Agregar usuario
                     </button>
@@ -137,8 +132,7 @@ export default function Header({
                         setShowUserListModal(true);
                         setSidebarOpen(false);
                       }}
-                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#585075", color: "#000" }}
+                      className="w-full fondo-plateado text-left mb-3 px-4 py-2 rounded-lg"
                     >
                       Ver usuarios
                     </button>
@@ -150,8 +144,7 @@ export default function Header({
                         setShowHistoryModal(true);
                         setSidebarOpen(false);
                       }}
-                      className="w-full text-left mb-3 px-4 py-2 rounded-lg"
-                      style={{ backgroundColor: "#585075", color: "#000" }}
+                      className="w-full fondo-plateado text-left mb-3 px-4 py-2 rounded-lg"
                     >
                       Historial
                     </button>
@@ -162,8 +155,7 @@ export default function Header({
                       onLogout();
                       setSidebarOpen(false);
                     }}
-                    className="w-full text-left mt-2 px-4 py-2 rounded-lg text-red-700 font-semibold"
-                    style={{ backgroundColor: "#585075", color: "#000" }}
+                    className="w-full fondo-plateado text-left mt-2 px-4 py-2 rounded-lg font-semibold text-red-700"
                   >
                     Cerrar sesión
                   </button>
@@ -174,8 +166,7 @@ export default function Header({
                     onLoginClick();
                     setSidebarOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2 rounded-lg font-semibold"
-                  style={{ backgroundColor: "#585075", color: "#000" }}
+                  className="w-full fondo-plateado text-left px-4 py-2 rounded-lg font-semibold"
                 >
                   Iniciar sesión
                 </button>
@@ -191,8 +182,7 @@ export default function Header({
           <div className="bg-white p-6 rounded-lg shadow-lg relative w-80 sm:w-96">
             <button
               onClick={() => setShowContacto(false)}
-              className="absolute top-2 right-2 text-black font-bold"
-              style={{ backgroundColor: GOLD, color: "#000" }}
+              className="absolute top-2 fondo-plateado right-2 text-black font-bold"
             >
               <FaTimes size={20} />
             </button>

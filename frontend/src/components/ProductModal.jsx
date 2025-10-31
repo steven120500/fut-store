@@ -237,8 +237,8 @@ export default function ProductModal({
         {/* Botón cerrar */}
         <button
           onClick={onClose}
-          className="absolute mr-2 top-12 right-2 text-white bg-black rounded p-1"
-          style={{ backgroundColor: "#9E8F91", color: "#000" }}
+          className="absolute fondo-plateado mr-2 top-12 right-2 text-black bg-black rounded p-1"
+          
           title="Cerrar"
         >
           <FaTimes size={30} />
@@ -303,13 +303,13 @@ export default function ProductModal({
             {hasMany && (
               <>
                 <button onClick={() => setIdx(i => (i - 1 + localImages.length) % localImages.length)}
-                  className="absolute left-0 px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "#9E8F91" }}>
+                  className="absolute fondo-plateado left-0 px-3 py-1 rounded-full"
+                  >
                   <FaChevronLeft/>
                 </button>
                 <button onClick={() => setIdx(i => (i + 1) % localImages.length)}
-                  className="absolute right-0 px-3 py-1 rounded-full"
-                  style={{ backgroundColor: "#9E8F91" }}>
+                  className="absolute fondo-plateado right-0 px-3 py-1 rounded-full"
+                  >
                   <FaChevronRight/>
                 </button>
               </>

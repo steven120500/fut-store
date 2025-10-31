@@ -47,6 +47,62 @@ h1 {
   line-height: 1.1;
 }
 
+.fondo-plateado {
+  background: linear-gradient(
+    145deg,
+    #f2f2f2 0%,
+    #d9d9d9 25%,
+    #bfbfbf 50%,
+    #e6e6e6 75%,
+    #ffffff 100%
+  );
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+              0 0 20px rgba(200, 200, 200, 0.3);
+  border: 1px solid #bfbfbf;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.fondo-plateado:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7),
+              0 0 40px rgba(180, 180, 180, 0.5);
+}
+
+
+/* ❤️ Rojo vino brillante metálico (elegante y llamativo) */
+.text-vino-brillante {
+  color: #b3003c; /* base vino oscuro */
+  font-weight: 800;
+  text-shadow:
+    0 0 6px rgba(179, 0, 60, 0.6),
+    0 0 12px rgba(255, 50, 90, 0.4),
+    0 0 20px rgba(120, 0, 30, 0.3);
+  background: linear-gradient(
+    90deg,
+    #8b0000 0%,
+    #ff3355 40%,
+    #ff6680 50%,
+    #ff3355 60%,
+    #8b0000 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% auto;
+  animation: brilloVino 5s linear infinite;
+}
+
+/* ✨ Animación de reflejo suave */
+@keyframes brilloVino {
+  0% {
+    background-position: -150px 0;
+  }
+  100% {
+    background-position: 150px 0;
+  }
+}
+
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;

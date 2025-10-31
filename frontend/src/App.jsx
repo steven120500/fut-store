@@ -16,12 +16,11 @@ import "./index.css";
 import UserListModal from "./components/UserListModal";
 import HistoryModal from "./components/HistoryModal";
 import Medidas from "./components/Medidas";
-import fotofondo from "./assets/fotofondo.JPG";
 
 // 🎃 Contexto de temporada
 import { SeasonProvider, useSeason } from "./components/SeasonContext";
 
-// 🔹 Nuevo componente Bienvenido
+// 🔹 Nuevo componente Bienvenido con carrusel integrado
 import Bienvenido from "./components/Bienvenido";
 
 // nuevo FilterBar
@@ -133,6 +132,19 @@ function AppContent() {
     }
   }, [page, limit, searchTerm, filterType, filterSizes]);
 
+  // ✅ NUEVO: escucha el evento de “Ver Descuentos” desde Bienvenido
+  useEffect(() => {
+    const handleFiltrarOfertas = () => {
+      setFilterType("Ofertas");
+      setPage(1);
+    };
+
+    window.addEventListener("filtrarOfertas", handleFiltrarOfertas);
+    return () => {
+      window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
+    };
+  }, []);
+
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
       setProducts((prev) => prev.filter((p) => getPid(p) !== String(deletedId)));
@@ -189,6 +201,7 @@ function AppContent() {
       )}
 
       {loading && <LoadingOverlay message="Cargando productos..." />}
+
       {!anyModalOpen && (
         <Header
           onLoginClick={() => setShowLogin(true)}
@@ -209,24 +222,8 @@ function AppContent() {
         />
       )}
 
-      {/* Imagen de fondo de bienvenida */}
-      <section
-        className="relative w-full h-screen bg-cover bg-center flex items-center justify-center"
-        style={
-          theme.backgroundImage
-            ? { backgroundImage: `url(${theme.backgroundImage})` }
-            : { backgroundImage: `url(${fotofondo})` }
-        }
-      >
-        <div className="absolute inset-0 bg-black/70"></div>
-        <div className="relative z-0 p-6 rounded-lg animate-fadeIn">
-          <Bienvenido />
-          {theme.message && (
-            <p className="text-lg text-center mt-2 text-white">{theme.message}</p>
-          )}
-        </div>
-        {theme.decorations}
-      </section>
+      {/* 🎞️ Carrusel de bienvenida */}
+      <Bienvenido />
 
       {/* 🔎 Barra de búsqueda + filtros */}
       <FilterBar
@@ -241,28 +238,26 @@ function AppContent() {
       {/* BOTÓN DE AGREGAR */}
       {canAdd && !anyModalOpen && (
         <button
-          className="fixed bottom-6 right-6 text-black p-4 rounded-full shadow-lg transition z-50"
+          className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
           onClick={() => setShowAddModal(true)}
           title="Añadir producto"
-          style={{ backgroundColor: GOLD }}
         >
           <FaPlus />
         </button>
       )}
 
-      {/* 🦇 LISTA DE PRODUCTOS CON FONDO DE MURCIÉLAGOS */}
+      {/* 🦇 LISTA DE PRODUCTOS */}
       <div className="relative w-full">
         {/* Fondo decorativo */}
         <img
-  src="/bats.png"
-  alt="Murciélagos"
-  className="absolute -top-48 -left-36 w-42 max-h-[300px] object-contain opacity-30 pointer-events-none select-none z-0"
-  style={{
-    objectPosition: "top right",
-    transform: "scale(1.5)", // agranda un poco sin perder calidad
-  }}
-/>
-
+          src="/bats.png"
+          alt="Murciélagos"
+          className="absolute -top-48 -left-36 w-42 max-h-[300px] object-contain opacity-30 pointer-events-none select-none z-0"
+          style={{
+            objectPosition: "top right",
+            transform: "scale(1.5)",
+          }}
+        />
 
         {/* Productos */}
         <div
@@ -275,6 +270,7 @@ function AppContent() {
               key={getPid(product)}
               product={product}
               onClick={() => setSelectedProduct(product)}
+              user={user}
             />
           ))}
         </div>
@@ -331,7 +327,7 @@ function AppContent() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
+              className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"
               title="Anterior"
             >
               <FaChevronLeft />
@@ -347,7 +343,7 @@ function AppContent() {
                     <button
                       onClick={() => setPage(n)}
                       className={`px-2 text-sm py-0.5 rounded border ${
-                        n === page ? "text-black" : "hover:bg-gray-100"
+                        n === page ? "text-black fondo-plateado" : "hover:bg-green-700"
                       }`}
                       style={{
                         backgroundColor: n === page ? GOLD : "transparent",
@@ -363,7 +359,7 @@ function AppContent() {
             <button
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page === pages}
-              className="px-2 py-1 text-sm text-white bg-yellow-600 rounded border disabled:opacity-50"
+              className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"
               title="Siguiente"
             >
               <FaChevronRight />
@@ -379,10 +375,10 @@ function AppContent() {
   );
 }
 
-// 🔹 App envuelto con el SeasonProvider
+// 🔹 App envuelta con el SeasonProvider
 export default function App() {
   return (
-    <SeasonProvider season="halloween">
+    <SeasonProvider season="default">
       <AppContent />
     </SeasonProvider>
   );

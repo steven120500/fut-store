@@ -74,7 +74,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         {/* Cerrar */}
         <button
           onClick={onClose}
-          className="absolute right-3 top-3 p-1 rounded-md hover:bg-black/5"
+          className="absolute right-3 fondo-plateado top-3 p-1 rounded-md hover:bg-black/5"
           aria-label="Cerrar"
           title="Cerrar"
         >
@@ -87,7 +87,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
             <button
               type="button"
               onClick={() => setIsRegister(false)}
-              className={`px-3 py-1 rounded-full transition ${
+              className={`px-3 py-1 fondo-plateado  transition ${
                 !isRegister
                   ? 'text-black'
                   : 'text-gray-400 hover:text-gray-700'
@@ -149,8 +149,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
 
           <button
             type="submit"
-            className="w-full rounded-lg py-2 font-semibold text-black transition hover:opacity-90"
-            style={{ backgroundColor: GOLD }}
+            className="w-full fondo-plateado rounded-lg py-2 font-semibold text-black transition hover:opacity-90"
+           
           >
             {isRegister ? 'Registrarse' : 'Iniciar Sesión'}
           </button>

@@ -63,28 +63,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           </span>
         )}
 
-        {/* 🕸️ Telaraña decorativa */}
-        <img
-          src={Araña}
-          alt="Telaraña decorativa"
-          className="absolute -top-14 -left-10 w-28 sm:w-60 md:w-60 pointer-events-none select-none z-10"
-          style={{
-            transform: "translate(-5px, -12px) rotate(-4deg)",
-            objectFit: "contain",
-          }}
-        />
-
-        {/* 🧟‍♂️ Zombie decorativo */}
-        <img
-          src={"/Zombie.png"}
-          alt="Zombie decorativa"
-          className="absolute -bottom-20 -right-14 w-40 sm:w-60 md:w-80 pointer-events-none select-none z-10"
-          style={{
-            transform: "translate(-5px, -12px) rotate(-4deg)",
-            objectFit: "contain",
-          }}
-        />
-
+        
         <motion.img
           src={imgMain}
           alt={product.name}
@@ -100,7 +79,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
       {/* 🔸 Tipo — pegado directamente a la imagen */}
       {product.type && (
         <div className="w-full">
-          <div className="block w-full text-sm text-center text-purple-600 bg-yellow-600 font-bold py-1 shadow-md">
+          <div className="block w-full text-sm text-center text-black fondo-plateado font-bold py-1 shadow-md rounded-none">
             {product.type}
           </div>
         </div>
@@ -109,7 +88,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
       {/* Info */}
       <div className="flex flex-col justify-between h-auto p-4">
         {/* Nombre */}
-        <h3 className="text-xs sm:text-sm md:text-base font-bold text-purple-600 line-clamp-2 text-left">
+        <h3 className="text-xs sm:text-sm md:text-base font-bold text-black line-clamp-2 text-left">
           {product.name}
         </h3>
 
@@ -125,7 +104,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
               </p>
             </>
           ) : (
-            <p className="text-base sm:text-lg md:text-xl font-semibold text-yellow-600">
+            <p className="text-base sm:text-lg md:text-xl font-semibold text-black">
               ₡{Number(product.price).toLocaleString("de-DE")}
             </p>
           )}

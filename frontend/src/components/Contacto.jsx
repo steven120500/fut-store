@@ -10,12 +10,8 @@ export default function Contacto() {
           href="https://www.facebook.com/profile.php?id=61559013514708&locale=es_LA"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
-          style={{
-            backgroundColor: "#9E8F91",
-            color: "#000",
-            fontSize: "1.9rem",
-          }}
+          className="w-12 h-12 fondo-plateado text-black flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
+          
         >
           <FaFacebookF />
         </a>
@@ -24,12 +20,8 @@ export default function Contacto() {
           href="https://www.instagram.com/futstore_cr/"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
-          style={{
-            backgroundColor: "#9E8F91",
-            color: "#000",
-            fontSize: "1.9rem",
-          }}
+          className="w-12 h-12 fondo-plateado text-black flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
+          
         >
           <FaInstagram />
         </a>
@@ -38,12 +30,8 @@ export default function Contacto() {
           href="https://wa.me/50672327096"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-12 h-12 flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
-          style={{
-            backgroundColor: "#9E8F91",
-            color: "#000",
-            fontSize: "1.9rem",
-          }}
+          className="w-12 h-12 fondo-plateado text-black flex items-center justify-center rounded hover:opacity-80 transition text-2xl"
+          
         >
           <FaWhatsapp />
         </a>
