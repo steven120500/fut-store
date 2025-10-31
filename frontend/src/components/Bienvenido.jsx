@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from "react";
 import CarruselFondo from "./CarruselFondo";
 
-import fotofondo from "../assets/fotofondo.jpg";
-import fotofondo1 from "../assets/fotofondo1.jpg";
-import fotofondo2 from "../assets/fotofondo2.jpg";
+// 🔹 Ahora las imágenes vienen de /public
+const imagenes = [
+  "/fotofondo.jpg",
+  "/fotofondo1.jpg",
+  "/fotofondo2.jpg",
+];
 
 // 🟢 Mensajes rotativos (sin huecos)
 const mensajes = [
@@ -16,7 +19,6 @@ const mensajes = [
 export default function Bienvenido() {
   const [index, setIndex] = useState(0);
   const [fade, setFade] = useState(true);
-  const imagenes = [fotofondo, fotofondo1, fotofondo2];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -58,15 +60,6 @@ export default function Bienvenido() {
         >
           Ver Ofertas
         </button>
-
-        {/* 🟡 Mensaje secundario (opcional, comentado) */}
-        {/*
-        <p className="text-sm sm:text-base text-white mt-3 whitespace-pre-line leading-snug drop-shadow-md">
-          ¡Que el terror no sea el precio!{"\n"}
-          10% de descuento en productos internacionales, 5% en nacionales{"\n"}
-          ¡Este Halloween viste con estilo!
-        </p>
-        */}
       </div>
     </section>
   );
