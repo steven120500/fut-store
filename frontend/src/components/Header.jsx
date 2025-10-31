@@ -1,12 +1,10 @@
 import logo from "../assets/logo.png";
-import FondoHeader from "../assets/FondoHeader.png"; // ✅ importamos la imagen de fondo
+import FondoHeader from "../assets/FondoHeader.png"; // ✅ imagen de fondo
 import { FaBars, FaTimes } from "react-icons/fa";
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState } from "react";
-import Contacto from "./Contacto"; // 🔹 Importa el nuevo componente
-
-const GOLD = "#4CC27B";
+import Contacto from "./Contacto"; // 🔹 componente contacto
 
 export default function Header({
   onLoginClick,
@@ -29,7 +27,7 @@ export default function Header({
       className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
-        backgroundColor: GOLD, // fallback si no carga la imagen
+        backgroundColor: "#000", // 🖤 fondo negro sólido (sin verde)
       }}
     >
       <div className="flex items-center justify-between">
@@ -42,8 +40,8 @@ export default function Header({
             className="focus:outline-none"
             style={{
               backgroundColor: "transparent",
-              color: "#000",
-              fontSize: "1.0rem",
+              color: "#fff",
+              fontSize: "1rem",
             }}
           >
             <img src={logo} alt="Logo" className="h-12 sm:h-20" />
@@ -92,8 +90,8 @@ export default function Header({
             <div
               className="relative h-full overflow-y-auto pt-14 p-5"
               style={{
-                backgroundColor: GOLD,
-                backgroundImage: `url(${FondoHeader})`, // también el fondo aquí por coherencia
+                backgroundColor: "#000", // 🖤 sidebar negro
+                backgroundImage: `url(${FondoHeader})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -103,9 +101,8 @@ export default function Header({
                 aria-label="Cerrar menú"
                 className="absolute text-white text-center top-3 right-2 sm:right-3 grid place-items-center rounded-full w-9 h-9"
                 style={{
-                  backgroundColor: "transparent", // 🪄 sin fondo
-                  border: "none", 
-                  hover: "none",                // sin borde
+                  backgroundColor: "transparent",
+                  border: "none",
                 }}
               >
                 <FaTimes size={20} />
