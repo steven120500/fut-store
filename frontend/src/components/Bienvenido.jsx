@@ -12,7 +12,7 @@ const imagenes = [
   "/fotofondo5.jpg",
 ];
 
-// 🟢 Mensajes rotativos (sin huecos)
+// 🟢 Mensajes rotativos
 const mensajes = [
   "Bienvenido a FutStore",
   "Tienda física en Grecia",
@@ -26,17 +26,15 @@ export default function Bienvenido() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      // 🔸 efecto de desvanecido
       setFade(false);
       setTimeout(() => {
         setIndex((prev) => (prev + 1) % mensajes.length);
         setFade(true);
-      }, 500); // medio segundo de fade
-    }, 4000); // ⏱️ cambia cada 4 segundos
+      }, 500);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
-  // 🔹 Función que emite el evento para mostrar ofertas
   const handleVerDescuentos = () => {
     window.dispatchEvent(new CustomEvent("filtrarOfertas"));
   };
@@ -48,7 +46,7 @@ export default function Bienvenido() {
 
       {/* 🔸 Contenido encima del carrusel */}
       <div className="relative z-10 p-6 transition-all duration-1000">
-        {/* 🟢 Mensaje principal rotativo con fondo semitransparente */}
+        {/* 🟢 Mensaje principal con fondo translúcido y gradiente negro-blanco */}
         <div
           className={`inline-block bg-black/40 backdrop-blur-sm px-6 py-3 rounded-md transition-opacity duration-700 ${
             fade ? "opacity-100" : "opacity-0"
@@ -56,8 +54,8 @@ export default function Bienvenido() {
         >
           <h1
             className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text 
-            bg-gradient-to-r from-white via-gray-200 to-gray-400 
-            animate-gradient-slow drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]"
+            bg-gradient-to-r from-black via-gray-400 to-white 
+            animate-gradient-slow drop-shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
           >
             {mensajes[index]}
           </h1>
