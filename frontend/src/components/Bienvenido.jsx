@@ -1,11 +1,15 @@
+// src/components/Bienvenido.jsx
 import React, { useState, useEffect } from "react";
 import CarruselFondo from "./CarruselFondo";
 
-// 🔹 Ahora las imágenes vienen de /public
+// 🔹 Imágenes del fondo (ahora con más fotos)
 const imagenes = [
   "/fotofondo.jpg",
   "/fotofondo1.jpg",
   "/fotofondo2.jpg",
+  "/fotofondo3.jpg",
+  "/fotofondo4.jpg",
+  "/fotofondo5.jpg",
 ];
 
 // 🟢 Mensajes rotativos (sin huecos)
@@ -40,18 +44,24 @@ export default function Bienvenido() {
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
       {/* 🔹 Carrusel de fondo */}
-      <CarruselFondo imagenes={imagenes} intervalo={4000} />
+      <CarruselFondo imagenes={imagenes} intervalo={3000} />
 
       {/* 🔸 Contenido encima del carrusel */}
       <div className="relative z-10 p-6 transition-all duration-1000">
-        {/* 🟢 Mensaje principal rotativo con fade */}
-        <h1
-          className={`text-5xl sm:text-6xl font-bold text-vino-brillante drop-shadow-lg transition-opacity duration-700 ${
+        {/* 🟢 Mensaje principal rotativo con fondo semitransparente */}
+        <div
+          className={`inline-block bg-black/40 backdrop-blur-sm px-6 py-3 rounded-md transition-opacity duration-700 ${
             fade ? "opacity-100" : "opacity-0"
           }`}
         >
-          {mensajes[index]}
-        </h1>
+          <h1
+            className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text 
+            bg-gradient-to-r from-white via-gray-200 to-gray-400 
+            animate-gradient-slow drop-shadow-[0_3px_8px_rgba(0,0,0,0.6)]"
+          >
+            {mensajes[index]}
+          </h1>
+        </div>
 
         {/* 🔸 Botón de descuentos */}
         <button

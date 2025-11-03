@@ -24,7 +24,7 @@ export default function Header({
 
   return (
     <header
-      className="mb-10 shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
+      className=" shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
         backgroundColor: "#000", // 🖤 fondo negro sólido (sin verde)
