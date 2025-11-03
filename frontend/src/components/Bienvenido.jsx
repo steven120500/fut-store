@@ -40,7 +40,7 @@ export default function Bienvenido() {
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
       {/* 🔹 Carrusel de fondo */}
-      <CarruselFondo imagenes={imagenes} intervalo={2000} />
+      <CarruselFondo imagenes={imagenes} intervalo={4000} />
 
       {/* 🔸 Contenido encima del carrusel */}
       <div className="relative z-10 p-6 transition-all duration-1000">
