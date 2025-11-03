@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import CarruselFondo from "./CarruselFondo";
 
-// 🔹 Imágenes del fondo (ahora con más fotos)
 const imagenes = [
   "/fotofondo.jpg",
   "/fotofondo1.jpg",
@@ -12,27 +11,45 @@ const imagenes = [
   "/fotofondo5.jpg",
 ];
 
-// 🟢 Mensajes rotativos
+// 🟢 Frases divididas en partes [normal, destacado]
 const mensajes = [
-  "Bienvenido a FutStore",
-  "Tienda física en Grecia",
-  "Envíos a todo Costa Rica",
-  "+2500 chemas en stock"
-].filter(Boolean);
+  ["Bienvenido a ", "FutStore"],
+  ["Tienda física en ", "Grecia"],
+  ["Envíos a todo ", "Costa Rica"],
+  ["+2500 ", "chemas en stock"],
+];
 
 export default function Bienvenido() {
   const [index, setIndex] = useState(0);
+  const [textoVisible, setTextoVisible] = useState(""); // texto animado
   const [fade, setFade] = useState(true);
 
+  // Efecto máquina de escribir
   useEffect(() => {
-    const interval = setInterval(() => {
+    const [normal, destacado] = mensajes[index];
+    const textoCompleto = normal + destacado;
+    let i = 0;
+    setTextoVisible("");
+
+    const escribir = setInterval(() => {
+      setTextoVisible(textoCompleto.slice(0, i));
+      i++;
+      if (i > textoCompleto.length) clearInterval(escribir);
+    }, 80); // velocidad de escritura (ms por letra)
+
+    return () => clearInterval(escribir);
+  }, [index]);
+
+  // Cambia mensaje cada 5s
+  useEffect(() => {
+    const intervalo = setInterval(() => {
       setFade(false);
       setTimeout(() => {
         setIndex((prev) => (prev + 1) % mensajes.length);
         setFade(true);
-      }, 500);
-    }, 4000);
-    return () => clearInterval(interval);
+      }, 300);
+    }, 5000);
+    return () => clearInterval(intervalo);
   }, []);
 
   const handleVerDescuentos = () => {
@@ -41,27 +58,24 @@ export default function Bienvenido() {
 
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
-      {/* 🔹 Carrusel de fondo */}
+      {/* 🔹 Fondo con carrusel */}
       <CarruselFondo imagenes={imagenes} intervalo={3000} />
 
-      {/* 🔸 Contenido encima del carrusel */}
-      <div className="relative z-10 p-6 transition-all duration-1000">
-        {/* 🟢 Mensaje principal con fondo translúcido y gradiente negro-blanco */}
-        <div
-          className={`inline-block bg-black/40 backdrop-blur-sm px-6 py-3 rounded-md transition-opacity duration-700 ${
-            fade ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          <h1
-            className="text-4xl sm:text-6xl font-extrabold text-transparent bg-clip-text 
-            bg-gradient-to-r from-black via-gray-400 to-white 
-            animate-gradient-slow drop-shadow-[0_3px_8px_rgba(0,0,0,0.7)]"
-          >
-            {mensajes[index]}
+      {/* 🔸 Contenedor del texto */}
+      <div
+        className={`relative z-10 px-6 py-3 transition-all duration-1000 ${
+          fade ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {/* 🟢 Fondo blanco con sombra sutil */}
+        <div className="inline-block bg-gray-100 backdrop-blur-md rounded-lg px-8 py-4 shadow-xl border border-gray-200">
+          <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 leading-snug tracking-tight typewriter">
+            {textoVisible}
+            <span className="border-r-4 border-gray-900 ml-1 animate-cursor"></span>
           </h1>
         </div>
 
-        {/* 🔸 Botón de descuentos */}
+        {/* 🔸 Botón */}
         <button
           onClick={handleVerDescuentos}
           className="mt-6 bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-semibold px-6 py-2 rounded-lg shadow-lg transition-transform hover:scale-105"

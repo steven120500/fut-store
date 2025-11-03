@@ -204,3 +204,17 @@ button:focus-visible {
   background-size: 200% 200%;
   animation: gradient-slow 6s ease-in-out infinite;
 }
+
+/* ✨ Efecto máquina de escribir */
+@keyframes cursor-blink {
+  0%, 50%, 100% {
+    opacity: 1;
+  }
+  25%, 75% {
+    opacity: 0;
+  }
+}
+
+.animate-cursor {
+  animation: cursor-blink 1s step-end infinite;
+}
