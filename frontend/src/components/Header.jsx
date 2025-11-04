@@ -24,14 +24,15 @@ export default function Header({
 
   return (
     <header
-      className=" shadow-md fondo-plateado px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
+      className="shadow-md fondo-plateado px-1 sm:px-1 py-1 fixed w-full 
+                 top-8 left-0 z-50 bg-cover bg-center bg-no-repeat"
       style={{
-        // backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
-        backgroundColor: "#000", // 🖤 fondo negro sólido (sin verde)
+        // backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen opcional
+        backgroundColor: "#000", // 🖤 fondo negro sólido
       }}
     >
       <div className="flex items-center justify-between">
-        {/* IZQUIERDA */}
+        {/* 🔹 IZQUIERDA */}
         <div className="flex items-center gap sm:gap-4">
           {/* LOGO */}
           <button
@@ -53,7 +54,7 @@ export default function Header({
             className="text-white text-xs sm:text-lg bg-black mr-2 font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <LiaRulerSolid size={24} />
-            <span >Tallas</span>
+            <span>Tallas</span>
           </button>
 
           {/* CONTACTO */}
@@ -62,22 +63,22 @@ export default function Header({
             className="text-white bg-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <FiPhoneCall size={24} />
-            <span >Contacto</span>
+            <span>Contacto</span>
           </button>
         </div>
 
-        {/* BOTÓN MENÚ */}
+        {/* 🔹 BOTÓN MENÚ */}
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full bg-black p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
+            className="rounded-full bg-black p-2 sm:text-lg shadow-md hover:bg-gray-800 text-white"
           >
             <FaBars size={18} />
           </button>
         </div>
       </div>
 
-      {/* SIDEBAR */}
+      {/* 🔸 SIDEBAR */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-[100] bg-black/40"
@@ -108,7 +109,7 @@ export default function Header({
                 <FaTimes size={20} />
               </button>
 
-              {/* Opciones */}
+              {/* 🔹 Opciones del Sidebar */}
               {user ? (
                 <>
                   {isSuperUser && (
@@ -173,7 +174,7 @@ export default function Header({
         </div>
       )}
 
-      {/* MODAL CONTACTO */}
+      {/* 🔹 MODAL CONTACTO */}
       {showContacto && (
         <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center">
           <div className="bg-white p-6 rounded-lg shadow-lg relative w-80 sm:w-96">

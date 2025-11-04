@@ -13,31 +13,27 @@ import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
+import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
 import HistoryModal from "./components/HistoryModal";
 import Medidas from "./components/Medidas";
-
-// 🎃 Contexto de temporada
-import { SeasonProvider, useSeason } from "./components/SeasonContext";
-
-// 🔹 Nuevo componente Bienvenido con carrusel integrado
 import Bienvenido from "./components/Bienvenido";
-
-// nuevo FilterBar
 import FilterBar from "./components/FilterBar";
 
 const API_BASE = "https://fut-store.onrender.com";
 const GOLD = "#9E8F91";
 
+// 🔹 Función auxiliar para paginación
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
   return [...out].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
 }
 
+// 🔹 Obtiene el ID del producto
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
 // 🔹 Componente principal
-function AppContent() {
+export default function App() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -53,27 +49,16 @@ function AppContent() {
   const [showMedidas, setShowMedidas] = useState(false);
 
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
+  const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   const pages = Math.max(1, Math.ceil(total / limit));
-
   const pageTopRef = useRef(null);
-
-  const anyModalOpen =
-    !!selectedProduct ||
-    showAddModal ||
-    showLogin ||
-    showRegisterUserModal ||
-    showUserListModal ||
-    showHistoryModal ||
-    showMedidas;
 
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
       return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Error parsing user from localStorage", error);
+    } catch {
       return null;
     }
   });
@@ -90,6 +75,7 @@ function AppContent() {
     toast.success("Sesión cerrada correctamente");
   };
 
+  // 🔹 Cargar productos desde el backend
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
@@ -100,7 +86,7 @@ function AppContent() {
     try {
       const params = new URLSearchParams({
         page: String(p),
-        limit: String(limit),
+        limit: "20",
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(sizes ? { sizes } : {}),
@@ -111,8 +97,7 @@ function AppContent() {
       setProducts(json.items);
       setTotal(json.total);
       setPage(json.page);
-    } catch (e) {
-      console.error("fetchProducts error:", e);
+    } catch {
       setProducts([]);
       setTotal(0);
     } finally {
@@ -120,55 +105,56 @@ function AppContent() {
     }
   };
 
-  // 🔁 Actualiza productos cuando cambian filtros o página
+  // 🔁 Recargar productos con scroll ajustado
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
     if (pageTopRef.current) {
       const rect = pageTopRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const targetY = rect.top + scrollTop;
-      window.scrollTo({
-        top: targetY - 200,
-        behavior: "smooth",
-      });
+      window.scrollTo({ top: targetY - 120, behavior: "smooth" });
     }
-  }, [page, limit, searchTerm, filterType, filterSizes]);
+  }, [page, searchTerm, filterType, filterSizes]);
 
   // ✅ Escucha “Ver Ofertas”
   useEffect(() => {
     const handleFiltrarOfertas = () => {
       setFilterType("Ofertas");
       setPage(1);
-      if (pageTopRef.current) {
-        pageTopRef.current.scrollIntoView({ behavior: "smooth" });
-      }
+      fetchProducts({ page: 1, type: "Ofertas" });
+      setTimeout(() => {
+        if (pageTopRef.current) {
+          const y = pageTopRef.current.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: y - 150, behavior: "smooth" });
+        }
+      }, 400);
     };
 
     window.addEventListener("filtrarOfertas", handleFiltrarOfertas);
     return () => window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
   }, []);
 
-  // ✅ Escucha “Ver Disponible” (muestra stock > 0 y baja el scroll)
+  // ✅ Escucha “Ver Disponibles” (sin ofertas ni descuentos)
   useEffect(() => {
-    const handleFiltrarDisponibles = () => {
+    const handleFiltrarDisponibles = async () => {
       setFilterType("");
       setSearchTerm("");
       setPage(1);
-      fetchProducts({ page: 1 });
+      await fetchProducts({ page: 1, type: "" });
 
-      // 👇 Desplazamiento suave hacia la lista de productos
       setTimeout(() => {
         if (pageTopRef.current) {
-          pageTopRef.current.scrollIntoView({ behavior: "smooth" });
+          const y = pageTopRef.current.getBoundingClientRect().top + window.scrollY;
+          window.scrollTo({ top: y - 100, behavior: "smooth" });
         }
-      }, 600);
+      }, 500);
     };
 
     window.addEventListener("filtrarDisponibles", handleFiltrarDisponibles);
-    return () =>
-      window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
+    return () => window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
   }, []);
 
+  // 🔹 Actualizar producto o eliminarlo
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
       setProducts((prev) => prev.filter((p) => getPid(p) !== String(deletedId)));
@@ -177,28 +163,29 @@ function AppContent() {
       return;
     }
     setProducts((prev) =>
-      prev.map((p) =>
-        getPid(p) === getPid(updatedProduct) ? { ...p, ...updatedProduct } : p
-      )
-    );
-    setSelectedProduct((prev) =>
-      prev && getPid(prev) === getPid(updatedProduct)
-        ? { ...prev, ...updatedProduct }
-        : prev
+      prev.map((p) => (getPid(p) === getPid(updatedProduct) ? { ...p, ...updatedProduct } : p))
     );
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtra solo productos con stock disponible
+  // 🔹 Filtro local (sin ofertas, sin descuentos, con stock)
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name
-      .toLowerCase()
+      ?.toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const hasStock = Object.values(product.stock || {}).some((qty) => qty > 0);
-    return matchesSearch && hasStock;
-  });
 
-  const theme = useSeason();
+    // Tiene stock disponible
+    const hasStock = Object.values(product.stock || {}).some((qty) => qty > 0);
+
+    // Detecta si es oferta o tiene descuento
+    const isOffer =
+      product.type?.toLowerCase().includes("oferta") ||
+      product.tags?.includes("oferta") ||
+      product.discount > 0 ||
+      product.hasDiscount === true;
+
+    return matchesSearch && hasStock && !isOffer;
+  });
 
   return (
     <>
@@ -230,30 +217,43 @@ function AppContent() {
 
       {loading && <LoadingOverlay message="Cargando productos..." />}
 
-      {!anyModalOpen && (
-        <Header
-          onLoginClick={() => setShowLogin(true)}
-          onLogout={handleLogout}
-          onLogoClick={() => {
-            setFilterType("");
-            setSearchTerm("");
-            setPage(1);
-          }}
-          onMedidasClick={() => setShowMedidas(true)}
-          user={user}
-          isSuperUser={isSuperUser}
-          canSeeHistory={canSeeHistory}
-          setShowRegisterUserModal={setShowRegisterUserModal}
-          setShowUserListModal={setShowUserListModal}
-          setShowHistoryModal={setShowHistoryModal}
-          setFilterType={setFilterType}
-        />
-      )}
+      {/* 🔝 TopBanner + Header fijos */}
+      <div className="fixed top-0 left-0 w-full z-50">
+        <TopBanner />
+        {!selectedProduct &&
+          !showAddModal &&
+          !showLogin &&
+          !showRegisterUserModal &&
+          !showUserListModal &&
+          !showHistoryModal &&
+          !showMedidas && (
+            <Header
+              onLoginClick={() => setShowLogin(true)}
+              onLogout={handleLogout}
+              onLogoClick={() => {
+                setFilterType("");
+                setSearchTerm("");
+                setPage(1);
+              }}
+              onMedidasClick={() => setShowMedidas(true)}
+              user={user}
+              isSuperUser={isSuperUser}
+              canSeeHistory={canSeeHistory}
+              setShowRegisterUserModal={setShowRegisterUserModal}
+              setShowUserListModal={setShowUserListModal}
+              setShowHistoryModal={setShowHistoryModal}
+              setFilterType={setFilterType}
+            />
+          )}
+      </div>
 
-      {/* 🎞️ Carrusel de bienvenida */}
+      {/* Espaciador para el header fijo */}
+      <div className="h-[120px]" />
+
+      {/* Bienvenida */}
       <Bienvenido />
 
-      {/* 🔎 Barra de búsqueda + filtros */}
+      {/* Barra de filtros */}
       <FilterBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -263,8 +263,8 @@ function AppContent() {
         setFilterSizes={setFilterSizes}
       />
 
-      {/* BOTÓN DE AGREGAR */}
-      {canAdd && !anyModalOpen && (
+      {/* Botón de agregar */}
+      {canAdd && (
         <button
           className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
           onClick={() => setShowAddModal(true)}
@@ -274,18 +274,8 @@ function AppContent() {
         </button>
       )}
 
-      {/* 🦇 LISTA DE PRODUCTOS */}
+      {/* Lista de productos */}
       <div className="relative w-full">
-        <img
-          src="/bats.png"
-          alt="Murciélagos"
-          className="absolute -top-48 -left-36 w-42 max-h-[300px] object-contain opacity-30 pointer-events-none select-none z-0"
-          style={{
-            objectPosition: "top right",
-            transform: "scale(1.5)",
-          }}
-        />
-
         <div
           ref={pageTopRef}
           className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
@@ -302,7 +292,7 @@ function AppContent() {
         </div>
       </div>
 
-      {/* PRODUCT MODAL */}
+      {/* Modal producto */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -315,7 +305,7 @@ function AppContent() {
         />
       )}
 
-      {/* ADD PRODUCT MODAL */}
+      {/* Modal agregar */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -329,7 +319,7 @@ function AppContent() {
         />
       )}
 
-      {/* LOGIN */}
+      {/* Modal login */}
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -346,7 +336,7 @@ function AppContent() {
         />
       )}
 
-      {/* PAGINACIÓN */}
+      {/* Paginación */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
@@ -396,18 +386,10 @@ function AppContent() {
         </div>
       )}
 
+      {/* Footer */}
       <Footer />
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />
     </>
-  );
-}
-
-// 🔹 App envuelta con el SeasonProvider
-export default function App() {
-  return (
-    <SeasonProvider season="default">
-      <AppContent />
-    </SeasonProvider>
   );
 }

@@ -376,3 +376,47 @@ button:focus-visible {
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
   }
 }
+
+/* 🎨 Texto plateado con reflejo suave (igual al header) */
+.text-plateado {
+  color: #9E8F91;
+  text-shadow: 0 0 6px rgba(158, 143, 145, 0.4);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* 🩶 Texto plateado con brillo animado */
+.text-plateado {
+  position: relative;
+  color: #9E8F91;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(158, 143, 145, 0.4);
+  overflow: hidden;
+}
+
+/* ✨ Texto plateado con brillo solo dentro de las letras */
+.text-plateado {
+  background: linear-gradient(
+    90deg,
+    #9E8F91 0%,
+    #d8cfcf 25%,
+    #ffffff 50%,
+    #9E8F91 75%,
+    #b8a9ac 100%
+  );
+  background-size: 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: brilloSoloTexto 4s linear infinite;
+  font-weight: 800;
+}
+
+/* 🔁 Movimiento del brillo dentro de las letras */
+@keyframes brilloSoloTexto {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
+  }
+}
