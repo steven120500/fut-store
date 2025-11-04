@@ -43,7 +43,7 @@ function AppContent() {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
-  const [filterSizes, setFilterSizes] = useState([]); // << tallas
+  const [filterSizes, setFilterSizes] = useState([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -56,6 +56,8 @@ function AppContent() {
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const pages = Math.max(1, Math.ceil(total / limit));
+
+  const pageTopRef = useRef(null);
 
   const anyModalOpen =
     !!selectedProduct ||
@@ -118,7 +120,7 @@ function AppContent() {
     }
   };
 
-  const pageTopRef = useRef(null);
+  // 🔁 Actualiza productos cuando cambian filtros o página
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
     if (pageTopRef.current) {
@@ -132,17 +134,39 @@ function AppContent() {
     }
   }, [page, limit, searchTerm, filterType, filterSizes]);
 
-  // ✅ NUEVO: escucha el evento de “Ver Descuentos” desde Bienvenido
+  // ✅ Escucha “Ver Ofertas”
   useEffect(() => {
     const handleFiltrarOfertas = () => {
       setFilterType("Ofertas");
       setPage(1);
+      if (pageTopRef.current) {
+        pageTopRef.current.scrollIntoView({ behavior: "smooth" });
+      }
     };
 
     window.addEventListener("filtrarOfertas", handleFiltrarOfertas);
-    return () => {
-      window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
+    return () => window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
+  }, []);
+
+  // ✅ Escucha “Ver Disponible” (muestra stock > 0 y baja el scroll)
+  useEffect(() => {
+    const handleFiltrarDisponibles = () => {
+      setFilterType("");
+      setSearchTerm("");
+      setPage(1);
+      fetchProducts({ page: 1 });
+
+      // 👇 Desplazamiento suave hacia la lista de productos
+      setTimeout(() => {
+        if (pageTopRef.current) {
+          pageTopRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 600);
     };
+
+    window.addEventListener("filtrarDisponibles", handleFiltrarDisponibles);
+    return () =>
+      window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
   }, []);
 
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
@@ -165,10 +189,14 @@ function AppContent() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtro frontend
-  const filteredProducts = products.filter((product) =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 🔹 Filtra solo productos con stock disponible
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const hasStock = Object.values(product.stock || {}).some((qty) => qty > 0);
+    return matchesSearch && hasStock;
+  });
 
   const theme = useSeason();
 
@@ -248,7 +276,6 @@ function AppContent() {
 
       {/* 🦇 LISTA DE PRODUCTOS */}
       <div className="relative w-full">
-        {/* Fondo decorativo */}
         <img
           src="/bats.png"
           alt="Murciélagos"
@@ -259,7 +286,6 @@ function AppContent() {
           }}
         />
 
-        {/* Productos */}
         <div
           ref={pageTopRef}
           className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
@@ -343,7 +369,9 @@ function AppContent() {
                     <button
                       onClick={() => setPage(n)}
                       className={`px-2 text-sm py-0.5 rounded border ${
-                        n === page ? "text-black fondo-plateado" : "hover:bg-green-700"
+                        n === page
+                          ? "text-black fondo-plateado"
+                          : "hover:bg-green-700"
                       }`}
                       style={{
                         backgroundColor: n === page ? GOLD : "transparent",

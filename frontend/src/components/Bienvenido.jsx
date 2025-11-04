@@ -1,4 +1,3 @@
-// src/components/Bienvenido.jsx
 import React, { useState, useEffect } from "react";
 import CarruselFondo from "./CarruselFondo";
 
@@ -21,10 +20,10 @@ const mensajes = [
 
 export default function Bienvenido() {
   const [index, setIndex] = useState(0);
-  const [textoVisible, setTextoVisible] = useState(""); // texto animado
+  const [textoVisible, setTextoVisible] = useState("");
   const [fade, setFade] = useState(true);
 
-  // Efecto máquina de escribir
+  // 🧠 efecto máquina de escribir
   useEffect(() => {
     const [normal, destacado] = mensajes[index];
     const textoCompleto = normal + destacado;
@@ -35,12 +34,11 @@ export default function Bienvenido() {
       setTextoVisible(textoCompleto.slice(0, i));
       i++;
       if (i > textoCompleto.length) clearInterval(escribir);
-    }, 80); // velocidad de escritura (ms por letra)
-
+    }, 80);
     return () => clearInterval(escribir);
   }, [index]);
 
-  // Cambia mensaje cada 5s
+  // 🔁 cambia mensaje cada 5s
   useEffect(() => {
     const intervalo = setInterval(() => {
       setFade(false);
@@ -52,43 +50,51 @@ export default function Bienvenido() {
     return () => clearInterval(intervalo);
   }, []);
 
-  const handleVerDescuentos = () => {
+  // 🔹 Filtra los productos en oferta
+  const handleVerOfertas = () => {
     window.dispatchEvent(new CustomEvent("filtrarOfertas"));
+  };
+
+  // 🟢 Muestra todos los productos disponibles con stock
+  const handleVerDisponibles = () => {
+    window.dispatchEvent(new CustomEvent("filtrarDisponibles"));
   };
 
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
-      {/* 🔹 Fondo con carrusel */}
+      {/* Fondo dinámico */}
       <CarruselFondo imagenes={imagenes} intervalo={5000} />
 
-      {/* 🔸 Contenedor del texto */}
+      {/* Contenedor del texto */}
       <div
         className={`relative z-10 px-6 py-3 transition-all duration-1000 ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-        {/* 🟢 Fondo blanco con sombra sutil */}
-        <div className="inline-block backdrop-blur-md rounded-lg px-8 py-4 shadow-xl ">
-          <h1 className="text-4xl sm:text-6xl font-extrabold  text-blanco-borde-negro leading-snug tracking-tight typewriter">
+        {/* 🟢 Fondo blanco translúcido detrás del texto */}
+        <div className="inline-flex items-center justify-center backdrop-blur-md bg-white/20 rounded-lg px-8 py-4 shadow-xl min-w-[280px] sm:min-w-[420px] md:min-w-[520px] min-h-[100px] sm:min-h-[120px] md:min-h-[140px]">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-blanco-borde-negro leading-snug tracking-tight text-center">
             {textoVisible}
-            
           </h1>
-
-
-
         </div>
 
-        <div >
-          
-        </div>
+      {/* 🔘 Botones */}
+<div className="mt-10 flex flex-row justify-center items-center gap-3 w-full">
+  <button
+    onClick={handleVerDisponibles}
+    className="boton-luminoso-verde bg-green-600 text-white text-base sm:text-lg font-semibold w-[140px] sm:w-[180px] py-2 rounded-lg shadow-lg hover:scale-105 transition-all duration-300"
+  >
+    Ver disponible
+  </button>
 
-        {/* 🔸 Botón */}
-        <button
-          onClick={handleVerDescuentos}
-          className="mt-12 bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-semibold px-6 py-2 rounded-lg shadow-lg transition-transform hover:scale-105"
-        >
-          Ver Ofertas
-        </button>
+  <button
+    onClick={handleVerOfertas}
+    className="boton-luminoso-rojo bg-red-600 text-white text-base sm:text-lg font-semibold w-[140px] sm:w-[180px] py-2 rounded-lg shadow-lg hover:scale-105 transition-all duration-300"
+  >
+    Ver Ofertas
+  </button>
+</div>
+
       </div>
     </section>
   );

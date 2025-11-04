@@ -232,3 +232,147 @@ button:focus-visible {
 .animate-cursor {
   animation: cursor-blink 1s step-end infinite;
 }
+
+/* ===========================================================
+   💚 BOTÓN LUMINOSO VERDE — con brillo móvil animado
+   =========================================================== */
+   .boton-luminoso-verde {
+    position: relative;
+    display: inline-block;
+    color: #fff;
+    background-color: #16a34a;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 20px rgba(22, 163, 74, 0.5), 0 0 40px rgba(22, 163, 74, 0.3);
+  }
+  
+  .boton-luminoso-verde::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-25deg);
+    animation: brilloVerdeMovimiento 3s infinite;
+  }
+  
+  @keyframes brilloVerdeMovimiento {
+    0% {
+      left: -75%;
+    }
+    50% {
+      left: 125%;
+    }
+    100% {
+      left: 125%;
+    }
+  }
+  
+  .boton-luminoso-verde:hover {
+    box-shadow: 0 0 25px rgba(80, 255, 150, 0.8), 0 0 50px rgba(80, 255, 150, 0.4);
+    transform: scale(1.05);
+  }
+  
+  
+  /* ===========================================================
+     ❤️ BOTÓN LUMINOSO ROJO — con brillo móvil animado
+     =========================================================== */
+  .boton-luminoso-rojo {
+    position: relative;
+    display: inline-block;
+    color: #fff;
+    background-color: #dc2626;
+    border: none;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    overflow: hidden;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 0 20px rgba(255, 50, 50, 0.5), 0 0 40px rgba(255, 50, 50, 0.3);
+  }
+  
+  .boton-luminoso-rojo::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.7) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-25deg);
+    animation: brilloRojoMovimiento 3s infinite;
+  }
+  
+  @keyframes brilloRojoMovimiento {
+    0% {
+      left: -75%;
+    }
+    50% {
+      left: 125%;
+    }
+    100% {
+      left: 125%;
+    }
+  }
+  
+  .boton-luminoso-rojo:hover {
+    box-shadow: 0 0 25px rgba(255, 100, 100, 0.8), 0 0 50px rgba(255, 100, 100, 0.4);
+    transform: scale(1.05);
+  }
+  
+  /* ❤️ Etiqueta de Oferta con efecto luminoso en movimiento */
+.etiqueta-oferta-luminosa {
+  position: relative;
+  display: inline-block;
+  background-color: #dc2626; /* rojo base */
+  color: #fff;
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.5rem;
+  letter-spacing: 1px;
+  overflow: hidden;
+  box-shadow: 0 0 15px rgba(255, 50, 50, 0.6),
+              0 0 30px rgba(255, 50, 50, 0.3);
+  transition: all 0.3s ease-in-out;
+}
+
+/* ✨ Brillo animado que cruza la etiqueta */
+/* ✨ Efecto luminoso rojo animado para etiqueta de oferta */
+.etiqueta-oferta-luminosa {
+  background: linear-gradient(90deg, #b30000, #ff3333, #ff6666, #b30000);
+  background-size: 300% 300%;
+  animation: brilloOferta 3s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(255, 0, 0, 0.6), 0 0 20px rgba(255, 80, 80, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes brilloOferta {
+  0% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 20px rgba(255, 100, 100, 0.8);
+  }
+  100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+  }
+}
