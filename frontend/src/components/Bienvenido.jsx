@@ -59,7 +59,7 @@ export default function Bienvenido() {
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
       {/* 🔹 Fondo con carrusel */}
-      <CarruselFondo imagenes={imagenes} intervalo={3000} />
+      <CarruselFondo imagenes={imagenes} intervalo={5000} />
 
       {/* 🔸 Contenedor del texto */}
       <div
@@ -68,17 +68,24 @@ export default function Bienvenido() {
         }`}
       >
         {/* 🟢 Fondo blanco con sombra sutil */}
-        <div className="inline-block bg-gray-100 backdrop-blur-md rounded-lg px-8 py-4 shadow-xl border border-gray-200">
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-900 leading-snug tracking-tight typewriter">
+        <div className="inline-block backdrop-blur-md rounded-lg px-8 py-4 shadow-xl ">
+          <h1 className="text-4xl sm:text-6xl font-extrabold  text-green-200 leading-snug tracking-tight typewriter">
             {textoVisible}
-            <span className="border-r-4 border-gray-900 ml-1 animate-cursor"></span>
+            <span className="border-r-4 border-white ml-1 animate-cursor"></span>
           </h1>
+
+
+
+        </div>
+
+        <div >
+          
         </div>
 
         {/* 🔸 Botón */}
         <button
           onClick={handleVerDescuentos}
-          className="mt-6 bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-semibold px-6 py-2 rounded-lg shadow-lg transition-transform hover:scale-105"
+          className="mt-12 bg-red-600 hover:bg-red-700 text-white text-lg sm:text-xl font-semibold px-6 py-2 rounded-lg shadow-lg transition-transform hover:scale-105"
         >
           Ver Ofertas
         </button>

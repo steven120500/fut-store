@@ -24,9 +24,9 @@ export default function Header({
 
   return (
     <header
-      className=" shadow-md px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
+      className=" shadow-md fondo-plateado px-4 sm:px-6 py-3 fixed w-full top-0 left-0 z-50 bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
+        // backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen
         backgroundColor: "#000", // 🖤 fondo negro sólido (sin verde)
       }}
     >
@@ -44,7 +44,7 @@ export default function Header({
               fontSize: "1rem",
             }}
           >
-            <img src={logo} alt="Logo" className="h-12 sm:h-20" />
+            <img src={logo} alt="Logo" className="h-16 sm:h-28" />
           </button>
 
           {/* MEDIDAS */}
@@ -91,7 +91,7 @@ export default function Header({
               className="relative h-full overflow-y-auto pt-14 p-5"
               style={{
                 backgroundColor: "#000", // 🖤 sidebar negro
-                backgroundImage: `url(${FondoHeader})`,
+                // backgroundImage: `url(${FondoHeader})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
