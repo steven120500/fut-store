@@ -102,6 +102,20 @@ h1 {
   }
 }
 
+/* ⚫🤍 Texto blanco con borde negro y leve brillo */
+.text-blanco-borde-negro {
+  color: #ffffff; /* letras blancas */
+  font-weight: 900;
+  text-shadow:
+    /* contorno negro grueso */
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    /* brillo suave */
+    0 0 8px rgba(255, 255, 255, 0.6),
+    0 0 14px rgba(255, 255, 255, 0.4);
+}
 
 button {
   border-radius: 8px;

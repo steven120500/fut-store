@@ -50,7 +50,7 @@ export default function Header({
           {/* MEDIDAS */}
           <button
             onClick={onMedidasClick}
-            className="text-black text-xs sm:text-lg fondo-plateado mr-2 font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
+            className="text-white text-xs sm:text-lg bg-black mr-2 font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <LiaRulerSolid size={24} />
             <span className="hidden sm:inline">Medidas</span>
@@ -59,7 +59,7 @@ export default function Header({
           {/* CONTACTO */}
           <button
             onClick={() => setShowContacto(true)}
-            className="text-black fondo-plateado text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
+            className="text-white bg-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <FiPhoneCall size={24} />
             <span className="hidden sm:inline">Contacto</span>
@@ -70,7 +70,7 @@ export default function Header({
         <div className="flex items-center">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full fondo-plateado p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
+            className="rounded-full bg-black p-2 sm:text-lg shadow-md bg-black hover:bg-gray-800 text-white"
           >
             <FaBars size={18} />
           </button>
