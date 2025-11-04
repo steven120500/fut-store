@@ -88,7 +88,7 @@ export default function Header({
             onClick={(e) => e.stopPropagation()}
           >
             <div
-              className="relative h-full overflow-y-auto pt-14 p-5"
+              className="relative fondo-plateado h-full overflow-y-auto pt-14 p-5"
               style={{
                 backgroundColor: "#000", // 🖤 sidebar negro
                 // backgroundImage: `url(${FondoHeader})`,

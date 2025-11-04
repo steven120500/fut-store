@@ -71,7 +71,7 @@ export default function Bienvenido() {
         <div className="inline-block backdrop-blur-md rounded-lg px-8 py-4 shadow-xl ">
           <h1 className="text-4xl sm:text-6xl font-extrabold  text-blanco-borde-negro leading-snug tracking-tight typewriter">
             {textoVisible}
-            <span className="border-r-4 border-white ml-1 animate-cursor"></span>
+            
           </h1>
 
 
