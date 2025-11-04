@@ -53,7 +53,7 @@ export default function Header({
             className="text-white text-xs sm:text-lg bg-black mr-2 font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <LiaRulerSolid size={24} />
-            <span className="hidden sm:inline">Medidas</span>
+            <span >Tallas</span>
           </button>
 
           {/* CONTACTO */}
@@ -62,7 +62,7 @@ export default function Header({
             className="text-white bg-black text-xs sm:text-lg font-semibold px-2 sm:px-4 py-1 rounded flex items-center gap-1"
           >
             <FiPhoneCall size={24} />
-            <span className="hidden sm:inline">Contacto</span>
+            <span >Contacto</span>
           </button>
         </div>
 
