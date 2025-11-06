@@ -1,9 +1,7 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
-
 import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña
-
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -57,13 +55,34 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     >
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
+        
+        {/* 🌟 Etiqueta OFERTA roja con brillo animado */}
         {hasDiscount && (
-          <span className="absolute top-2 right-2 bg-red-600 text-white text-sm font-bold px-2 py-1 rounded shadow-md">
-            Oferta
+          <span
+            className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden  shadow-lg"
+            style={{
+              background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
+              boxShadow: "0 0 15px rgba(255,0,0,0.7)",
+            }}
+          >
+            OFERTA
+            <span
+              className="shine-effect"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "-100%",
+                width: "50%",
+                height: "100%",
+                background:
+                  "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
+                transform: "skewX(-20deg)",
+                animation: "shineMove 3s infinite",
+              }}
+            />
           </span>
         )}
 
-        
         <motion.img
           src={imgMain}
           alt={product.name}
@@ -76,7 +95,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
         />
       </div>
 
-      {/* 🔸 Tipo — pegado directamente a la imagen */}
+      {/* 🔸 Tipo */}
       {product.type && (
         <div className="w-full">
           <div className="block w-full text-sm text-center text-black fondo-plateado font-bold py-1 shadow-md rounded-none">
