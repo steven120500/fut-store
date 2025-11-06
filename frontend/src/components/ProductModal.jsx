@@ -396,19 +396,12 @@ export default function ProductModal({
 
 💰 *Precio:* ₡${product?.discountPrice > 0 ? product.discountPrice : product.price}
 
-📸 *Imagen del producto:* ${product?.images?.[0]?.url || product?.imageSrc || ""}
-
-🔗 *Ver en tienda:* https://fut-store-frontend.onrender.com/product/${product?._id}
-`
+📸 *Ver imagen del producto:* ${product?.imageSrc || ""}`
   )}`}
   target="_blank"
   rel="noopener noreferrer"
   className="mt-4 block bg-green-600 text-white py-2 rounded text-center font-bold hover:bg-green-700 transition"
 >
-
-        
-
-
 
             <FaWhatsapp className="inline mr-2" />
             Enviar mensaje por WhatsApp
