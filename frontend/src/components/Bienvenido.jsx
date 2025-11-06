@@ -13,7 +13,7 @@ export default function Bienvenido() {
     <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
       {/* 🖼️ Fondo fijo */}
       <img
-        src="/fotofondo4.jpg"
+        src="/fotofondo1.jpg"
         alt="Fondo FutStore"
         className="absolute inset-0 w-full h-full object-cover object-center brightness-[0.6] z-0"
       />
@@ -21,7 +21,7 @@ export default function Bienvenido() {
       {/* 🔹 Título */}
       <div className="relative z-10 px-6 py-3">
         <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold leading-snug tracking-tight text-center">
-          <span className="text-white">Bienvenido a </span>
+          <span className="text-plateado">Bienvenido a </span>
           <span className="text-plateado">FutStore</span>
         </h1>
 
