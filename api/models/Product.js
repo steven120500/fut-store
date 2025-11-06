@@ -55,8 +55,12 @@ const productSchema = new mongoose.Schema(
     images:   { type: [ImageSchema], default: [] },
 
     stock: { type: Object, required: true, validate: stockValidator },
+    bodega: { type: Object, default: {} },
 
-    type: { type: String, required: true, trim: true, maxlength: 40 }
+    type: { type: String, required: true, trim: true, maxlength: 40 },
+
+    // 👇 NUEVO CAMPO para mostrar etiqueta “NUEVO”
+    isNew: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -84,6 +88,7 @@ productSchema.index({ name: 1 });
 productSchema.index({ type: 1 });
 productSchema.index({ price: 1, createdAt: -1 });
 productSchema.index({ discountPrice: 1 });
+productSchema.index({ isNew: 1 }); // 👈 índice para búsquedas futuras
 
 // ===== Limpieza de salida =====
 productSchema.set('toJSON', {
