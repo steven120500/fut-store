@@ -32,7 +32,7 @@ export default function Bienvenido() {
     className="boton-luminoso-verde bg-green-600 text-white 
                text-sm sm:text-base md:text-lg font-semibold 
                w-[160px] sm:w-[180px] md:w-[190px] 
-               py-3 sm:py-2 rounded-lg shadow-lg 
+               px-6 py-3 sm:py-3 rounded-lg shadow-lg 
                hover:scale-105 transition-all duration-300"
   >
     Ver disponible
@@ -43,7 +43,7 @@ export default function Bienvenido() {
     className="boton-luminoso-rojo bg-red-600 text-white 
                text-sm sm:text-base md:text-lg font-semibold 
                w-[160px] sm:w-[180px] md:w-[190px] 
-               py-3 sm:py-2 rounded-lg shadow-lg 
+                px-6 py-3 sm:py-3 rounded-lg shadow-lg 
                hover:scale-105 transition-all duration-300"
   >
     Ver Ofertas

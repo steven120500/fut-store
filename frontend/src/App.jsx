@@ -75,12 +75,13 @@ export default function App() {
     toast.success("Sesión cerrada correctamente");
   };
 
-  // 🔹 Obtener productos del backend
+  // 🔹 Obtener productos del backend (editado)
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
     const sizes = (opts.sizes ?? filterSizes).join(",");
+    const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : ""); // 👈 agregado
 
     setLoading(true);
     try {
@@ -90,7 +91,9 @@ export default function App() {
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(sizes ? { sizes } : {}),
+        ...(mode ? { mode } : {}), // 👈 agregado
       });
+
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
@@ -140,12 +143,11 @@ export default function App() {
     const handleFiltrarDisponibles = async () => {
       window.__verDisponiblesActivo = true;
 
-      // no enviar tipo inexistente al backend
       setFilterType("");
       setSearchTerm("");
       setPage(1);
 
-      await fetchProducts({ page: 1 });
+      await fetchProducts({ page: 1, mode: "disponibles" }); // 👈 modo correcto
 
       setTimeout(() => {
         if (pageTopRef.current) {
@@ -183,31 +185,25 @@ export default function App() {
     const name = (product.name || "").toLowerCase();
     const matchesSearch = name.includes((searchTerm || "").toLowerCase());
 
-    // ✅ stock disponible
     const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
 
-    // ✅ detectar si tiene descuento real
     const price = Number(product.price ?? 0);
     const dpRaw = product.discountPrice;
     const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
     const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-    // ✅ Mostrar solo ofertas
     if (filterType === "Ofertas") return matchesSearch && isOffer;
 
-    // ✅ Mostrar solo disponibles (sin descuento real)
     if (window.__verDisponiblesActivo) {
       const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
       return matchesSearch && hasStock && noDiscount;
     }
 
-    // ✅ Mostrar productos por tipo (Player, Fan, etc.)
     if (filterType) {
       const type = (product.type || "").toLowerCase();
       return matchesSearch && hasStock && type.includes(filterType.toLowerCase());
     }
 
-    // ✅ Mostrar todos con stock
     return matchesSearch && hasStock;
   });
 
@@ -271,13 +267,9 @@ export default function App() {
           )}
       </div>
 
-      {/* Espaciador */}
       <div className="h-[120px]" />
-
-      {/* Bienvenida */}
       <Bienvenido />
 
-      {/* Barra de filtros */}
       <FilterBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -287,7 +279,6 @@ export default function App() {
         setFilterSizes={setFilterSizes}
       />
 
-      {/* Botón agregar producto */}
       {canAdd && (
         <button
           className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
@@ -298,7 +289,6 @@ export default function App() {
         </button>
       )}
 
-      {/* Lista de productos */}
       <div className="relative w-full">
         <div
           ref={pageTopRef}
@@ -317,7 +307,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modal de producto */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -330,7 +319,6 @@ export default function App() {
         />
       )}
 
-      {/* Modal agregar producto */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -344,7 +332,6 @@ export default function App() {
         />
       )}
 
-      {/* Modal login */}
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -361,7 +348,6 @@ export default function App() {
         />
       )}
 
-      {/* Paginación */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
@@ -413,7 +399,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer */}
       <Footer />
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />
