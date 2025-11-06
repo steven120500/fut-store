@@ -106,7 +106,7 @@ router.post('/', upload.any(), async (req, res) => {
     const product = await Product.create({
       name : String(req.body.name || '').trim(),
       price: Number(req.body.price),
-      discountPrice: req.body.discountPrice ? Number(req.body.discountPrice) : null, // ⬅️ NUEVO
+      discountPrice: req.body.discountPrice ? Number(req.body.discountPrice) : null,
       type : String(req.body.type || '').trim(),
       stock: cleanStock,
       bodega: cleanBodega,
@@ -292,7 +292,8 @@ router.get('/', async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
     const q     = (req.query.q || '').trim();
     const type  = (req.query.type || '').trim();
-    const sizes = (req.query.sizes || '').trim(); // 👈 NUEVO
+    const sizes = (req.query.sizes || '').trim();
+    const mode  = (req.query.mode || '').trim(); // 👈 NUEVO
 
     const find = {};
     if (q) find.name = { $regex: q, $options: 'i' };
@@ -300,11 +301,30 @@ router.get('/', async (req, res) => {
     // 👇 Caso especial: Ofertas
     if (type === 'Ofertas') {
       find.discountPrice = { $ne: null, $gt: 0 };
-    } else if (type) {
+    } 
+    // 👇 Caso especial: Disponibles (sin descuento y con stock > 0)
+    else if (mode === 'disponibles') {
+      find.$and = [
+        { $or: [
+          { discountPrice: { $exists: false } },
+          { discountPrice: null },
+          { discountPrice: 0 }
+        ]},
+        {
+          $expr: {
+            $gt: [
+              { $sum: { $map: { input: { $objectToArray: "$stock" }, as: "s", in: "$$s.v" } } },
+              0
+            ]
+          }
+        }
+      ];
+    } 
+    else if (type) {
       find.type = type;
     }
 
-    // 👇 NUEVO: filtrar por tallas (stock > 0)
+    // 👇 Filtrar por tallas
     if (sizes) {
       const sizesArray = sizes.split(',').map(s => s.trim()).filter(Boolean);
       if (sizesArray.length > 0) {
@@ -314,7 +334,6 @@ router.get('/', async (req, res) => {
       }
     }
 
-    // añadimos discountPrice y bodega a la proyección
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt';
 
     const [items, total] = await Promise.all([
@@ -328,7 +347,6 @@ router.get('/', async (req, res) => {
     ]);
 
     res.set('Cache-Control', 'public, max-age=20');
-
     res.json({
       items,
       total,

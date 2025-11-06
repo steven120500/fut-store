@@ -25,22 +25,30 @@ export default function Bienvenido() {
           <span className="text-plateado">FutStore</span>
         </h1>
 
-        {/* 🔘 Botones */}
-        <div className="mt-10 flex flex-row justify-center items-center gap-3 w-full">
-          <button
-            onClick={handleVerDisponibles}
-            className="boton-luminoso-verde bg-green-600 text-white text-base sm:text-lg font-semibold w-[180px] sm:w-[180px] py-2 rounded-lg shadow-lg hover:scale-105 transition-all duration-300"
-          >
-            Ver disponible
-          </button>
+       {/* 🔘 Botones */}
+<div className="mt-10 flex flex-row justify-center items-center gap-3 w-full flex-wrap">
+  <button
+    onClick={handleVerDisponibles}
+    className="boton-luminoso-verde bg-green-600 text-white 
+               text-sm sm:text-base md:text-lg font-semibold 
+               w-[160px] sm:w-[180px] md:w-[190px] 
+               py-3 sm:py-2 rounded-lg shadow-lg 
+               hover:scale-105 transition-all duration-300"
+  >
+    Ver disponible
+  </button>
 
-          <button
-            onClick={handleVerOfertas}
-            className="boton-luminoso-rojo bg-red-600 text-white text-base sm:text-lg font-semibold w-[180px] sm:w-[180px] py-2 rounded-lg shadow-lg hover:scale-105 transition-all duration-300"
-          >
-            Ver Ofertas
-          </button>
-        </div>
+  <button
+    onClick={handleVerOfertas}
+    className="boton-luminoso-rojo bg-red-600 text-white 
+               text-sm sm:text-base md:text-lg font-semibold 
+               w-[160px] sm:w-[180px] md:w-[190px] 
+               py-3 sm:py-2 rounded-lg shadow-lg 
+               hover:scale-105 transition-all duration-300"
+  >
+    Ver Ofertas
+  </button>
+</div>
       </div>
     </section>
   );

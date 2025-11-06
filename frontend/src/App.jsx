@@ -23,16 +23,15 @@ import FilterBar from "./components/FilterBar";
 const API_BASE = "https://fut-store.onrender.com";
 const GOLD = "#9E8F91";
 
-// 🔹 Función auxiliar para paginación
+// 🔹 Función auxiliar de paginación
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
   return [...out].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
 }
 
-// 🔹 Obtiene el ID del producto
+// 🔹 Obtiene ID de producto
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
-// 🔹 Componente principal
 export default function App() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +53,7 @@ export default function App() {
   const pages = Math.max(1, Math.ceil(total / limit));
   const pageTopRef = useRef(null);
 
+  // 🔹 Estado del usuario
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -75,7 +75,7 @@ export default function App() {
     toast.success("Sesión cerrada correctamente");
   };
 
-  // 🔹 Cargar productos desde el backend
+  // 🔹 Obtener productos del backend
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
@@ -105,7 +105,7 @@ export default function App() {
     }
   };
 
-  // 🔁 Recargar productos con scroll ajustado
+  // 🔁 Cargar y mover scroll arriba
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
     if (pageTopRef.current) {
@@ -116,9 +116,10 @@ export default function App() {
     }
   }, [page, searchTerm, filterType, filterSizes]);
 
-  // ✅ Escucha “Ver Ofertas”
+  // 🔸 Botón “Ver Ofertas”
   useEffect(() => {
     const handleFiltrarOfertas = () => {
+      delete window.__verDisponiblesActivo;
       setFilterType("Ofertas");
       setPage(1);
       fetchProducts({ page: 1, type: "Ofertas" });
@@ -134,27 +135,34 @@ export default function App() {
     return () => window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
   }, []);
 
-  // ✅ Escucha “Ver Disponibles” (sin ofertas ni descuentos)
+  // ✅ Botón “Ver Disponibles” (sin descuentos ni ofertas)
   useEffect(() => {
     const handleFiltrarDisponibles = async () => {
+      window.__verDisponiblesActivo = true;
+
+      // no enviar tipo inexistente al backend
       setFilterType("");
       setSearchTerm("");
       setPage(1);
-      await fetchProducts({ page: 1, type: "" });
+
+      await fetchProducts({ page: 1 });
 
       setTimeout(() => {
         if (pageTopRef.current) {
           const y = pageTopRef.current.getBoundingClientRect().top + window.scrollY;
           window.scrollTo({ top: y - 100, behavior: "smooth" });
         }
-      }, 500);
+      }, 400);
     };
 
     window.addEventListener("filtrarDisponibles", handleFiltrarDisponibles);
-    return () => window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
+    return () => {
+      delete window.__verDisponiblesActivo;
+      window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
+    };
   }, []);
 
-  // 🔹 Actualizar producto o eliminarlo
+  // 🔹 Actualizar producto o eliminar
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
       setProducts((prev) => prev.filter((p) => getPid(p) !== String(deletedId)));
@@ -163,28 +171,44 @@ export default function App() {
       return;
     }
     setProducts((prev) =>
-      prev.map((p) => (getPid(p) === getPid(updatedProduct) ? { ...p, ...updatedProduct } : p))
+      prev.map((p) =>
+        getPid(p) === getPid(updatedProduct) ? { ...p, ...updatedProduct } : p
+      )
     );
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtro local (sin ofertas, sin descuentos, con stock)
+  // 🔹 Filtro final de productos
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const name = (product.name || "").toLowerCase();
+    const matchesSearch = name.includes((searchTerm || "").toLowerCase());
 
-    // Tiene stock disponible
-    const hasStock = Object.values(product.stock || {}).some((qty) => qty > 0);
+    // ✅ stock disponible
+    const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
 
-    // Detecta si es oferta o tiene descuento
-    const isOffer =
-      product.type?.toLowerCase().includes("oferta") ||
-      product.tags?.includes("oferta") ||
-      product.discount > 0 ||
-      product.hasDiscount === true;
+    // ✅ detectar si tiene descuento real
+    const price = Number(product.price ?? 0);
+    const dpRaw = product.discountPrice;
+    const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
+    const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-    return matchesSearch && hasStock && !isOffer;
+    // ✅ Mostrar solo ofertas
+    if (filterType === "Ofertas") return matchesSearch && isOffer;
+
+    // ✅ Mostrar solo disponibles (sin descuento real)
+    if (window.__verDisponiblesActivo) {
+      const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
+      return matchesSearch && hasStock && noDiscount;
+    }
+
+    // ✅ Mostrar productos por tipo (Player, Fan, etc.)
+    if (filterType) {
+      const type = (product.type || "").toLowerCase();
+      return matchesSearch && hasStock && type.includes(filterType.toLowerCase());
+    }
+
+    // ✅ Mostrar todos con stock
+    return matchesSearch && hasStock;
   });
 
   return (
@@ -217,7 +241,7 @@ export default function App() {
 
       {loading && <LoadingOverlay message="Cargando productos..." />}
 
-      {/* 🔝 TopBanner + Header fijos */}
+      {/* 🔝 TopBanner + Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <TopBanner />
         {!selectedProduct &&
@@ -247,7 +271,7 @@ export default function App() {
           )}
       </div>
 
-      {/* Espaciador para el header fijo */}
+      {/* Espaciador */}
       <div className="h-[120px]" />
 
       {/* Bienvenida */}
@@ -263,7 +287,7 @@ export default function App() {
         setFilterSizes={setFilterSizes}
       />
 
-      {/* Botón de agregar */}
+      {/* Botón agregar producto */}
       {canAdd && (
         <button
           className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
@@ -278,7 +302,8 @@ export default function App() {
       <div className="relative w-full">
         <div
           ref={pageTopRef}
-          className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
+          className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 
+                     sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
         >
           {filteredProducts.map((product) => (
             <ProductCard
@@ -292,7 +317,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modal producto */}
+      {/* Modal de producto */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -305,7 +330,7 @@ export default function App() {
         />
       )}
 
-      {/* Modal agregar */}
+      {/* Modal agregar producto */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -348,6 +373,7 @@ export default function App() {
             >
               <FaChevronLeft />
             </button>
+
             {(() => {
               const nums = buildPages(page, pages);
               return nums.map((n, i) => {
@@ -374,6 +400,7 @@ export default function App() {
                 );
               });
             })()}
+
             <button
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page === pages}
