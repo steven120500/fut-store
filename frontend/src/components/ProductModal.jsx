@@ -390,11 +390,15 @@ export default function ProductModal({
         {/* WhatsApp */}
         <a
   href={`https://wa.me/50672327096?text=${encodeURIComponent(
-    `¡Hola! Me interesa la camiseta ${product?.name} (${product?.type}).
+    `👋 ¡Hola! Me interesa la camiseta:
 
-💰 Precio: ₡${product?.discountPrice > 0 ? product.discountPrice : product.price}
+👕 *${product?.name}* (${product?.type})
 
-📸 Ver imagen del producto: ${product?.images?.[0] || product?.imageSrc || ""}
+💰 *Precio:* ₡${product?.discountPrice > 0 ? product.discountPrice : product.price}
+
+📸 *Imagen del producto:* ${product?.images?.[0]?.url || product?.imageSrc || ""}
+
+🔗 *Ver en tienda:* https://fut-store-frontend.onrender.com/product/${product?._id}
 `
   )}`}
   target="_blank"
@@ -402,6 +406,7 @@ export default function ProductModal({
   className="mt-4 block bg-green-600 text-white py-2 rounded text-center font-bold hover:bg-green-700 transition"
 >
 
+        
 
 
 
