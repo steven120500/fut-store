@@ -1,7 +1,7 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
-import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña
+import Araña from "../assets/Araña.png"; // 🕸️ Imagen de telaraña (si quieres mantenerla)
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -23,6 +23,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     : null;
 
   const hasDiscount = Number(product.discountPrice) > 0;
+  const isNew = Boolean(product.isNew); // ✅ campo NUEVO
 
   // 🔹 Definir tallas según tipo
   const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
@@ -55,13 +56,43 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     >
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
-        
+
+        {/* 🌟 Etiqueta NUEVO plateada con brillo */}
+        {isNew && (
+          <span
+            className="absolute top-2 left-2 text-black font-extrabold z-10 text-xs sm:text-sm px-3 py-1 rounded-full overflow-hidden shadow-lg uppercase"
+            style={{
+              background:
+                "linear-gradient(90deg, #f0f0f0 0%, #d4d4d4 50%, #f0f0f0 100%)",
+              boxShadow: "0 0 10px rgba(255,255,255,0.7)",
+              border: "1px solid rgba(180,180,180,0.8)",
+            }}
+          >
+            NUEVO
+            <span
+              className="shine-effect"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "-100%",
+                width: "50%",
+                height: "100%",
+                background:
+                  "linear-gradient(120deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.1) 100%)",
+                transform: "skewX(-20deg)",
+                animation: "shineMove 5s infinite", // 🌟 más lento
+              }}
+            />
+          </span>
+        )}
+
         {/* 🌟 Etiqueta OFERTA roja con brillo animado */}
         {hasDiscount && (
           <span
-            className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden  shadow-lg"
+            className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden shadow-lg"
             style={{
-              background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
+              background:
+                "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
               boxShadow: "0 0 15px rgba(255,0,0,0.7)",
             }}
           >
@@ -77,12 +108,13 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
                 background:
                   "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
                 transform: "skewX(-20deg)",
-                animation: "shineMove 3s infinite",
+                animation: "shineMove 5s infinite", // 🌟 más lento también
               }}
             />
           </span>
         )}
 
+        {/* Imagen principal */}
         <motion.img
           src={imgMain}
           alt={product.name}
@@ -145,6 +177,15 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           </div>
         )}
       </div>
+
+      {/* ✨ Keyframes para los brillos */}
+      <style>{`
+        @keyframes shineMove {
+          0% { left: -100%; }
+          40% { left: 120%; }
+          100% { left: 120%; }
+        }
+      `}</style>
     </motion.div>
   );
 }
