@@ -75,13 +75,13 @@ export default function App() {
     toast.success("Sesión cerrada correctamente");
   };
 
-  // 🔹 Obtener productos del backend (editado)
+  // 🔹 Obtener productos del backend
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     const tp = (opts.type ?? filterType).trim();
     const sizes = (opts.sizes ?? filterSizes).join(",");
-    const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : ""); // 👈 agregado
+    const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
     setLoading(true);
     try {
@@ -91,7 +91,7 @@ export default function App() {
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(sizes ? { sizes } : {}),
-        ...(mode ? { mode } : {}), // 👈 agregado
+        ...(mode ? { mode } : {}),
       });
 
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
@@ -138,16 +138,15 @@ export default function App() {
     return () => window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
   }, []);
 
-  // ✅ Botón “Ver Disponibles” (sin descuentos ni ofertas)
+  // ✅ Botón “Ver Disponibles” (sin descuentos)
   useEffect(() => {
     const handleFiltrarDisponibles = async () => {
       window.__verDisponiblesActivo = true;
-
       setFilterType("");
       setSearchTerm("");
       setPage(1);
 
-      await fetchProducts({ page: 1, mode: "disponibles" }); // 👈 modo correcto
+      await fetchProducts({ page: 1, mode: "disponibles" });
 
       setTimeout(() => {
         if (pageTopRef.current) {
@@ -163,6 +162,28 @@ export default function App() {
       window.removeEventListener("filtrarDisponibles", handleFiltrarDisponibles);
     };
   }, []);
+
+  // 🔗 Abrir producto desde URL (?product=ID)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pid = params.get("product");
+    if (!pid) return;
+
+    // Buscar si ya está en los productos cargados
+    const match = products.find((p) => String(p._id) === pid || String(p.id) === pid);
+    if (match) {
+      setSelectedProduct(match);
+      return;
+    }
+
+    // Si no está cargado, traerlo del backend
+    fetch(`${API_BASE}/api/products/${pid}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data._id) setSelectedProduct(data);
+      })
+      .catch(() => {});
+  }, [products]);
 
   // 🔹 Actualizar producto o eliminar
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
@@ -184,9 +205,7 @@ export default function App() {
   const filteredProducts = products.filter((product) => {
     const name = (product.name || "").toLowerCase();
     const matchesSearch = name.includes((searchTerm || "").toLowerCase());
-
     const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
-
     const price = Number(product.price ?? 0);
     const dpRaw = product.discountPrice;
     const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
@@ -213,12 +232,14 @@ export default function App() {
       {showRegisterUserModal && (
         <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
       )}
+
       {showUserListModal && (
         <UserListModal
           open={showUserListModal}
           onClose={() => setShowUserListModal(false)}
         />
       )}
+
       {showHistoryModal && (
         <HistoryModal
           open={showHistoryModal}
@@ -227,6 +248,7 @@ export default function App() {
           roles={user?.roles || []}
         />
       )}
+
       {showMedidas && (
         <Medidas
           open={showMedidas}
@@ -267,9 +289,13 @@ export default function App() {
           )}
       </div>
 
+      {/* Espaciador */}
       <div className="h-[120px]" />
+
+      {/* Bienvenida */}
       <Bienvenido />
 
+      {/* Barra de filtros */}
       <FilterBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -279,6 +305,7 @@ export default function App() {
         setFilterSizes={setFilterSizes}
       />
 
+      {/* Botón agregar producto */}
       {canAdd && (
         <button
           className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
@@ -289,11 +316,11 @@ export default function App() {
         </button>
       )}
 
+      {/* Lista de productos */}
       <div className="relative w-full">
         <div
           ref={pageTopRef}
-          className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 
-                     sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
+          className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
         >
           {filteredProducts.map((product) => (
             <ProductCard
@@ -307,6 +334,7 @@ export default function App() {
         </div>
       </div>
 
+      {/* Modal de producto */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -319,6 +347,7 @@ export default function App() {
         />
       )}
 
+      {/* Modal agregar producto */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -332,6 +361,7 @@ export default function App() {
         />
       )}
 
+      {/* Modal login */}
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -348,6 +378,7 @@ export default function App() {
         />
       )}
 
+      {/* Paginación */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
@@ -399,6 +430,7 @@ export default function App() {
         </div>
       )}
 
+      {/* Footer */}
       <Footer />
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />

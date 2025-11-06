@@ -393,12 +393,13 @@ export default function ProductModal({
     `¡Hola! 👋 Me interesa la camiseta:\n` +
     `🏷️ ${product?.name} (${product?.type})\n` +
     `💰 Precio: ₡${Number(product?.price || 0).toLocaleString('es-CR')}\n\n` +
-    `🔗 Ver producto:\nhttps://fut-store-frontend.onrender.com/product/${product?._id}`
+    `🔗 Ver producto:\nhttps://fut-store-frontend.onrender.com/?product=${product?._id}`
   )}`}
   target="_blank"
   rel="noopener noreferrer"
   className="mt-4 block bg-green-600 text-white py-2 rounded text-center font-bold hover:bg-green-700 transition-colors"
 >
+
 
 
             <FaWhatsapp className="inline mr-2" />
