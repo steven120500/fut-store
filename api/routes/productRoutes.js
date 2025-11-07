@@ -5,17 +5,24 @@ import History from '../models/History.js';
 import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
 
+
 const router = express.Router();
+
 
 /* ================= Multer ================= */
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+
 /* ================= Helpers ================= */
 
+
+// 🔹 Incluye tallas de adulto, niño y balón
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const KID_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
-const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES]);
+const BALL_SIZES = ['3', '4', '5']; // ⚽ nuevas tallas de balones
+const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES]);
+
 
 function whoDidIt(req) {
   return (
@@ -26,6 +33,7 @@ function whoDidIt(req) {
     'Sistema'
   );
 }
+
 
 function diffInv(label, prev = {}, next = {}) {
   const sizes = new Set([
@@ -41,6 +49,7 @@ function diffInv(label, prev = {}, next = {}) {
   return out;
 }
 
+
 function diffProduct(prev, next) {
   const ch = [];
   if (prev.name !== next.name)
@@ -48,9 +57,7 @@ function diffProduct(prev, next) {
   if (prev.price !== next.price)
     ch.push(`precio: ${prev.price} -> ${next.price}`);
   if (prev.discountPrice !== next.discountPrice)
-    ch.push(
-      `precio oferta: ${prev.discountPrice} -> ${next.discountPrice}`
-    );
+    ch.push(`precio oferta: ${prev.discountPrice} -> ${next.discountPrice}`);
   if (prev.type !== next.type)
     ch.push(`tipo: "${prev.type}" -> "${next.type}"`);
   if (prev.isNew !== next.isNew)
@@ -59,6 +66,7 @@ function diffProduct(prev, next) {
   ch.push(...diffInv('bodega', prev.bodega, next.bodega));
   return ch;
 }
+
 
 function uploadToCloudinary(buffer) {
   return new Promise((resolve, reject) => {
@@ -70,6 +78,7 @@ function uploadToCloudinary(buffer) {
   });
 }
 
+
 function sanitizeInv(obj) {
   const clean = {};
   for (const [size, qty] of Object.entries(obj || {})) {
@@ -80,7 +89,9 @@ function sanitizeInv(obj) {
   return clean;
 }
 
+
 /* ================= Rutas ================= */
+
 
 /** Crear producto */
 router.post('/', upload.any(), async (req, res) => {
@@ -92,6 +103,7 @@ router.post('/', upload.any(), async (req, res) => {
       return res.status(400).json({ error: 'No se enviaron imágenes' });
     }
 
+
     const uploaded = await Promise.all(
       files.map((f) => uploadToCloudinary(f.buffer))
     );
@@ -100,6 +112,7 @@ router.post('/', upload.any(), async (req, res) => {
       url: u.secure_url,
     }));
     const imageSrc = images[0]?.url || '';
+
 
     // stock
     let stock = {};
@@ -115,6 +128,7 @@ router.post('/', upload.any(), async (req, res) => {
     }
     const cleanStock = sanitizeInv(stock);
 
+
     // bodega
     let bodega = {};
     try {
@@ -127,11 +141,13 @@ router.post('/', upload.any(), async (req, res) => {
     }
     const cleanBodega = sanitizeInv(bodega);
 
+
     // campo nuevo
     const isNew =
       req.body.isNew === 'true' ||
       req.body.isNew === true ||
       req.body.isNew === 'on';
+
 
     const product = await Product.create({
       name: String(req.body.name || '').trim(),
@@ -144,8 +160,9 @@ router.post('/', upload.any(), async (req, res) => {
       bodega: cleanBodega,
       imageSrc,
       images,
-      isNew, // 👈 campo NUEVO
+      isNew, // 👈 etiqueta NUEVO
     });
+
 
     await History.create({
       user: whoDidIt(req),
@@ -155,14 +172,14 @@ router.post('/', upload.any(), async (req, res) => {
       details: `img principal: ${imageSrc}`,
     });
 
+
     res.status(201).json(product);
   } catch (err) {
     console.error('POST /api/products error:', err);
-    res
-      .status(500)
-      .json({ error: err.message || 'Error al crear producto' });
+    res.status(500).json({ error: err.message || 'Error al crear producto' });
   }
 });
+
 
 /** Actualizar producto */
 router.put('/:id', async (req, res) => {
@@ -170,6 +187,7 @@ router.put('/:id', async (req, res) => {
     const prev = await Product.findById(req.params.id).lean();
     if (!prev)
       return res.status(404).json({ error: 'Producto no encontrado' });
+
 
     // stock
     let incomingStock = req.body.stock;
@@ -185,6 +203,7 @@ router.put('/:id', async (req, res) => {
       nextStock = sanitizeInv(incomingStock);
     }
 
+
     // bodega
     let incomingBodega = req.body.bodega;
     if (typeof incomingBodega === 'string') {
@@ -198,6 +217,7 @@ router.put('/:id', async (req, res) => {
     if (incomingBodega && typeof incomingBodega === 'object') {
       nextBodega = sanitizeInv(incomingBodega);
     }
+
 
     const update = {
       name:
@@ -220,6 +240,7 @@ router.put('/:id', async (req, res) => {
       bodega: nextBodega,
     };
 
+
     // 👇 nuevo campo
     if (req.body.isNew !== undefined) {
       update.isNew =
@@ -227,6 +248,7 @@ router.put('/:id', async (req, res) => {
         req.body.isNew === true ||
         req.body.isNew === 'on';
     }
+
 
     // imágenes
     if (req.body.imageSrc !== undefined)
@@ -236,6 +258,7 @@ router.put('/:id', async (req, res) => {
     if (req.body.imageAlt !== undefined)
       update.imageAlt = req.body.imageAlt || '';
 
+
     let incomingImages = req.body.images;
     if (typeof incomingImages === 'string') {
       try {
@@ -244,6 +267,7 @@ router.put('/:id', async (req, res) => {
         incomingImages = undefined;
       }
     }
+
 
     if (Array.isArray(incomingImages)) {
       const prevList = prev.images || [];
@@ -275,6 +299,7 @@ router.put('/:id', async (req, res) => {
         }
       }
 
+
       const keepUrls = new Set(normalized.map((i) => i.url));
       for (const old of prevList) {
         if (old.public_id && !keepUrls.has(old.url)) {
@@ -284,16 +309,19 @@ router.put('/:id', async (req, res) => {
         }
       }
 
+
       update.images = normalized;
       update.imageSrc = normalized[0]?.url || '';
       update.imageSrc2 = normalized[1]?.url || '';
     }
+
 
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
       { $set: update },
       { new: true, runValidators: true }
     );
+
 
     const changes = diffProduct(prev, updated.toObject());
     if (changes.length) {
@@ -306,14 +334,14 @@ router.put('/:id', async (req, res) => {
       });
     }
 
+
     res.json(updated);
   } catch (err) {
     console.error('PUT /api/products/:id error:', err);
-    res
-      .status(500)
-      .json({ error: 'Error al actualizar producto' });
+    res.status(500).json({ error: 'Error al actualizar producto' });
   }
 });
+
 
 /** Eliminar producto */
 router.delete('/:id', async (req, res) => {
@@ -321,6 +349,7 @@ router.delete('/:id', async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product)
       return res.status(404).json({ error: 'Producto no encontrado' });
+
 
     for (const img of product.images || []) {
       if (img.public_id) {
@@ -330,26 +359,26 @@ router.delete('/:id', async (req, res) => {
       }
     }
 
+
     await product.deleteOne();
+
 
     await History.create({
       user: whoDidIt(req),
       action: 'eliminó producto',
       item: `${product.name} (${product.type})`,
       date: new Date(),
-      details: `imagenes borradas: ${
-        product.images?.length || 0
-      }`,
+      details: `imagenes borradas: ${product.images?.length || 0}`,
     });
+
 
     res.json({ message: 'Producto eliminado' });
   } catch (err) {
     console.error('DELETE /api/products/:id error:', err);
-    res
-      .status(500)
-      .json({ error: 'Error al eliminar producto' });
+    res.status(500).json({ error: 'Error al eliminar producto' });
   }
 });
+
 
 /** Listado paginado */
 router.get('/', async (req, res) => {
@@ -364,8 +393,10 @@ router.get('/', async (req, res) => {
     const sizes = (req.query.sizes || '').trim();
     const mode = (req.query.mode || '').trim();
 
+
     const find = {};
     if (q) find.name = { $regex: q, $options: 'i' };
+
 
     if (type === 'Ofertas') {
       find.discountPrice = { $ne: null, $gt: 0 };
@@ -399,6 +430,7 @@ router.get('/', async (req, res) => {
       find.type = type;
     }
 
+
     if (sizes) {
       const sizesArray = sizes
         .split(',')
@@ -411,8 +443,10 @@ router.get('/', async (req, res) => {
       }
     }
 
+
     const projection =
       'name price discountPrice type imageSrc images stock bodega createdAt isNew';
+
 
     const [items, total] = await Promise.all([
       Product.find(find)
@@ -424,6 +458,7 @@ router.get('/', async (req, res) => {
       Product.countDocuments(find),
     ]);
 
+
     res.set('Cache-Control', 'public, max-age=20');
     res.json({
       items,
@@ -434,11 +469,10 @@ router.get('/', async (req, res) => {
     });
   } catch (err) {
     console.error('GET /api/products error:', err);
-    res
-      .status(500)
-      .json({ error: 'Error al obtener los productos' });
+    res.status(500).json({ error: 'Error al obtener los productos' });
   }
 });
+
 
 /** Health check */
 router.get('/health', async (_req, res) => {
@@ -449,5 +483,6 @@ router.get('/health', async (_req, res) => {
     res.status(500).json({ ok: false });
   }
 });
+
 
 export default router;

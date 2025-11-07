@@ -319,21 +319,25 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         </label>
 
         {/* Stock */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {tallas.map((size) => (
-            <label key={size} className="text-center">
-              <span className="block mb-1 text-sm font-medium">{size}</span>
-              <input
-                type="number"
-                min="0"
-                defaultValue={stock[size] ?? ""}
-                onChange={(e) => handleInvChange(size, e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-center"
-                inputMode="numeric"
-              />
-            </label>
-          ))}
-        </div>
+        
+
+{/* Stock */}
+<div className="grid grid-cols-3 gap-3 mb-6">
+  {tallas.map((size) => (
+    <label key={size} className="text-center">
+      <span className="block mb-1 text-sm font-medium">{size}</span>
+      <input
+        type="number"
+        min="0"
+        value={stock[size] ?? ""}
+        onChange={(e) => handleInvChange(size, e.target.value)}
+        className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+        inputMode="numeric"
+      />
+    </label>
+  ))}
+</div>
+
 
         {/* Botones */}
         <div className="flex gap-2">
@@ -357,4 +361,3 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     </div>
   );
 }
-
