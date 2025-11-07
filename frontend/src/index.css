@@ -492,9 +492,9 @@ button:focus-visible {
 /* 📱 Tamaño más pequeño en móvil */
 @media (max-width: 640px) {
   .sticker-new {
-    transform: scale(0.8);
-    top: -4px;
-    left: -4px;
+    transform: scale(0.7);
+    top: -18px;
+    left: -18px;
   }
   .sticker-new span {
     font-size: 9px;
