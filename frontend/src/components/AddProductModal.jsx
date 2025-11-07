@@ -78,7 +78,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [price, setPrice] = useState("");
   const [discountPrice, setDiscountPrice] = useState("");
   const [type, setType] = useState("Player");
-  const [isNew, setIsNew] = useState(false); // ✅ NUEVO
+  const [isNew, setIsNew] = useState(false);
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -96,7 +96,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     };
   }, []);
 
-  // 🆕 Incluimos “Balón” con tallas 3, 4, 5
+  // 🔹 Agregar Balón al listado de tipos
   const tallas = useMemo(() => {
     const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"] };
     return tipos[type] || [];
@@ -149,11 +149,13 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     });
   };
 
+  // ✅ Captura de inventario
   const handleInvChange = (size, value) => {
-    const n = Math.max(0, parseInt(value, 10) || 0);
-    setStock((prev) => ({ ...prev, [size]: n }));
+    const num = value === "" ? 0 : Math.max(0, parseInt(value, 10) || 0);
+    setStock((prev) => ({ ...prev, [size]: num }));
   };
 
+  // ✅ Envío de formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (loading) return;
@@ -172,13 +174,18 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
 
       const displayName = user?.username || "ChemaSportER";
 
+      // ✅ Asegurar stock completo
+      const stockFinal = Object.keys(stock).length
+        ? stock
+        : Object.fromEntries(tallas.map((t) => [t, 0]));
+
       const formData = new FormData();
       formData.append("name", name.trim());
       formData.append("price", String(price).trim());
       if (discountPrice) formData.append("discountPrice", String(discountPrice).trim());
       formData.append("type", type.trim());
-      formData.append("stock", JSON.stringify(stock));
-      formData.append("isNew", isNew ? "true" : "false"); // ✅ Campo NUEVO
+      formData.append("stock", JSON.stringify(stockFinal));
+      formData.append("isNew", isNew ? "true" : "false");
 
       for (let i = 0; i < images.length; i++) {
         const blob = images[i].blob || (await srcToBlob(images[i].src));
@@ -299,7 +306,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </select>
 
-        {/* ✅ Checkbox NUEVO */}
+        {/* Checkbox NUEVO */}
         <label className="flex items-center gap-2 mb-4 select-none">
           <input
             type="checkbox"
@@ -319,9 +326,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
               <input
                 type="number"
                 min="0"
-                value={stock[size] ?? ""}
+                defaultValue={stock[size] ?? ""}
                 onChange={(e) => handleInvChange(size, e.target.value)}
                 className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                inputMode="numeric"
               />
             </label>
           ))}
@@ -349,3 +357,4 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     </div>
   );
 }
+
