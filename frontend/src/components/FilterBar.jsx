@@ -1,19 +1,33 @@
+// src/components/FilterBar.jsx
 import React, { useState, useEffect } from "react";
 
 const tipos = [
-  "Player", "Fan", "Mujer", "Niño", "Retro", "Abrigos",
-  "Nacional", "Ofertas", "NBA", "MLB", "Todos"
+  "Player",
+  "Fan",
+  "Mujer",
+  "Niño",
+  "Retro",
+  "Abrigos",
+  "Nacional",
+  "Balón",       // ✅ NUEVO tipo agregado
+  "Ofertas",
+  "NBA",
+  "MLB",
+  "Todos",
 ];
 
 const tallas = [
-  "16","18","20","22","24","26","28",
-  "S","M","L","XL","XXL","3XL","4XL"
+  "16", "18", "20", "22", "24", "26", "28",
+  "S", "M", "L", "XL", "XXL", "3XL", "4XL"
 ];
 
 export default function FilterBar({
-  searchTerm, setSearchTerm,
-  filterType, setFilterType,
-  filterSizes, setFilterSizes
+  searchTerm,
+  setSearchTerm,
+  filterType,
+  setFilterType,
+  filterSizes,
+  setFilterSizes
 }) {
   const [showTipos, setShowTipos] = useState(false);
   const [showTallas, setShowTallas] = useState(false);

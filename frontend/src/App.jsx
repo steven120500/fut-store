@@ -169,14 +169,12 @@ export default function App() {
     const pid = params.get("product");
     if (!pid) return;
 
-    // Buscar si ya está en los productos cargados
     const match = products.find((p) => String(p._id) === pid || String(p.id) === pid);
     if (match) {
       setSelectedProduct(match);
       return;
     }
 
-    // Si no está cargado, traerlo del backend
     fetch(`${API_BASE}/api/products/${pid}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
@@ -201,10 +199,13 @@ export default function App() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🔹 Filtro final de productos
+  // 🧠 ✅ Filtro final con normalización (soporta “Balón”, “Balon”, etc.)
+  const normalize = (str) =>
+    str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   const filteredProducts = products.filter((product) => {
-    const name = (product.name || "").toLowerCase();
-    const matchesSearch = name.includes((searchTerm || "").toLowerCase());
+    const name = normalize(product.name || "");
+    const matchesSearch = name.includes(normalize(searchTerm || ""));
     const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
     const price = Number(product.price ?? 0);
     const dpRaw = product.discountPrice;
@@ -219,8 +220,9 @@ export default function App() {
     }
 
     if (filterType) {
-      const type = (product.type || "").toLowerCase();
-      return matchesSearch && hasStock && type.includes(filterType.toLowerCase());
+      const productType = normalize(product.type || "");
+      const filter = normalize(filterType);
+      return matchesSearch && hasStock && productType.includes(filter);
     }
 
     return matchesSearch && hasStock;
@@ -228,7 +230,6 @@ export default function App() {
 
   return (
     <>
-      {/* Modales */}
       {showRegisterUserModal && (
         <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
       )}
@@ -259,7 +260,6 @@ export default function App() {
 
       {loading && <LoadingOverlay message="Cargando productos..." />}
 
-      {/* 🔝 TopBanner + Header */}
       <div className="fixed top-0 left-0 w-full z-50">
         <TopBanner />
         {!selectedProduct &&
@@ -289,13 +289,9 @@ export default function App() {
           )}
       </div>
 
-      {/* Espaciador */}
       <div className="h-[120px]" />
-
-      {/* Bienvenida */}
       <Bienvenido />
 
-      {/* Barra de filtros */}
       <FilterBar
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
@@ -305,7 +301,6 @@ export default function App() {
         setFilterSizes={setFilterSizes}
       />
 
-      {/* Botón agregar producto */}
       {canAdd && (
         <button
           className="fixed bottom-6 fondo-plateado right-6 text-black p-4 rounded-full shadow-lg transition z-50"
@@ -316,7 +311,6 @@ export default function App() {
         </button>
       )}
 
-      {/* Lista de productos */}
       <div className="relative w-full">
         <div
           ref={pageTopRef}
@@ -334,7 +328,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modal de producto */}
       {selectedProduct && (
         <ProductModal
           key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
@@ -347,7 +340,6 @@ export default function App() {
         />
       )}
 
-      {/* Modal agregar producto */}
       {showAddModal && (
         <AddProductModal
           user={user}
@@ -361,7 +353,6 @@ export default function App() {
         />
       )}
 
-      {/* Modal login */}
       {showLogin && (
         <LoginModal
           isOpen={showLogin}
@@ -378,7 +369,6 @@ export default function App() {
         />
       )}
 
-      {/* Paginación */}
       {pages > 1 && (
         <div className="mt-8 flex flex-col items-center gap-3">
           <nav className="flex items-center justify-center gap-2">
@@ -430,7 +420,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Footer */}
       <Footer />
       <ToastContainer />
       <Toaster position="top-center" reverseOrder={false} />

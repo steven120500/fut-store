@@ -4,7 +4,10 @@ import mongoose from "mongoose";
 // ===== Tallas =====
 const ADULT_SIZES = ['S','M','L','XL','XXL','3XL','4XL'];
 const KID_SIZES   = ['16','18','20','22','24','26','28'];
-const ALL_SIZES   = new Set([...ADULT_SIZES, ...KID_SIZES]);
+const BALL_SIZES  = ['3','4','5']; // ⚽ Tallas de balones
+
+// 🔹 Unificamos todas las tallas válidas
+const ALL_SIZES   = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES]);
 
 // ===== Validadores =====
 const imageAnyValidator = {
@@ -24,6 +27,7 @@ const stockValidator = {
   validator(obj) {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
     for (const [size, qty] of Object.entries(obj)) {
+      // 🔹 Ahora incluye tallas de balón
       if (!ALL_SIZES.has(String(size))) return false;
       const n = Number(qty);
       if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) return false;
@@ -57,9 +61,10 @@ const productSchema = new mongoose.Schema(
     stock: { type: Object, required: true, validate: stockValidator },
     bodega: { type: Object, default: {} },
 
+    // 🔹 Tipo de producto (Player, Fan, Mujer, Niño, Retro, Balón, etc.)
     type: { type: String, required: true, trim: true, maxlength: 40 },
 
-    // 👇 NUEVO CAMPO para mostrar etiqueta “NUEVO”
+    // 👇 Campo adicional para mostrar etiqueta “NUEVO”
     isNew: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -1,3 +1,4 @@
+// src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
 import Araña from "../assets/Araña.png"; // opcional
@@ -17,22 +18,33 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
   const [isHovered, setIsHovered] = useState(false);
 
   const H = 700;
-  const imgMain = product.images?.[0]?.url
-    ? cldUrl(product.images[0].url, 640, H)
-    : null;
+
+  // ✅ Soporte para array de strings, array de objetos o campo imageSrc
+  const imgMain =
+    Array.isArray(product.images) && product.images.length > 0
+      ? cldUrl(
+          typeof product.images[0] === "string"
+            ? product.images[0]
+            : product.images[0]?.url,
+          640,
+          H
+        )
+      : product.imageSrc || null;
 
   const hasDiscount = Number(product.discountPrice) > 0;
   const isNew = Boolean(product.isNew); // ✅ etiqueta NUEVO
 
   // 🔹 Definir tallas según tipo
   const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
-  const tallasNino   = ["16", "18", "20", "22", "24", "26", "28"];
-  const tallasBalon  = ["3", "4", "5"]; // ⚽ tallas para Balón
+  const tallasNino = ["16", "18", "20", "22", "24", "26", "28"];
+  const tallasBalon = ["3", "4", "5"]; // ⚽ tallas específicas para balones
 
-  const type = product.type?.toLowerCase() || "";
-  const isNiño  = type === "niño";
+  // Detectar tipo
+  const type = (product.type || "").trim().toLowerCase();
+  const isNiño = type === "niño";
   const isBalon = type === "balón";
 
+  // Elegir el grupo de tallas según tipo
   const ALL_SIZES = isBalon
     ? tallasBalon
     : isNiño
@@ -45,7 +57,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     product.stock?.[size] ?? null,
   ]);
 
-  // 🔹 Clasificación
+  // 🔹 Clasificación de tallas
   const soldOutSizes = stockEntries
     .filter(([_, qty]) => qty == null || qty <= 0)
     .map(([size]) => size);
@@ -100,16 +112,22 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
         )}
 
         {/* Imagen principal */}
-        <motion.img
-          src={imgMain}
-          alt={product.name}
-          className="w-full h-full object-cover object-center"
-          loading="lazy"
-          decoding="async"
-          fetchpriority="low"
-          animate={{ scale: isHovered ? 1.3 : 1 }}
-          transition={{ duration: 0.4, ease: "easeInOut" }}
-        />
+        {imgMain ? (
+          <motion.img
+            src={imgMain}
+            alt={product.name}
+            className="w-full h-full object-cover object-center"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+            animate={{ scale: isHovered ? 1.3 : 1 }}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+          />
+        ) : (
+          <div className="w-full h-full grid place-items-center text-gray-400">
+            Sin imagen
+          </div>
+        )}
       </div>
 
       {/* 🔸 Tipo */}
@@ -123,10 +141,12 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
 
       {/* Info */}
       <div className="flex flex-col justify-between h-auto p-4">
+        {/* Nombre */}
         <h3 className="text-xs sm:text-sm md:text-base font-bold text-black line-clamp-2 text-left">
           {product.name}
         </h3>
 
+        {/* Precio */}
         <div className="text-right">
           {hasDiscount ? (
             <>
