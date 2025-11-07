@@ -26,9 +26,18 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
 
   // 🔹 Definir tallas según tipo
   const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
-  const tallasNino = ["16", "18", "20", "22", "24", "26", "28"];
-  const isNiño = product.type?.toLowerCase() === "niño";
-  const ALL_SIZES = isNiño ? tallasNino : tallasAdulto;
+  const tallasNino   = ["16", "18", "20", "22", "24", "26", "28"];
+  const tallasBalon  = ["3", "4", "5"]; // ⚽ tallas para Balón
+
+  const type = product.type?.toLowerCase() || "";
+  const isNiño  = type === "niño";
+  const isBalon = type === "balón";
+
+  const ALL_SIZES = isBalon
+    ? tallasBalon
+    : isNiño
+    ? tallasNino
+    : tallasAdulto;
 
   // 🔹 Crear stock con todas las tallas posibles
   const stockEntries = ALL_SIZES.map((size) => [
@@ -55,7 +64,6 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     >
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
-
         {/* 🆕 Sticker plateado */}
         {isNew && (
           <div className="sticker-new">
@@ -136,6 +144,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           )}
         </div>
 
+        {/* ⚙️ Avisos de stock SOLO para admins */}
         {canEdit && (
           <div className="mt-2 text-xs space-y-1">
             {soldOutSizes.length > 0 && (

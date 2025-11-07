@@ -1,4 +1,3 @@
-// src/components/AddProductModal.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FaTimes } from "react-icons/fa";
 import { toast } from "react-toastify";
@@ -77,8 +76,9 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [images, setImages] = useState([]);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
-  const [discountPrice, setDiscountPrice] = useState(""); // 🔹 nuevo campo
+  const [discountPrice, setDiscountPrice] = useState("");
   const [type, setType] = useState("Player");
+  const [isNew, setIsNew] = useState(false); // ✅ NUEVO
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -96,7 +96,11 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     };
   }, []);
 
-  const tallas = useMemo(() => tallaPorTipo[type] || [], [type]);
+  // 🆕 Incluimos “Balón” con tallas 3, 4, 5
+  const tallas = useMemo(() => {
+    const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"] };
+    return tipos[type] || [];
+  }, [type]);
 
   const handleFiles = async (filesLike) => {
     const files = Array.from(filesLike).slice(0, MAX_IMAGES - images.length);
@@ -171,13 +175,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       const formData = new FormData();
       formData.append("name", name.trim());
       formData.append("price", String(price).trim());
-
-      if (discountPrice) {
-        formData.append("discountPrice", String(discountPrice).trim());
-      }
-
+      if (discountPrice) formData.append("discountPrice", String(discountPrice).trim());
       formData.append("type", type.trim());
       formData.append("stock", JSON.stringify(stock));
+      formData.append("isNew", isNew ? "true" : "false"); // ✅ Campo NUEVO
 
       for (let i = 0; i < images.length; i++) {
         const blob = images[i].blob || (await srcToBlob(images[i].src));
@@ -216,7 +217,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         <button
           onClick={onCancel}
           className="absolute fondo-plateado top-6 right-2 text-white bg-black rounded p-1"
-        
         >
           <FaTimes size={30} />
         </button>
@@ -250,7 +250,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 p-2 rounded w-full text-center"
+              className="border-2 text-white border-dashed border-gray-300 p-2 rounded w-full text-center"
             >
               Seleccionar imagen
             </button>
@@ -264,7 +264,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </div>
         )}
 
-        {/* Nombre */}
+        {/* Campos básicos */}
         <input
           type="text"
           placeholder="Nombre del producto"
@@ -273,7 +273,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
-        {/* Precio normal */}
         <input
           type="text"
           placeholder="Precio normal (₡)"
@@ -282,7 +281,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
-        {/* Precio con descuento (opcional) */}
         <input
           type="text"
           placeholder="Precio con descuento (opcional)"
@@ -291,18 +289,29 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
         />
 
-        {/* Tipo */}
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-6"
+          className="w-full px-4 py-2 border border-gray-300 rounded mb-4"
         >
-          {Object.keys(tallaPorTipo).map((t) => (
+          {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"] }).map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
 
-        {/* Tallas */}
+        {/* ✅ Checkbox NUEVO */}
+        <label className="flex items-center gap-2 mb-4 select-none">
+          <input
+            type="checkbox"
+            checked={isNew}
+            onChange={(e) => setIsNew(e.target.checked)}
+          />
+          <span className="text-sm">
+            Mostrar etiqueta <strong>NUEVO</strong>
+          </span>
+        </label>
+
+        {/* Stock */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {tallas.map((size) => (
             <label key={size} className="text-center">
@@ -325,14 +334,13 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
             onClick={handleSubmit}
             disabled={loading}
             className="flex-1 fondo-plateado text-black py-2 rounded hover:brightness-110 transition disabled:opacity-60"
-            
           >
             {loading ? "Agregando..." : "Agregar producto"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border text-white bg-red-600 border-[#9E8F91] text-[#9E8F91] rounded "
+            className="px-4 py-2 border bg-red-600 text-white rounded"
           >
             Cancelar
           </button>

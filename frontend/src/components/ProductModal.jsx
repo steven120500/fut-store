@@ -1,4 +1,3 @@
-// src/components/ProductModal.jsx
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
@@ -7,6 +6,7 @@ const API_BASE = 'https://fut-store.onrender.com';
 
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
+const TALLAS_BALON  = ['3', '4', '5']; // ⚽ NUEVAS tallas para Balones
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 
 const MODAL_IMG_MAX_W = 800;
@@ -76,7 +76,7 @@ export default function ProductModal({
     setEditedDiscountPrice(product?.discountPrice ?? '');
     setEditedType(product?.type || 'Player');
     setEditedStock({ ...(product?.stock  || {}) });
-    setEditedIsNew(Boolean(product?.isNew)); // ✅ sincroniza al abrir/cambiar producto
+    setEditedIsNew(Boolean(product?.isNew)); // ✅ sincroniza
     setLocalImages(
       product?.images?.length
         ? product.images.map(img => ({ src: typeof img === 'string' ? img : img.url, isNew: false }))
@@ -151,7 +151,7 @@ export default function ProductModal({
       setEditedDiscountPrice(updated.discountPrice ?? '');
       setEditedType(updated.type || 'Player');
       setEditedStock({ ...(updated.stock  || {}) });
-      setEditedIsNew(Boolean(updated.isNew)); // ✅ refresca desde respuesta
+      setEditedIsNew(Boolean(updated.isNew));
       setLocalImages(
         updated?.images?.length
           ? updated.images.map(img => ({ src: typeof img === 'string' ? img : img.url, isNew: false }))
@@ -230,8 +230,16 @@ export default function ProductModal({
     setIdx(0);
   };
 
-  const isNino = (isEditing ? editedType : viewProduct?.type) === 'Niño';
-  const tallasVisibles = isNino ? TALLAS_NINO : TALLAS_ADULTO;
+  // ✅ lógica de tallas según tipo
+  const isNino  = (isEditing ? editedType : viewProduct?.type) === 'Niño';
+  const isBalon = (isEditing ? editedType : viewProduct?.type) === 'Balón';
+
+  const tallasVisibles = isBalon
+    ? TALLAS_BALON
+    : isNino
+    ? TALLAS_NINO
+    : TALLAS_ADULTO;
+
   const displayUrl = currentSrc ? transformCloudinary(currentSrc, MODAL_IMG_MAX_W) : '';
 
   return (
@@ -259,7 +267,7 @@ export default function ProductModal({
                 onChange={(e) => setEditedType(e.target.value)}
                 className="w-full px-3 py-2 border rounded mb-3"
               >
-                {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño'].map(t => (
+                {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón'].map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
@@ -408,13 +416,13 @@ export default function ProductModal({
         {/* WhatsApp */}
         <a
           href={`https://wa.me/50672327096?text=${encodeURIComponent(
-            `👋 ¡Hola! Me interesa la camiseta:
+            `👋 ¡Hola! Me interesa el producto:
 
-👕 *${product?.name}* (${product?.type})
+🛒 *${product?.name}* (${product?.type})
 
 💰 *Precio:* ₡${product?.discountPrice > 0 ? product.discountPrice : product.price}
 
-📸 *Ver imagen del producto:* ${product?.imageSrc || ""}`
+📸 *Imagen:* ${product?.imageSrc || ""}`
           )}`}
           target="_blank"
           rel="noopener noreferrer"
