@@ -1,4 +1,3 @@
-// src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
 import Araña from "../assets/Araña.png"; // opcional
@@ -31,7 +30,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
   const isNiño = product.type?.toLowerCase() === "niño";
   const ALL_SIZES = isNiño ? tallasNino : tallasAdulto;
 
-  // 🔹 Crear stock con todas las tallas posibles (si falta → null)
+  // 🔹 Crear stock con todas las tallas posibles
   const stockEntries = ALL_SIZES.map((size) => [
     size,
     product.stock?.[size] ?? null,
@@ -57,14 +56,14 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
 
-        {/* 🆕 Sticker plateado en la esquina */}
+        {/* 🆕 Sticker plateado */}
         {isNew && (
           <div className="sticker-new">
             <span>Nuevo</span>
           </div>
         )}
 
-        {/* 🌟 Etiqueta OFERTA roja con brillo animado */}
+        {/* 🌟 Etiqueta OFERTA */}
         {hasDiscount && (
           <span
             className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden shadow-lg"
@@ -86,7 +85,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
                 background:
                   "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
                 transform: "skewX(-20deg)",
-                animation: "shineMove 5s infinite", // brillo suave/espaciado
+                animation: "shineMove 5s infinite",
               }}
             />
           </span>
@@ -116,12 +115,10 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
 
       {/* Info */}
       <div className="flex flex-col justify-between h-auto p-4">
-        {/* Nombre */}
         <h3 className="text-xs sm:text-sm md:text-base font-bold text-black line-clamp-2 text-left">
           {product.name}
         </h3>
 
-        {/* Precios */}
         <div className="text-right">
           {hasDiscount ? (
             <>
@@ -139,7 +136,6 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           )}
         </div>
 
-        {/* 🔹 Avisos de stock SOLO para admins */}
         {canEdit && (
           <div className="mt-2 text-xs space-y-1">
             {soldOutSizes.length > 0 && (
@@ -155,65 +151,6 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           </div>
         )}
       </div>
-
-      {/* ✨ Estilos internos para el sticker y el brillo */}
-      <style>{`
-        @keyframes shineMove {
-          0% { left: -100%; }
-          40% { left: 120%; }
-          100% { left: 120%; }
-        }
-
-        /* Sticker plateado tipo "peel" en la esquina */
-        .sticker-new {
-          position: absolute;
-          top: -6px;
-          left: -6px;
-          width: 68px;
-          height: 68px;
-          z-index: 10;
-          border-radius: 18px 48px 18px 18px; /* curva marcada arriba-derecha */
-          background: radial-gradient(circle at 30% 30%,rgb(0, 0, 0),rgb(0, 0, 0) 55%,rgb(0, 0, 0) 85%);
-          border: 1px solid rgba(255,255,255,0.6);
-          box-shadow:
-            0 8px 16px rgba(0,0,0,0.18),
-            inset 0 0 10px rgba(206, 201, 201, 0.65);
-          overflow: hidden;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          pointer-events: none; /* no tapa clics al card */
-          opacity: 0.95;       /* se ve un pelín el fondo */
-          backdrop-filter: blur(2px);
-        }
-        .sticker-new span {
-          font-weight: 800;
-          font-size: 10px;
-          text-transform: uppercase;
-          color: #fff;
-          letter-spacing: 0.6px;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.9);
-          transform: translateY(2px);
-        }
-        /* Brillo que atraviesa el sticker de vez en cuando */
-        .sticker-new::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -120%;
-          width: 60%;
-          height: 100%;
-          background: linear-gradient(
-            120deg,
-            rgba(255,255,255,0) 0%,
-            rgba(255,255,255,0.85) 100%,
-            rgba(255,255,255,0) 100%
-          );
-          transform: skewX(-20deg);
-          animation: shineMove 5s infinite; /* cada ~5s, suave */
-        }
-        
-      `}</style>
     </motion.div>
   );
 }
