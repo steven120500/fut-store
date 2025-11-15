@@ -13,7 +13,7 @@ export default function Bienvenido() {
 
 
   return (
-    <section className="relative sm:mt-48 sm:mb-0 mt-12 -mb-60 w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
+    <section className="relative sm:mt-48 sm:mb-0 mt-12 -mb-52 w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
 
 
       {/* 🖼️ Fondo para PC */}
@@ -61,7 +61,7 @@ export default function Bienvenido() {
                        px-6 py-3 sm:py-3 rounded-lg shadow-lg 
                        hover:scale-105 transition-all duration-300"
           >
-            Ver Ofertas
+           Ver Ofertas
           </button>
         </div>
 
