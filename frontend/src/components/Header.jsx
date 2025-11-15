@@ -24,7 +24,7 @@ export default function Header({
 
   return (
     <header
-      className="shadow-md fondo-plateado px-1 sm:px-1 py-1 fixed w-full 
+      className="shadow-md fondo-plateado px-1 sm:px-10 sm:py-4 py-1 fixed w-full 
                  top-8 left-0 z-50 bg-cover bg-center bg-no-repeat"
       style={{
         // backgroundImage: `url(${FondoHeader})`, // ✅ fondo con imagen opcional
