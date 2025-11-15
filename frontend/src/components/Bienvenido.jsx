@@ -39,7 +39,7 @@ export default function Bienvenido() {
         </h1>
 
 
-        {/* 🔘 Botones */}
+        {/* 🔘 Botones
         <div className="mt-10 flex flex-row justify-center items-center gap-3 w-full flex-wrap">
           <button
             onClick={handleVerDisponibles}
@@ -63,7 +63,7 @@ export default function Bienvenido() {
           >
            Ver Ofertas
           </button>
-        </div>
+        </div> */}
 
 
       </div>
