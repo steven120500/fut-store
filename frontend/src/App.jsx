@@ -199,7 +199,7 @@ export default function App() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🧠 ✅ Filtro final con normalización (soporta “Balón”, “Balon”, etc.)
+  // 🧠 ✅ Filtro final con normalización
   const normalize = (str) =>
     str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -216,16 +216,19 @@ export default function App() {
 
     if (window.__verDisponiblesActivo) {
       const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
+      // AQUÍ SÍ mantenemos hasStock para ocultar agotados en modo "Disponibles"
       return matchesSearch && hasStock && noDiscount;
     }
 
     if (filterType) {
       const productType = normalize(product.type || "");
       const filter = normalize(filterType);
-      return matchesSearch && hasStock && productType.includes(filter);
+      // 🔥 CORREGIDO: Eliminado el "&& hasStock"
+      return matchesSearch && productType.includes(filter);
     }
 
-    return matchesSearch && hasStock;
+    // 🔥 CORREGIDO: Eliminado el "&& hasStock"
+    return matchesSearch;
   });
 
   return (

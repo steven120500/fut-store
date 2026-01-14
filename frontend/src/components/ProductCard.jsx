@@ -1,7 +1,7 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
-import Araña from "../assets/Araña.png"; // opcional
+// import Araña from "../assets/Araña.png"; // opcional
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -57,7 +57,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     product.stock?.[size] ?? null,
   ]);
 
-  // 🔹 Clasificación de tallas
+  // 🔹 Clasificación de tallas para Admin
   const soldOutSizes = stockEntries
     .filter(([_, qty]) => qty == null || qty <= 0)
     .map(([size]) => size);
@@ -65,6 +65,10 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
   const lowStockSizes = stockEntries
     .filter(([_, qty]) => qty === 1)
     .map(([size]) => size);
+
+  // 🔥 NUEVA LÓGICA: Calcular si el producto está totalmente agotado
+  const totalStock = stockEntries.reduce((acc, [_, qty]) => acc + (Number(qty) || 0), 0);
+  const isOutOfStock = totalStock <= 0;
 
   return (
     <motion.div
@@ -76,15 +80,25 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     >
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
-        {/* 🆕 Sticker plateado */}
-        {isNew && (
+        
+        {/* 🛑 CARTEL DE AGOTADO (Prioridad Visual) */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50">
+            <span className="bg-red-400 text-white text-lg font-bold px-6 py-2 rounded shadow-2xl transform  border-2 border-white uppercase tracking-widest">
+              Agotado
+            </span>
+          </div>
+        )}
+
+        {/* 🆕 Sticker plateado (Solo si no está agotado para no ensuciar) */}
+        {!isOutOfStock && isNew && (
           <div className="sticker-new">
             <span>Nuevo</span>
           </div>
         )}
 
-        {/* 🌟 Etiqueta OFERTA */}
-        {hasDiscount && (
+        {/* 🌟 Etiqueta OFERTA (Solo si no está agotado) */}
+        {!isOutOfStock && hasDiscount && (
           <span
             className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden shadow-lg"
             style={{
@@ -116,7 +130,8 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           <motion.img
             src={imgMain}
             alt={product.name}
-            className="w-full h-full object-cover object-center"
+            // Si está agotado, le bajamos un poco la opacidad y saturación (escala de grises)
+            className={`w-full h-full object-cover object-center ${isOutOfStock ? "opacity-75 grayscale" : ""}`}
             loading="lazy"
             decoding="async"
             fetchpriority="low"
@@ -167,15 +182,18 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
         {/* ⚙️ Avisos de stock SOLO para admins */}
         {canEdit && (
           <div className="mt-2 text-xs space-y-1">
-            {soldOutSizes.length > 0 && (
+            {soldOutSizes.length > 0 && !isOutOfStock && (
               <p className="text-red-600 flex items-center gap-1">
-                ⚠️ Agotado en tallas {soldOutSizes.join(", ")}
+                ⚠️ Agotado en {soldOutSizes.join(", ")}
               </p>
             )}
-            {lowStockSizes.length > 0 && (
+            {lowStockSizes.length > 0 && !isOutOfStock && (
               <p className="text-gray-600 flex items-center gap-1">
-                ⚠️ Queda 1 en tallas {lowStockSizes.join(", ")}
+                ⚠️ Queda 1 en {lowStockSizes.join(", ")}
               </p>
+            )}
+            {isOutOfStock && (
+               <p className="text-red-600 font-bold">⚠️ SIN STOCK TOTAL</p>
             )}
           </div>
         )}

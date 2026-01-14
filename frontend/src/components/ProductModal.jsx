@@ -169,7 +169,7 @@ export default function ProductModal({
 
       onUpdate?.(updated);
       setIsEditing(false);
-      toast.success('Producto actualizado correctamente');
+      
       
     } catch (err) {
       console.error(err);
@@ -452,7 +452,7 @@ export default function ProductModal({
 
         {/* ✅ NUEVO: Cuadro de confirmación personalizado sobrepuesto */}
         {showConfirmDelete && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50 rounded-lg backdrop-blur-sm">
+          <div className="absolute bottom-3 left-0 right-0 bg-black/60 flex items-center justify-center z-50 rounded-lg backdrop-blur-sm">
             <div className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-xs mx-4 border-2 border-red-100">
               <FaTimes className="mx-auto text-red-500 mb-3" size={40} />
               <h3 className="text-xl font-bold mb-2 text-gray-800">¿Estás seguro?</h3>
