@@ -6,7 +6,7 @@ const API_BASE = 'https://fut-store.onrender.com';
 
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
-const TALLAS_BALON  = ['3', '4', '5']; // ⚽ NUEVAS tallas para Balones
+const TALLAS_BALON  = ['3', '4', '5'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 
 const MODAL_IMG_MAX_W = 800;
@@ -39,6 +39,9 @@ export default function ProductModal({
 }) {
   const modalRef = useRef(null);
 
+  // ✅ NUEVO ESTADO: para controlar la visualización del cuadro de confirmación
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
   const [viewProduct, setViewProduct] = useState(product);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -49,7 +52,7 @@ export default function ProductModal({
     product?.discountPrice ?? ''
   );
   const [editedType,   setEditedType]   = useState(product?.type || 'Player');
-  const [editedIsNew,  setEditedIsNew]  = useState(Boolean(product?.isNew)); // ✅ NUEVO
+  const [editedIsNew,  setEditedIsNew]  = useState(Boolean(product?.isNew));
   const [loading,      setLoading]      = useState(false);
 
   const galleryFromProduct = useMemo(() => {
@@ -76,7 +79,7 @@ export default function ProductModal({
     setEditedDiscountPrice(product?.discountPrice ?? '');
     setEditedType(product?.type || 'Player');
     setEditedStock({ ...(product?.stock  || {}) });
-    setEditedIsNew(Boolean(product?.isNew)); // ✅ sincroniza
+    setEditedIsNew(Boolean(product?.isNew));
     setLocalImages(
       product?.images?.length
         ? product.images.map(img => ({ src: typeof img === 'string' ? img : img.url, isNew: false }))
@@ -86,6 +89,8 @@ export default function ProductModal({
           ]
     );
     setIdx(0);
+    // Reseteamos el estado de confirmación al cambiar de producto
+    setShowConfirmDelete(false);
   }, [product]);
 
   useEffect(() => {
@@ -108,7 +113,6 @@ export default function ProductModal({
 
       const priceInt = Math.max(0, parseInt(editedPrice, 10) || 0);
 
-      // 👇 no guardar 0 ni vacío para descuento
       let discountInt = null;
       if (editedDiscountPrice !== '' && !isNaN(Number(editedDiscountPrice))) {
         const val = parseInt(editedDiscountPrice, 10);
@@ -130,7 +134,7 @@ export default function ProductModal({
         imageSrc:  localImages[0]?.src || null,
         imageSrc2: localImages[1]?.src || null,
         imageAlt: (editedName || '').trim(),
-        isNew: !!editedIsNew, // ✅ enviar al backend
+        isNew: !!editedIsNew,
       };
 
       const res = await fetch(`${API_BASE}/api/products/${encodeURIComponent(id)}`, {
@@ -146,6 +150,7 @@ export default function ProductModal({
 
       const updated = await res.json();
       setViewProduct(updated);
+      // Actualizar estados locales...
       setEditedName(updated.name || '');
       setEditedPrice(updated.price ?? 0);
       setEditedDiscountPrice(updated.discountPrice ?? '');
@@ -164,6 +169,7 @@ export default function ProductModal({
 
       onUpdate?.(updated);
       setIsEditing(false);
+      toast.success('Producto actualizado correctamente');
       
     } catch (err) {
       console.error(err);
@@ -173,13 +179,17 @@ export default function ProductModal({
     }
   };
 
-  const handleDelete = async () => {
+  // ✅ NUEVA FUNCIÓN: Ejecuta el borrado real cuando se confirma en el cuadro personalizado
+  const executeDelete = async () => {
     if (loading) return;
+    
     const id = product?._id || product?.id;
     if (!id || !isLikelyObjectId(id)) {
       toast.error('ID inválido');
+      setShowConfirmDelete(false); // Ocultamos el cuadro
       return;
     }
+
     try {
       setLoading(true);
       const displayName = user?.username || 'FutStore';
@@ -187,13 +197,18 @@ export default function ProductModal({
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'x-user': displayName },
       });
+      
       if (!res.ok) throw new Error(`Error ${res.status}`);
+      
+      
       onUpdate?.(null, id);
       onClose?.();
+
     } catch {
       toast.error('No se pudo eliminar');
     } finally {
       setLoading(false);
+      setShowConfirmDelete(false); // Aseguramos que se oculte el cuadro
     }
   };
 
@@ -230,7 +245,6 @@ export default function ProductModal({
     setIdx(0);
   };
 
-  // ✅ lógica de tallas según tipo
   const isNino  = (isEditing ? editedType : viewProduct?.type) === 'Niño';
   const isBalon = (isEditing ? editedType : viewProduct?.type) === 'Balón';
 
@@ -246,7 +260,8 @@ export default function ProductModal({
     <div className="mt-10 mb-16 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6">
       <div
         ref={modalRef}
-        className="pt-12 pb-24 relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto"
+        // Añadido 'relative' aquí para que el cuadro de confirmación se posicione respecto a este contenedor
+        className="relative pt-12 pb-24 bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto"
       >
         {/* Botón cerrar */}
         <button
@@ -297,7 +312,6 @@ export default function ProductModal({
                 placeholder="Dejar vacío si no tiene"
               />
 
-              {/* ✅ Checkbox NUEVO */}
               <label className="flex items-center gap-2 mt-1 mb-3 select-none">
                 <input
                   type="checkbox"
@@ -407,7 +421,11 @@ export default function ProductModal({
             </button>
           )}
           {canDelete && (
-            <button className="bg-red-600 text-white py-2 rounded" onClick={handleDelete}>
+            // ✅ MODIFICADO: Ahora solo activa el estado de confirmación
+            <button 
+                className="bg-red-600 text-white py-2 rounded hover:bg-red-700 transition" 
+                onClick={() => setShowConfirmDelete(true)}
+            >
               Eliminar
             </button>
           )}
@@ -431,6 +449,36 @@ export default function ProductModal({
           <FaWhatsapp className="inline mr-2" />
           Enviar mensaje por WhatsApp
         </a>
+
+        {/* ✅ NUEVO: Cuadro de confirmación personalizado sobrepuesto */}
+        {showConfirmDelete && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-50 rounded-lg backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-xs mx-4 border-2 border-red-100">
+              <FaTimes className="mx-auto text-red-500 mb-3" size={40} />
+              <h3 className="text-xl font-bold mb-2 text-gray-800">¿Estás seguro?</h3>
+              <p className="text-gray-600 mb-6 text-sm">
+                ¿Quieres eliminar este producto permanentemente? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => setShowConfirmDelete(false)} // Cancelar
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md font-semibold hover:bg-gray-300 transition"
+                  disabled={loading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={executeDelete} // Proceder con el borrado real
+                  className="px-4 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition flex items-center"
+                  disabled={loading}
+                >
+                  {loading ? 'Eliminando...' : 'Sí, Eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
