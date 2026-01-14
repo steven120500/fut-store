@@ -53,6 +53,9 @@ export default function App() {
   const pages = Math.max(1, Math.ceil(total / limit));
   const pageTopRef = useRef(null);
 
+  // ✅ 1. NUEVO: Referencia para saber si es la primera carga (Solución del bug de scroll)
+  const isFirstRun = useRef(true);
+
   // 🔹 Estado del usuario
   const [user, setUser] = useState(() => {
     try {
@@ -108,16 +111,32 @@ export default function App() {
     }
   };
 
-  // 🔁 Cargar y mover scroll arriba
+  // ✅ 2. MODIFICADO: Lógica de carga y scroll inteligente
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
-    if (pageTopRef.current) {
-      const rect = pageTopRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const targetY = rect.top + scrollTop;
-      window.scrollTo({ top: targetY - 120, behavior: "smooth" });
+
+    if (isFirstRun.current) {
+      // Si es la PRIMERA VEZ (refresh): Forzamos ir arriba y desactivamos la bandera
+      window.scrollTo(0, 0);
+      isFirstRun.current = false;
+    } else {
+      // Si NO es la primera vez (ej: cambiaste de página): Hacemos scroll suave a los productos
+      if (pageTopRef.current) {
+        const rect = pageTopRef.current.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetY = rect.top + scrollTop;
+        window.scrollTo({ top: targetY - 120, behavior: "smooth" });
+      }
     }
   }, [page, searchTerm, filterType, filterSizes]);
+
+  // ✅ 3. NUEVO: Forzar navegador a olvidar la posición al recargar
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
 
   // 🔸 Botón “Ver Ofertas”
   useEffect(() => {
@@ -216,18 +235,15 @@ export default function App() {
 
     if (window.__verDisponiblesActivo) {
       const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
-      // AQUÍ SÍ mantenemos hasStock para ocultar agotados en modo "Disponibles"
       return matchesSearch && hasStock && noDiscount;
     }
 
     if (filterType) {
       const productType = normalize(product.type || "");
       const filter = normalize(filterType);
-      // 🔥 CORREGIDO: Eliminado el "&& hasStock"
       return matchesSearch && productType.includes(filter);
     }
 
-    // 🔥 CORREGIDO: Eliminado el "&& hasStock"
     return matchesSearch;
   });
 
