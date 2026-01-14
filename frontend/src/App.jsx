@@ -1,5 +1,8 @@
 import { Toaster } from "react-hot-toast";
 import React, { useEffect, useRef, useState } from "react";
+// 👇 IMPORTANTE: Importamos motion y AnimatePresence
+import { AnimatePresence } from "framer-motion";
+
 import Header from "./components/Header";
 import ProductCard from "./components/ProductCard";
 import ProductModal from "./components/ProductModal";
@@ -23,13 +26,11 @@ import FilterBar from "./components/FilterBar";
 const API_BASE = "https://fut-store.onrender.com";
 const GOLD = "#9E8F91";
 
-// 🔹 Función auxiliar de paginación
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
   return [...out].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
 }
 
-// 🔹 Obtiene ID de producto
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
 export default function App() {
@@ -53,10 +54,8 @@ export default function App() {
   const pages = Math.max(1, Math.ceil(total / limit));
   const pageTopRef = useRef(null);
 
-  // ✅ 1. NUEVO: Referencia para saber si es la primera carga (Solución del bug de scroll)
   const isFirstRun = useRef(true);
 
-  // 🔹 Estado del usuario
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -78,7 +77,6 @@ export default function App() {
     toast.success("Sesión cerrada correctamente");
   };
 
-  // 🔹 Obtener productos del backend
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
@@ -111,16 +109,13 @@ export default function App() {
     }
   };
 
-  // ✅ 2. MODIFICADO: Lógica de carga y scroll inteligente
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
 
     if (isFirstRun.current) {
-      // Si es la PRIMERA VEZ (refresh): Forzamos ir arriba y desactivamos la bandera
       window.scrollTo(0, 0);
       isFirstRun.current = false;
     } else {
-      // Si NO es la primera vez (ej: cambiaste de página): Hacemos scroll suave a los productos
       if (pageTopRef.current) {
         const rect = pageTopRef.current.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -130,7 +125,6 @@ export default function App() {
     }
   }, [page, searchTerm, filterType, filterSizes]);
 
-  // ✅ 3. NUEVO: Forzar navegador a olvidar la posición al recargar
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
@@ -138,7 +132,6 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
-  // 🔸 Botón “Ver Ofertas”
   useEffect(() => {
     const handleFiltrarOfertas = () => {
       delete window.__verDisponiblesActivo;
@@ -157,7 +150,6 @@ export default function App() {
     return () => window.removeEventListener("filtrarOfertas", handleFiltrarOfertas);
   }, []);
 
-  // ✅ Botón “Ver Disponibles” (sin descuentos)
   useEffect(() => {
     const handleFiltrarDisponibles = async () => {
       window.__verDisponiblesActivo = true;
@@ -182,7 +174,6 @@ export default function App() {
     };
   }, []);
 
-  // 🔗 Abrir producto desde URL (?product=ID)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pid = params.get("product");
@@ -202,7 +193,6 @@ export default function App() {
       .catch(() => {});
   }, [products]);
 
-  // 🔹 Actualizar producto o eliminar
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
     if (deletedId) {
       setProducts((prev) => prev.filter((p) => getPid(p) !== String(deletedId)));
@@ -218,7 +208,6 @@ export default function App() {
     toast.success("Producto actualizado correctamente");
   };
 
-  // 🧠 ✅ Filtro final con normalización
   const normalize = (str) =>
     str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -347,17 +336,20 @@ export default function App() {
         </div>
       </div>
 
-      {selectedProduct && (
-        <ProductModal
-          key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
-          product={selectedProduct}
-          onClose={() => setSelectedProduct(null)}
-          onUpdate={handleProductUpdate}
-          canEdit={canEdit}
-          canDelete={canDelete}
-          user={user}
-        />
-      )}
+      {/* 👇 AQUÍ ESTÁ LA MAGIA DE LA ANIMACIÓN DE CIERRE */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <ProductModal
+            key={`${getPid(selectedProduct)}-${selectedProduct.updatedAt || ""}`}
+            product={selectedProduct}
+            onClose={() => setSelectedProduct(null)}
+            onUpdate={handleProductUpdate}
+            canEdit={canEdit}
+            canDelete={canDelete}
+            user={user}
+          />
+        )}
+      </AnimatePresence>
 
       {showAddModal && (
         <AddProductModal

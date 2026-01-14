@@ -53,7 +53,7 @@ export default function Bienvenido() {
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/20 via-black/50 to-black/80" />
 
       {/* 🔹 Contenido Principal */}
-      <div className="mt-12 sm:mt-16 md:mt-20 relative z-10 px-6 max-w-5xl mx-auto flex flex-col items-center">
+      <div className="mt-16 sm:mt-18 md:mt-24 relative z-10 px-6 max-w-5xl mx-auto flex flex-col items-center">
         
         {/* ✨ TÍTULO ANIMADO */}
         <motion.h1 

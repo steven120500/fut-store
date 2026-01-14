@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+// 👇 1. Importamos motion para las animaciones
+import { motion } from "framer-motion";
 
 const API_BASE = 'https://fut-store.onrender.com';
 
@@ -39,7 +41,7 @@ export default function ProductModal({
 }) {
   const modalRef = useRef(null);
 
-  // ✅ NUEVO ESTADO: para controlar la visualización del cuadro de confirmación
+  // Estado para controlar la visualización del cuadro de confirmación
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const [viewProduct, setViewProduct] = useState(product);
@@ -89,7 +91,6 @@ export default function ProductModal({
           ]
     );
     setIdx(0);
-    // Reseteamos el estado de confirmación al cambiar de producto
     setShowConfirmDelete(false);
   }, [product]);
 
@@ -150,7 +151,6 @@ export default function ProductModal({
 
       const updated = await res.json();
       setViewProduct(updated);
-      // Actualizar estados locales...
       setEditedName(updated.name || '');
       setEditedPrice(updated.price ?? 0);
       setEditedDiscountPrice(updated.discountPrice ?? '');
@@ -170,7 +170,6 @@ export default function ProductModal({
       onUpdate?.(updated);
       setIsEditing(false);
       
-      
     } catch (err) {
       console.error(err);
       toast.error('Error al actualizar el producto');
@@ -179,14 +178,13 @@ export default function ProductModal({
     }
   };
 
-  // ✅ NUEVA FUNCIÓN: Ejecuta el borrado real cuando se confirma en el cuadro personalizado
   const executeDelete = async () => {
     if (loading) return;
     
     const id = product?._id || product?.id;
     if (!id || !isLikelyObjectId(id)) {
       toast.error('ID inválido');
-      setShowConfirmDelete(false); // Ocultamos el cuadro
+      setShowConfirmDelete(false); 
       return;
     }
 
@@ -200,7 +198,6 @@ export default function ProductModal({
       
       if (!res.ok) throw new Error(`Error ${res.status}`);
       
-      
       onUpdate?.(null, id);
       onClose?.();
 
@@ -208,7 +205,7 @@ export default function ProductModal({
       toast.error('No se pudo eliminar');
     } finally {
       setLoading(false);
-      setShowConfirmDelete(false); // Aseguramos que se oculte el cuadro
+      setShowConfirmDelete(false); 
     }
   };
 
@@ -257,10 +254,23 @@ export default function ProductModal({
   const displayUrl = currentSrc ? transformCloudinary(currentSrc, MODAL_IMG_MAX_W) : '';
 
   return (
-    <div className="mt-10 mb-16 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6">
-      <div
+    // 👇 2. Convertimos el div contenedor en motion.div (Fondo Oscuro)
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="mt-10 mb-16 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6 backdrop-blur-sm"
+      onClick={onClose} // Cerrar al hacer click fuera
+    >
+      {/* 👇 3. Convertimos la tarjeta en motion.div (Efecto Pop-up) */}
+      <motion.div
         ref={modalRef}
-        // Añadido 'relative' aquí para que el cuadro de confirmación se posicione respecto a este contenedor
+        onClick={(e) => e.stopPropagation()} // Evitar cierre al clickear adentro
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="relative pt-12 pb-24 bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto"
       >
         {/* Botón cerrar */}
@@ -421,7 +431,6 @@ export default function ProductModal({
             </button>
           )}
           {canDelete && (
-            // ✅ MODIFICADO: Ahora solo activa el estado de confirmación
             <button 
                 className="bg-red-600 text-white py-2 rounded hover:bg-red-700 transition" 
                 onClick={() => setShowConfirmDelete(true)}
@@ -450,10 +459,14 @@ export default function ProductModal({
           Enviar mensaje por WhatsApp
         </a>
 
-        {/* ✅ NUEVO: Cuadro de confirmación personalizado sobrepuesto */}
+        {/* ✅ Cuadro de confirmación animado */}
         {showConfirmDelete && (
           <div className="absolute bottom-3 left-0 right-0 bg-black/60 flex items-center justify-center z-50 rounded-lg backdrop-blur-sm">
-            <div className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-xs mx-4 border-2 border-red-100">
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white p-6 rounded-xl shadow-2xl text-center max-w-xs mx-4 border-2 border-red-100"
+            >
               <FaTimes className="mx-auto text-red-500 mb-3" size={40} />
               <h3 className="text-xl font-bold mb-2 text-gray-800">¿Estás seguro?</h3>
               <p className="text-gray-600 mb-6 text-sm">
@@ -461,25 +474,25 @@ export default function ProductModal({
               </p>
               <div className="flex gap-3 justify-center">
                 <button
-                  onClick={() => setShowConfirmDelete(false)} // Cancelar
+                  onClick={() => setShowConfirmDelete(false)}
                   className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md font-semibold hover:bg-gray-300 transition"
                   disabled={loading}
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={executeDelete} // Proceder con el borrado real
+                  onClick={executeDelete}
                   className="px-4 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition flex items-center"
                   disabled={loading}
                 >
                   {loading ? 'Eliminando...' : 'Sí, Eliminar'}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </div>
         )}
 
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
