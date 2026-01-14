@@ -1,7 +1,6 @@
 // src/components/ProductCard.jsx
 import { motion } from "framer-motion";
 import { useState } from "react";
-// import Araña from "../assets/Araña.png"; // opcional
 
 // 🔽 helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -32,12 +31,12 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
       : product.imageSrc || null;
 
   const hasDiscount = Number(product.discountPrice) > 0;
-  const isNew = Boolean(product.isNew); // ✅ etiqueta NUEVO
+  const isNew = Boolean(product.isNew);
 
   // 🔹 Definir tallas según tipo
   const tallasAdulto = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
   const tallasNino = ["16", "18", "20", "22", "24", "26", "28"];
-  const tallasBalon = ["3", "4", "5"]; // ⚽ tallas específicas para balones
+  const tallasBalon = ["3", "4", "5"];
 
   // Detectar tipo
   const type = (product.type || "").trim().toLowerCase();
@@ -66,7 +65,7 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
     .filter(([_, qty]) => qty === 1)
     .map(([size]) => size);
 
-  // 🔥 NUEVA LÓGICA: Calcular si el producto está totalmente agotado
+  // 🔥 Calcular si el producto está totalmente agotado
   const totalStock = stockEntries.reduce((acc, [_, qty]) => acc + (Number(qty) || 0), 0);
   const isOutOfStock = totalStock <= 0;
 
@@ -81,16 +80,25 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
       {/* Imagen */}
       <div className="relative w-full h-[300px] bg-gray-100 overflow-hidden">
         
-        {/* 🛑 CARTEL DE AGOTADO (Prioridad Visual) */}
+        {/* 🛑 CARTEL DE AGOTADO (CORREGIDO PARA MÓVIL) */}
         {isOutOfStock && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50">
-            <span className="bg-red-400 text-white text-lg font-bold px-6 py-2 rounded shadow-2xl transform  border-2 border-white uppercase tracking-widest">
+            <span className="
+              bg-red-400 text-white font-bold 
+              transform  uppercase tracking-widest shadow-2xl
+              
+              /* 📱 ESTILOS MÓVIL (Por defecto) */
+              text-xs px-3 py-1 border border-white rounded-sm
+              
+              /* 💻 ESTILOS DE ESCRITORIO (sm: para arriba) */
+              sm:text-lg sm:px-6 sm:py-2 sm:border-2 sm:rounded
+            ">
               Agotado
             </span>
           </div>
         )}
 
-        {/* 🆕 Sticker plateado (Solo si no está agotado para no ensuciar) */}
+        {/* 🆕 Sticker plateado (Solo si no está agotado) */}
         {!isOutOfStock && isNew && (
           <div className="sticker-new">
             <span>Nuevo</span>
@@ -130,7 +138,6 @@ export default function ProductCard({ product, onClick, user, canEdit }) {
           <motion.img
             src={imgMain}
             alt={product.name}
-            // Si está agotado, le bajamos un poco la opacidad y saturación (escala de grises)
             className={`w-full h-full object-cover object-center ${isOutOfStock ? "opacity-75 grayscale" : ""}`}
             loading="lazy"
             decoding="async"

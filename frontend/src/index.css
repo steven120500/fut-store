@@ -377,40 +377,52 @@ button:focus-visible {
   }
 }
 
-/* 🎨 Texto plateado con reflejo suave (igual al header) */
-.text-plateado {
-  color: #9E8F91;
-  text-shadow: 0 0 6px rgba(158, 143, 145, 0.4);
-  font-weight: 700;
-  letter-spacing: 0.5px;
+/* 1. Definimos la animación del brillo pasando */
+@keyframes brilloMetalico {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
 }
 
-/* 🩶 Texto plateado con brillo animado */
+/* 2. Clase mejorada */
 .text-plateado {
-  position: relative;
-  color: #9E8F91;
-  font-weight: 800;
-  text-shadow: 0 0 6px rgba(158, 143, 145, 0.4);
-  overflow: hidden;
-}
-
-/* ✨ Texto plateado con brillo solo dentro de las letras */
-.text-plateado {
+  /* Tipografía fuerte para que se note el metal */
+  font-weight: 900; 
+  letter-spacing: 1px;
+  
+  /* El Gradiente "Premium":
+     Usamos tu color base (#9E8F91) pero agregamos blanco puro 
+     y tonos más oscuros para dar volumen 3D */
   background: linear-gradient(
-    90deg,
-    #9E8F91 0%,
-    #d8cfcf 25%,
-    #ffffff 50%,
-    #9E8F91 75%,
-    #b8a9ac 100%
+    110deg, 
+    #7a6a6c 10%,      /* Sombra metálica */
+    #9E8F91 30%,      /* Tu color base */
+    #ffffff 45%,      /* ✨ Brillo intenso (Punto de luz) */
+    #ffffff 55%,      /* ✨ Brillo intenso mantenido */
+    #9E8F91 70%,      /* Tu color base */
+    #7a6a6c 90%       /* Sombra metálica */
   );
-  background-size: 200%;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: brilloSoloTexto 4s linear infinite;
-  font-weight: 800;
-}
 
+  /* Tamaño del fondo para permitir el movimiento */
+  background-size: 200% auto;
+  
+  /* Recortar el fondo a la forma de las letras */
+  -webkit-background-clip: text;
+  background-clip: text;
+  
+  /* Hacer las letras transparentes para ver el metal */
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  
+  /* Animación: 3 segundos, movimiento suave e infinito */
+  animation: brilloMetalico 3s linear infinite;
+
+  /* IMPORTANTE: Usamos filter en vez de text-shadow para textos con gradiente */
+  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.5));
+}
 /* 🔁 Movimiento del brillo dentro de las letras */
 @keyframes brilloSoloTexto {
   0% {
