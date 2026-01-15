@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-// 👇 1. Importamos motion para las animaciones
-import { motion } from "framer-motion";
+// 👇 1. Importamos motion y AnimatePresence (Necesario para el slide de fotos)
+import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE = 'https://fut-store.onrender.com';
 
@@ -254,19 +254,19 @@ export default function ProductModal({
   const displayUrl = currentSrc ? transformCloudinary(currentSrc, MODAL_IMG_MAX_W) : '';
 
   return (
-    // 👇 2. Convertimos el div contenedor en motion.div (Fondo Oscuro)
+    // 🔽 1. ANIMACIÓN DEL FONDO (Fade in)
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
       className="mt-10 mb-16 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6 backdrop-blur-sm"
-      onClick={onClose} // Cerrar al hacer click fuera
+      onClick={onClose}
     >
-      {/* 👇 3. Convertimos la tarjeta en motion.div (Efecto Pop-up) */}
+      {/* 🔽 2. ANIMACIÓN DEL MODAL (Scale Pop-up) */}
       <motion.div
         ref={modalRef}
-        onClick={(e) => e.stopPropagation()} // Evitar cierre al clickear adentro
+        onClick={(e) => e.stopPropagation()} 
         initial={{ scale: 0.9, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -341,21 +341,52 @@ export default function ProductModal({
           )}
         </div>
 
-        {/* Imagen */}
+        {/* 🔽 3. IMAGEN CON ANIMACIÓN (SLIDE + FADE) */}
         {!isEditing ? (
-          <div className="relative mb-4 flex items-center justify-center">
-            {displayUrl ? (
-              <img src={displayUrl} alt={viewProduct?.name} className="rounded max-h-[400px] object-contain"/>
-            ) : <div className="h-[300px] grid place-items-center">Sin imagen</div>}
+          <div className="relative mb-4 flex items-center justify-center h-[400px] overflow-hidden"> {/* Height fijo para evitar saltos */}
+            <AnimatePresence mode="wait">
+              {displayUrl ? (
+                <motion.img
+                  key={displayUrl} // 🔑 CRUCIAL: React detecta el cambio de URL y dispara la animación
+                  src={displayUrl}
+                  alt={viewProduct?.name}
+                  className="rounded max-h-[400px] object-contain cursor-grab active:cursor-grabbing"
+                  
+                  // Efecto Deslizar
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  
+                  loading="eager" // ⚡ Carga instantánea para que se vea el efecto
+                  draggable="false"
+                />
+              ) : (
+                <div className="h-[300px] w-full grid place-items-center text-gray-400">
+                  Sin imagen
+                </div>
+              )}
+            </AnimatePresence>
+
             {hasMany && (
               <>
-                <button onClick={() => setIdx(i => (i - 1 + localImages.length) % localImages.length)}
-                  className="absolute fondo-plateado left-0 px-3 py-1 rounded-full">
-                  <FaChevronLeft/>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIdx(i => (i - 1 + localImages.length) % localImages.length);
+                  }}
+                  className="absolute left-2 z-10 bg-black/30 hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
+                >
+                  <FaChevronLeft size={20}/>
                 </button>
-                <button onClick={() => setIdx(i => (i + 1) % localImages.length)}
-                  className="absolute fondo-plateado right-0 px-3 py-1 rounded-full">
-                  <FaChevronRight/>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIdx(i => (i + 1) % localImages.length);
+                  }}
+                  className="absolute right-2 z-10 bg-black/30 hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
+                >
+                  <FaChevronRight size={20}/>
                 </button>
               </>
             )}
