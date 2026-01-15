@@ -375,7 +375,7 @@ export default function ProductModal({
                     e.stopPropagation();
                     setIdx(i => (i - 1 + localImages.length) % localImages.length);
                   }}
-                  className="absolute left-2 z-10 bg-black/30 hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
+                  className="absolute left-2 z-10 fondo-plateado hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
                 >
                   <FaChevronLeft size={20}/>
                 </button>
@@ -384,7 +384,7 @@ export default function ProductModal({
                     e.stopPropagation();
                     setIdx(i => (i + 1) % localImages.length);
                   }}
-                  className="absolute right-2 z-10 bg-black/30 hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
+                  className="absolute right-2 z-10 fondo-plateado hover:bg-black/70 text-white p-2 rounded-full transition-all backdrop-blur-sm"
                 >
                   <FaChevronRight size={20}/>
                 </button>
