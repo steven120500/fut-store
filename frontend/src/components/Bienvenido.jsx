@@ -83,14 +83,14 @@ export default function Bienvenido() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
+            <h1 className="mb-6 text-5xl md:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
               BIENVENIDO
             </h1>
-            <h2 className="text-4xl md:text-6xl font-light text-gray-200 mt-2">
+            <h2 className="mb-8 text-4xl md:text-6xl font-light text-gray-200 mt-2">
               a <span className="font-serif italic text-white">FutStore</span>
             </h2>
             
-            <p className="mt-6 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
+            <p className="mb-10 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
               La mejor calidad, la misma pasión.
             </p>
           </motion.div>
