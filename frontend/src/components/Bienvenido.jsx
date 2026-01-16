@@ -56,7 +56,7 @@ export default function Bienvenido() {
   };
 
   return (
-    <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
+    <section className="relative  md:top-0 w-full h-full flex flex-col items-center justify-center overflow-hidden">
       
       {/* 🖼️ FONDO RESPONSIVE (NUEVO) */}
       {/* Aquí usamos tus nuevas imágenes: FondoM para móvil, FondoD para escritorio */}
@@ -83,14 +83,14 @@ export default function Bienvenido() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="mb-6 text-5xl md:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
+            <h1 className="mt-2 mb-16 text-5xl md:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
               BIENVENIDO
             </h1>
-            <h2 className="mb-8 text-4xl md:text-6xl font-light text-gray-200 mt-2">
+            <h2 className="-mt-10 mb-6 text-4xl md:text-6xl font-light text-gray-200 mt-2">
               a <span className="font-serif italic text-white">FutStore</span>
             </h2>
             
-            <p className="mb-10 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
+            <p className="-mt-3 mb-3 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
               La mejor calidad, la misma pasión.
             </p>
           </motion.div>
