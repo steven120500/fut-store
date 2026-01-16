@@ -132,6 +132,53 @@ export default function App() {
     window.scrollTo(0, 0);
   }, []);
 
+  // ----------------------------------------------------------------------
+  // 🔥 NUEVO BLOQUE: Manejo de los botones del Carrusel (Bienvenido)
+  // ----------------------------------------------------------------------
+  useEffect(() => {
+    // Función genérica para manejar los clics del carrusel
+    const handleCarruselFilter = (categoria) => {
+      delete window.__verDisponiblesActivo; // Quitamos modo disponibles si estaba activo
+      setFilterType(categoria);             // Ponemos el filtro (ej: "Retro")
+      setSearchTerm("");                    // Limpiamos búsqueda textual
+      setPage(1);                           // Volvemos a pág 1
+      
+      // Llamamos a fetch inmediatamente con la nueva categoría
+      fetchProducts({ page: 1, type: categoria });
+
+      // Scroll suave hacia el catálogo
+      setTimeout(() => {
+        if (pageTopRef.current) {
+          const y = pageTopRef.current.getBoundingClientRect().top + window.scrollY;
+          // Ajustamos -140 para que no quede tapado por el header y la barra de filtros
+          window.scrollTo({ top: y - 323, behavior: "smooth" });
+        }
+      }, 300);
+    };
+
+    // Listeners individuales
+    const onRetros = () => handleCarruselFilter("Retro");
+    const onPlayer = () => handleCarruselFilter("Player");
+    const onFan = () => handleCarruselFilter("Fan");
+    const onNacional = () => handleCarruselFilter("Nacional");
+
+    // Conectamos los oídos
+    window.addEventListener("filtrarRetros", onRetros);
+    window.addEventListener("filtrarPlayer", onPlayer);
+    window.addEventListener("filtrarFan", onFan);
+    window.addEventListener("filtrarNacional", onNacional);
+
+    return () => {
+      // Limpieza al desmontar
+      window.removeEventListener("filtrarRetros", onRetros);
+      window.removeEventListener("filtrarPlayer", onPlayer);
+      window.removeEventListener("filtrarFan", onFan);
+      window.removeEventListener("filtrarNacional", onNacional);
+    };
+  }, []);
+  // ----------------------------------------------------------------------
+
+
   useEffect(() => {
     const handleFiltrarOfertas = () => {
       delete window.__verDisponiblesActivo;
@@ -298,6 +345,8 @@ export default function App() {
       </div>
 
       <div className="h-[120px]" />
+      
+      {/* 🔹 AQUÍ ESTÁN TUS BOTONES DEL CARRUSEL DISPARANDO LOS EVENTOS */}
       <Bienvenido />
 
       <FilterBar
@@ -321,7 +370,7 @@ export default function App() {
 
       <div className="relative w-full">
         <div
-          ref={pageTopRef}
+          ref={pageTopRef} // 👈 AQUÍ LLEGARÁ EL SCROLL
           className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8"
         >
           {filteredProducts.map((product) => (

@@ -1,133 +1,154 @@
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// 📦 DATOS DEL CARRUSEL (Las camisetas que rotan)
+const slides = [
+  {
+    id: 1,
+    image: "/RetroB.png",
+    title: "Ver Retros",
+    eventName: "filtrarRetros"
+  },
+  {
+    id: 2,
+    image: "/PlayerB.png",
+    title: "Ver Player",
+    eventName: "filtrarPlayer"
+  },
+  {
+    id: 3,
+    image: "/FanB.png",
+    title: "Ver Fan",
+    eventName: "filtrarFan"
+  },
+  {
+    id: 4,
+    image: "/NacionalB.png",
+    title: "Ver Nacional",
+    eventName: "filtrarNacional"
+  }
+];
 
 export default function Bienvenido() {
-  const handleVerOfertas = () => {
-    window.dispatchEvent(new CustomEvent("filtrarOfertas"));
-  };
+  const [index, setIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleVerDisponibles = () => {
-    window.dispatchEvent(new CustomEvent("filtrarDisponibles"));
-  };
+  // 1. DETECTAR SI ES MÓVIL O PC (Para elegir el fondo correcto)
+  useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 768);
+    checkSize(); // Chequear al cargar
+    window.addEventListener("resize", checkSize); // Chequear si cambian el tamaño
+    return () => window.removeEventListener("resize", checkSize);
+  }, []);
 
-  // ✨ Variantes para la animación escalonada del texto
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: (i = 1) => ({
-      opacity: 1,
-      transition: { staggerChildren: 0.12, delayChildren: 0.3 * i },
-    }),
-  };
+  // 2. ROTACIÓN AUTOMÁTICA (Cada 4 segundos)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const childVariants = {
-    hidden: {
-      opacity: 0,
-      y: 20,
-      transition: { type: "spring", damping: 12, stiffness: 100 },
-    },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { type: "spring", damping: 12, stiffness: 100 },
-    },
+  // 3. FUNCIÓN DE NAVEGACIÓN
+  const handleNavigation = () => {
+    const currentSlide = slides[index];
+    window.dispatchEvent(new CustomEvent(currentSlide.eventName));
   };
 
   return (
-    <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden text-center">
+    <section className="relative w-full h-screen flex flex-col items-center justify-center overflow-hidden">
       
-      {/* 🖼️ Fondo oscuro con movimiento suave */}
-      <motion.div 
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
-        className="absolute inset-0 z-0"
-      >
+      {/* 🖼️ FONDO RESPONSIVE (NUEVO) */}
+      {/* Aquí usamos tus nuevas imágenes: FondoM para móvil, FondoD para escritorio */}
+      <div className="absolute inset-0 z-0">
         <img
-          src="/fotofondo1.jpg"
+          src={isMobile ? "/FondoM.png" : "/FondoD.png"}
           alt="Fondo FutStore"
-          className="w-full h-full object-cover object-center brightness-[0.5]"
+          className="w-full h-full object-fill brightness-[0.6]" 
+          // 'object-fill' estira la imagen para cubrir todo sin recortar
+          // 'brightness-[0.6]' oscurece un poco para que resalte el texto
         />
-      </motion.div>
+      </div>
 
-      {/* 🌑 Overlay Degradado */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/20 via-black/50 to-black/80" />
+      {/* (Opcional) Un degradado extra para que el texto se lea mejor si el fondo es muy claro */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-t from-black via-transparent to-black/40" />
 
-      {/* 🔹 Contenido Principal */}
-      <div className="mt-16 sm:mt-18 md:mt-24 relative z-10 px-6 max-w-5xl mx-auto flex flex-col items-center">
+      {/* 🔹 CONTENIDO PRINCIPAL */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-2 gap-8 items-center h-full pt-16 md:pt-32">
         
-        {/* ✨ TÍTULO ANIMADO */}
-        <motion.h1 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="text-5xl sm:text-6xl md:text-8xl font-extrabold leading-tight tracking-tight drop-shadow-2xl flex flex-wrap justify-center gap-x-3 gap-y-1"
-        >
-          <motion.span variants={childVariants} className="text-plateado">
-            Bienvenido
-          </motion.span>
-          <motion.span variants={childVariants} className="text-plateado">
-            a
-          </motion.span>
-          <motion.span 
-            variants={childVariants}
-            className="text-plateado bg-clip-text bg-gradient-to-r from-gray-100 via-white to-gray-300 md:ml-2"
+        {/* IZQUIERDA: TEXTOS */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left order-2 md:order-1">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
           >
-            FutStore
-          </motion.span>
-        </motion.h1>
+            <h1 className="text-5xl md:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
+              BIENVENIDO
+            </h1>
+            <h2 className="text-4xl md:text-6xl font-light text-gray-200 mt-2">
+              a <span className="font-serif italic text-white">FutStore</span>
+            </h2>
+            
+            <p className="mt-6 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
+              La mejor calidad, la misma pasión.
+            </p>
+          </motion.div>
+        </div>
 
-        {/* Slogan */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.8, ease: "easeOut" }}
-          className="mt-6 text-plateado text-2xl sm:text-2xl md:text-3xl font-medium tracking-wide drop-shadow-[0_3px_3px_rgba(0,0,0,0.9)] max-w-2xl"
-        >
-          La mejor calidad, la misma pasión.
-        </motion.p>
+        {/* DERECHA: CAMISETA + BOTÓN SUPERPUESTO */}
+        {/* Margen superior ajustado: mt-36 en móvil, normal en PC */}
+        <div className="relative h-[400px] md:h-[600px] flex items-center justify-center order-1 md:order-2 mt-36 md:mt-0">
+          
+          {/* IMAGEN DEL CARRUSEL (Camisetas) */}
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={slides[index].id}
+              src={slides[index].image}
+              alt="Camiseta Destacada"
+              
+              initial={{ opacity: 0, x: 100, rotate: 10, scale: 0.8 }}
+              animate={{ 
+                opacity: 1, 
+                x: 0, 
+                rotate: 0, 
+                scale: 1,
+                transition: { type: "spring", stiffness: 120, damping: 14 }
+              }}
+              exit={{ 
+                opacity: 0, 
+                x: -100, 
+                rotate: -10, 
+                scale: 0.8,
+                transition: { duration: 0.3 }
+              }}
+              
+              style={{ filter: "drop-shadow(0px 20px 30px rgba(0,0,0,0.6))" }}
+              className="max-h-full max-w-full object-contain cursor-pointer relative z-10"
+            />
+          </AnimatePresence>
 
-        {/* 🔘 Botones Animados */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 1.3, type: "spring", stiffness: 150, damping: 15 }}
-          className="mt-12 flex flex-row sm:flex-row gap-4 sm:gap-8 w-full justify-center items-center"
-        >
-          {/* Botón Verde */}
-          <motion.button
-            onClick={handleVerDisponibles}
-            animate={{ scale: [1, 1.03, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-            /* ✅ CLASE AGREGADA AQUI: boton-luminoso-verde */
-            /* Ajustes de tamaño responsivos: w-[180px] (móvil) -> sm:w-auto (pc) */
-            className="boton-luminoso-verde group relative text-white font-bold 
-                       w-[150px] sm:w-auto sm:min-w-[220px] 
-                       px-6 py-3 sm:px-8 sm:py-4
-                       text-base sm:text-xl
-                       rounded-full overflow-hidden transition-all duration-300"
-          >
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              Ver Disponibles
-            </span>
-          </motion.button>
+          {/* 🔘 BOTÓN FLOTANTE (SUPERPUESTO) */}
+          <div className="absolute bottom-10 right-4 md:right-12 z-20">
+            <AnimatePresence mode="wait">
+              <motion.button
+                key={slides[index].id}
+                onClick={handleNavigation}
+                initial={{ y: 20, opacity: 0, scale: 0.8 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                exit={{ y: 10, opacity: 0, scale: 0.8 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-3 rounded-full font-bold text-lg shadow-2xl ring-2 ring-black backdrop-blur-sm
+                           bg-gradient-to-r from-gray-200 via-white to-gray-300 text-black hover:bg-white transition-all"
+              >
+                {slides[index].title}
+              </motion.button>
+            </AnimatePresence>
+          </div>
 
-          {/* Botón Rojo */}
-          <motion.button
-            onClick={handleVerOfertas}
-            animate={{ scale: [1, 1.03, 1] }}
-            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            /* ✅ CLASE AGREGADA AQUI: boton-luminoso-rojo */
-            className="boton-luminoso-rojo group relative text-white font-bold 
-                       w-[150px] sm:w-auto sm:min-w-[220px] 
-                       px-6 py-3 sm:px-8 sm:py-4 
-                       text-base sm:text-xl
-                       rounded-full overflow-hidden transition-all duration-300"
-          >
-             <span className="relative z-10 flex items-center justify-center gap-2">
-              Ver Ofertas 
-            </span>
-          </motion.button>
-        </motion.div>
+        </div>
+
       </div>
     </section>
   );
