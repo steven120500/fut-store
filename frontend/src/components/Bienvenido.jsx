@@ -91,7 +91,7 @@ export default function Bienvenido() {
             </h2>
             
             <p className="-mt-3 mb-3 md:mt-0 md:mb-0 text-gray-300 text-lg md:text-xl max-w-md mx-auto md:mx-0 font-medium">
-              La mejor calidad, la misma pasión.
+              La élite del fútbol, en tu piel.
             </p>
           </motion.div>
         </div>
