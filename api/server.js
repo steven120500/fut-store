@@ -24,7 +24,9 @@ app.use(compression());                     // gzip/brotli
 // CORS con manejo de origenes
 const allowedOrigins = [
   'https://fut-store-frontend.onrender.com',
-  'http://localhost:5173'
+  'http://localhost:5173',
+  "https://futstorecr.com",                  // 👈 ¡TU NUEVO DOMINIO!
+  "https://www.futstorecr.com"
 ];
 
 app.use(cors({
