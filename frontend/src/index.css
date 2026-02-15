@@ -512,5 +512,11 @@ button:focus-visible {
     font-size: 9px;
   }
 }
+/* En index.css */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
 
 
