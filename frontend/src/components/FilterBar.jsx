@@ -89,7 +89,7 @@ export default function FilterBar({
   };
 
   return (
-    <div className="w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
+    <div className="mb-6 mt-6 w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-4 items-center justify-between">
         
         {/* 🔍 BARRA DE BÚSQUEDA ELEGANTE */}
@@ -220,5 +220,6 @@ export default function FilterBar({
         </div>
       </div>
     </div>
+    
   );
 }

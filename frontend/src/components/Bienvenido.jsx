@@ -57,6 +57,8 @@ export default function Bienvenido() {
 
   return (
     <section className="relative  md:top-0 w-full h-full sm:min-h-screen flex flex-col items-center justify-center overflow-hidden">
+
+      
       
       {/* 🖼️ FONDO RESPONSIVE (NUEVO) */}
       {/* Aquí usamos tus nuevas imágenes: FondoM para móvil, FondoD para escritorio */}
