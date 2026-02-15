@@ -22,6 +22,17 @@ const tallas = [
   "S", "M", "L", "XL", "XXL", "3XL", "4XL"
 ];
 
+// 🔹 Mapa de tallas CRC para mostrar visualmente
+const tallasCRC = {
+  "16": "2",
+  "18": "4",
+  "20": "6",
+  "22": "8",
+  "24": "10",
+  "26": "12",
+  "28": "14"
+};
+
 // 🎨 Estilo Plateado Premium (El mismo de tus Cards)
 const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
 
@@ -68,7 +79,7 @@ export default function FilterBar({
 
   const tipoLabel = isDisponibles
     ? "Disponibles"
-    : (filterType || "Versión"); // Cambié "Tipos" por "Versión" para sonar más pro
+    : (filterType || "Versión"); 
 
   const handleClear = () => {
     setLocalSearch("");
@@ -175,7 +186,7 @@ export default function FilterBar({
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute mt-2 w-40 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0"
+                  className="absolute mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0" // w-48 un poco más ancho
                 >
                   <div className="max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
                     {tallas.map((t) => (
@@ -194,7 +205,8 @@ export default function FilterBar({
                           }
                         }}
                       >
-                        {t}
+                        {/* ✅ AQUI ESTÁ EL CAMBIO: Muestra la talla original + la tica si existe */}
+                        {t} {tallasCRC[t] ? <span className="text-[10px] opacity-70">({tallasCRC[t]})</span> : ""}
                       </div>
                     ))}
                   </div>
@@ -220,6 +232,5 @@ export default function FilterBar({
         </div>
       </div>
     </div>
-    
   );
 }
