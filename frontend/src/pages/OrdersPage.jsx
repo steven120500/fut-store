@@ -58,9 +58,9 @@ const OrdersPage = () => {
                     <div className="flex justify-end mb-4">
                         <button 
                             onClick={() => navigate(-1)} 
-                            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
+                            className="flex items-left gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
                         >
-                            <FaArrowRight /> Volver
+                            <FaArrowLeft /> Volver
                         </button>
                     </div>
 
