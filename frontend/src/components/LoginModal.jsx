@@ -60,7 +60,6 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     // 2. Lógica según el modo
     try {
       if (mode === 'forgot') {
-        // 👇 AQUÍ AGREGUÉ EL /api/
         const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -85,11 +84,12 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
       }
 
       const endpoint = mode === 'register' ? 'register' : 'login';
+      
+      // 👇 AQUÍ ESTÁ LA MAGIA: Se agregó "username: email" para evitar el error de MongoDB
       const payload = mode === 'register' 
-        ? { firstName, lastName, email, phone, password } 
+        ? { username: email, firstName, lastName, email, phone, password } 
         : { email, password };
 
-      // 👇 AQUÍ AGREGUÉ EL /api/
       const res = await fetch(`${API_BASE}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
