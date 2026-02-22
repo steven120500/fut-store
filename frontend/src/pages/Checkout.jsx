@@ -48,7 +48,9 @@ export default function Checkout() {
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const orderId = query.get("order");
-    const tiloPayResponse = query.get("Response") || query.get("response");
+    
+    // 👇 AQUÍ ESTÁ EL CAMBIO MAGISTRAL: Le agregamos 'code' para que detecte la aprobación
+    const tiloPayResponse = query.get("Response") || query.get("response") || query.get("code");
 
     if (orderId && tiloPayResponse) {
       if (tiloPayResponse === "1") {
