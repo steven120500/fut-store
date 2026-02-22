@@ -6,8 +6,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const sendEmail = async (options) => {
   try {
     const { data, error } = await resend.emails.send({
-      // Resend permite enviar desde este dominio por defecto para pruebas
-      from: 'Tu Aplicación <onboarding@resend.dev>',
+      // ✅ CAMBIO VITAL: Usamos tu dominio verificado
+      from: 'FutStore <info@futstorecr.com>',
       to: options.email,
       subject: options.subject,
       html: options.message,
