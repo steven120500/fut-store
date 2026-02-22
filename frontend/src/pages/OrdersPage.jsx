@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaArrowRight } from 'react-icons/fa'; 
+import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
-// 1. Importamos useNavigate y el Footer
 import { useNavigate } from 'react-router-dom';
-import Footer from '../components/Footer'; // Asegúrate de que la ruta sea correcta
+import Footer from '../components/Footer'; 
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fut-store.onrender.com/api';
 
@@ -12,7 +11,7 @@ const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('paid'); 
-    const navigate = useNavigate(); // Inicializamos el navegador
+    const navigate = useNavigate(); 
 
     useEffect(() => {
         fetchOrders();
@@ -54,11 +53,11 @@ const OrdersPage = () => {
             <div className="flex-grow pt-24 px-4 md:px-8">
                 <div className="max-w-6xl mx-auto">
                     
-                    {/* BOTÓN VOLVER ARRIBA A LA DERECHA */}
-                    <div className="flex justify-end mb-4">
+                    {/* 🚀 BOTÓN VOLVER ARRIBA A LA IZQUIERDA */}
+                    <div className="flex justify-start mb-4">
                         <button 
                             onClick={() => navigate(-1)} 
-                            className="flex items-left gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
                         >
                             <FaArrowLeft /> Volver
                         </button>
@@ -104,7 +103,7 @@ const OrdersPage = () => {
                             </p>
                         </div>
                     ) : (
-                        <div className="grid gap-8 mb-20"> {/* Margen inferior para no pegar al footer */}
+                        <div className="grid gap-8 mb-20"> 
                             {filteredOrders.map((order) => (
                                 <div key={order._id} className={`bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative ${
                                     activeTab === 'paid' ? 'border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]' : 'border-gray-800 opacity-80'
@@ -221,7 +220,6 @@ const OrdersPage = () => {
                 </div>
             </div>
 
-            {/* 3. Footer al final de la página */}
             <Footer />
         </div>
     );

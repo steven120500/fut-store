@@ -338,7 +338,7 @@ export default function ProductDetail({ user, onUpdate }) {
                   {selectedSize && stockRestante > 0 && stockRestante < 15 && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md border border-orange-100">
                       <span className="text-lg"></span>
-                      <p className="font-bold text-xs">¡Date prisa! Solo quedan pocas unidades en esa talla {selectedSize}.</p>
+                      <p className="font-bold text-xs">¡Date prisa! Solo quedan pocas unidades en talla {selectedSize}.</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
