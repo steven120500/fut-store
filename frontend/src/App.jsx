@@ -31,7 +31,7 @@ import "./index.css";
 import ResetPassword from "./pages/ResetPassword";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
-import OrdersPage from "./pages/OrdersPage.jsx"; // 👈 NUEVA IMPORTACIÓN
+import OrdersPage from "./pages/OrdersPage.jsx"; 
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -58,7 +58,6 @@ export default function App() {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showMedidas, setShowMedidas] = useState(false);
 
-  // 👇 DETECTAR SI ALGÚN MODAL ESTÁ ABIERTO
   const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showHistoryModal || showMedidas;
 
   const [page, setPage] = useState(1);
@@ -67,6 +66,38 @@ export default function App() {
   const pages = Math.max(1, Math.ceil(total / limit));
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
+
+  // --- 🚀 EDICIÓN: ESCUCHAR EVENTOS DEL CARRUSEL (BIENVENIDO) ---
+  useEffect(() => {
+    const handleFilterEvent = (e) => {
+      const typeMap = {
+        filtrarRetros: "Retro",
+        filtrarPlayer: "Player",
+        filtrarFan: "Fan",
+        filtrarNacional: "Nacional",
+        filtrarOfertas: "Ofertas"
+      };
+      
+      const newFilter = typeMap[e.type];
+      if (newFilter) {
+        setFilterType(newFilter);
+        setPage(1); 
+        
+        if (pageTopRef.current) {
+          const rect = pageTopRef.current.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
+        }
+      }
+    };
+
+    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas"];
+    events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
+
+    return () => {
+      events.forEach(ev => window.removeEventListener(ev, handleFilterEvent));
+    };
+  }, []);
 
   const [user, setUser] = useState(() => {
     try {
@@ -158,6 +189,7 @@ export default function App() {
     const dpRaw = product.discountPrice;
     const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
     const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
+
     if (filterType === "Ofertas") return matchesSearch && isOffer;
     if (window.__verDisponiblesActivo) {
       const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
@@ -179,21 +211,19 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/product/:id" element={<ProductDetail user={user} onUpdate={handleProductUpdate} />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/pedidos" element={<OrdersPage />} /> {/* 👈 NUEVA RUTA */}
+          <Route path="/pedidos" element={<OrdersPage />} /> 
           
           <Route path="/" element={
             <>
-              {/* --- ZONA DE MODALES --- */}
               {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
               {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
               {showHistoryModal && <HistoryModal open={showHistoryModal} onClose={() => setShowHistoryModal(false)} isSuperUser={user?.isSuperUser === true} roles={user?.roles || []} />}
               {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
               {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
-              {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
+              {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
               
               {loading && <LoadingOverlay message="Cargando productos..." />}
 
-              {/* --- HEADER (Solo se muestra si NO hay modales abiertos) --- */}
               {!isAnyModalOpen && (
                 <div className="fixed top-0 left-0 w-full z-50">
                   <TopBanner />
