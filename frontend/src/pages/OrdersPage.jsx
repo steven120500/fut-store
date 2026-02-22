@@ -277,7 +277,7 @@ const OrdersPage = () => {
 
             {/* 👇 MODAL PARA INGRESAR LA GUÍA 👇 */}
             {showTrackingModal && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] bg-white backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-[#111] border border-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
                         <button 
                             onClick={() => setShowTrackingModal(false)}
@@ -287,12 +287,12 @@ const OrdersPage = () => {
                         </button>
                         
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-[#D4AF37]/20 text-[#D4AF37] rounded-full flex items-center justify-center mx-auto mb-4">
+                            <div className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center mx-auto mb-4">
                                 <FaTruck size={28} />
                             </div>
                             <h2 className="text-2xl font-black italic uppercase text-white">Enviar Guía</h2>
                             <p className="text-sm text-gray-400 mt-2">
-                                Cliente: <span className="text-white font-bold">{selectedOrder?.customer?.name}</span>
+                                Cliente: <span className="text-black font-bold">{selectedOrder?.customer?.name}</span>
                             </p>
                         </div>
 
