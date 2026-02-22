@@ -7,6 +7,8 @@ import { useCart } from '../context/CartContext';
 
 // 👇 AQUÍ IMPORTAMOS TU HEADER 👇
 import Header from '../components/Header'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar
+import TopBanner from '../components/TopBanner'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar    
+
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -193,9 +195,12 @@ export default function ProductDetail({ user, onUpdate }) {
   return (
     // 👇 ENVOLVEMOS TODO EN UN FRAGMENTO <> PARA PODER PONER EL HEADER ARRIBA 👇
     <>
+    <TopBanner/>
       <Header /> 
+
       
-      <div className="min-h-screen bg-white pt-24 pb-12 px-4 md:px-8 max-w-7xl mx-auto">
+      
+      <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
         <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
           <FaArrowLeft /> Volver al catálogo
         </button>

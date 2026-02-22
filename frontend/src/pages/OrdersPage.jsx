@@ -224,7 +224,7 @@ const OrdersPage = () => {
                                             {activeTab === 'paid' && esEnvioCorreos && order.status !== 'sent' && (
                                                 <button 
                                                     onClick={() => openTrackingModal(order)}
-                                                    className="mt-6 w-full bg-[#D4AF37] hover:bg-yellow-500 text-black font-black py-3 rounded-lg transition shadow-lg flex items-center justify-center gap-3"
+                                                    className="mt-6 w-full bg-white hover:bg-gray-500 text-black font-black py-3 rounded-lg transition shadow-lg flex items-center justify-center gap-3"
                                                 >
                                                     <FaPaperPlane /> AGREGAR GUÍA DE CORREOS
                                                 </button>

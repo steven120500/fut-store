@@ -45,17 +45,20 @@ export default function Header({
 
   return (
     <header
-      // 🚀 CORRECCIÓN: Volvemos a 'top-8' para no tapar el banner superior
       className="shadow-md fondo-plateado px-2 sm:px-10 py-2 fixed w-full 
                  top-8 left-0 z-50 transition-all duration-300"
       style={{ backgroundColor: "#000" }}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
         
-        {/* 🔹 IZQUIERDA: Logo y Accesos (Botones Negros / Letras Blancas) */}
+        {/* 🔹 IZQUIERDA: Logo y Accesos */}
         <div className="flex items-center gap-2 sm:gap-6">
+          {/* 👇 AQUÍ ESTÁ EL CAMBIO: navigate('/') para ir al inicio 👇 */}
           <button
-            onClick={onLogoClick}
+            onClick={() => {
+              navigate('/');
+              if (onLogoClick) onLogoClick();
+            }}
             title="Volver al inicio"
             className="focus:outline-none bg-transparent hover:scale-105 transition-transform"
           >
