@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft } from 'react-icons/fa'; 
+import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaArrowRight } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 // 1. Importamos useNavigate y el Footer
 import { useNavigate } from 'react-router-dom';
@@ -60,7 +60,7 @@ const OrdersPage = () => {
                             onClick={() => navigate(-1)} 
                             className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
                         >
-                            <FaArrowLeft /> Volver
+                            <FaArrowRight /> Volver
                         </button>
                     </div>
 
