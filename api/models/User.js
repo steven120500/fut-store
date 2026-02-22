@@ -1,6 +1,12 @@
 import mongoose from 'mongoose';
 
 const userSchema = new mongoose.Schema({
+  // ✅ AQUÍ ESTÁ EL PARCHE: Agregamos username para que Mongoose lo deje pasar
+  username: { 
+    type: String, 
+    unique: true, 
+    trim: true 
+  },
   firstName: { 
     type: String, 
     required: [true, 'El nombre es obligatorio'], 
