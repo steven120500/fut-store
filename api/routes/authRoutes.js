@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken'; // 👈 IMPORTANTE: Necesitamos esto para generar el token
+import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import sendEmail from '../utils/sendEmail.js';
 
@@ -32,6 +32,7 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
+      username: email, // 👈 ¡ESTA ES LA LÍNEA MÁGICA QUE FALTABA!
       firstName,
       lastName,
       email,
