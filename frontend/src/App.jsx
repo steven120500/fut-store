@@ -33,7 +33,7 @@ import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
 import OrdersPage from "./pages/OrdersPage.jsx"; // 👈 NUEVA IMPORTACIÓN
 
-const API_BASE = "https://machoteprincipal.onrender.com"; 
+const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
 
 function buildPages(page, pages) {

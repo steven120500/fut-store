@@ -4,7 +4,7 @@ import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/
 import { motion, AnimatePresence } from "framer-motion";
 
 // ✅ MEJORA 1: Usamos la misma lógica que en AddProduct para evitar errores de URL
-const API_BASE = import.meta.env.VITE_API_URL || "https://machoteprincipal.onrender.com";
+const API_BASE = import.meta.env.VITE_API_URL || "https://fut-store.onrender.com";
 
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];

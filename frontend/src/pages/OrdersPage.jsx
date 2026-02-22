@@ -3,7 +3,7 @@ import axios from 'axios';
 import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://machoteprincipal.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://fut-store.onrender.com/api';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);

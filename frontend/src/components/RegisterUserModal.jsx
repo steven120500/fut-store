@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { FaTimes, FaEye, FaEyeSlash, FaUser, FaPhone, FaEnvelope, FaLock } from "react-icons/fa";
 
-const API_BASE = "https://machoteprincipal.onrender.com";
+const API_BASE = "https://fut-store.onrender.com";
 
 export default function RegisterUserModal({ onClose }) {
   // Estados para los nuevos datos

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiEye, FiEyeOff, FiLock } from 'react-icons/fi';
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://machoteprincipal.onrender.com";
+const API_BASE = import.meta.env.VITE_API_URL || "https://fut-store.onrender.com";
 
 export default function ResetPassword() {
   const { token } = useParams(); // Captura el token de la URL

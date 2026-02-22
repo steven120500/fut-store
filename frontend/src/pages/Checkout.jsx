@@ -13,7 +13,7 @@ const GAM_CANTONES = {
 };
 
 // ⚠️ AJUSTA ESTO SI TU BACKEND TIENE OTRA RUTA
-const API_BASE = "https://machoteprincipal.onrender.com"; 
+const API_BASE = "https://fut-store.onrender.com"; 
 
 export default function Checkout() {
   const { cart, cartTotal, removeFromCart, clearCart } = useCart();

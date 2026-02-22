@@ -5,7 +5,7 @@ import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, Fa
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
-const API_BASE = "https://machoteprincipal.onrender.com";
+const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
 const TALLAS_BALON  = ['3', '4', '5'];
