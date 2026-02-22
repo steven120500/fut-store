@@ -64,7 +64,7 @@ export default function Header({
           <div className="flex gap-2">
             <button 
               onClick={onMedidasClick} 
-              className="text-white text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="text-black text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
             >
               <LiaRulerSolid size={18} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Guía de Tallas</span>
@@ -72,7 +72,7 @@ export default function Header({
 
             <button 
               onClick={() => setShowContacto(true)} 
-              className="text-white text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="text-black text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
             >
               <FiPhoneCall size={16} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Contacto</span>
@@ -85,11 +85,11 @@ export default function Header({
           {/* Botón Carrito */}
           <button 
             onClick={handleCartClick} 
-            className="relative bg-zinc-900 text-white p-3 rounded-full shadow-xl border border-zinc-800 hover:bg-white hover:text-black transition-all active:scale-95"
+            className="relative bg-zinc-900 text-black p-3 rounded-full shadow-xl border border-zinc-800 hover:bg-white hover:text-black transition-all active:scale-95"
           >
             <FaShoppingCart size={20} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black animate-bounce">
+              <span className="absolute -top-1 -right-1 bg-red-600 text-black text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black animate-bounce">
                 {cartCount}
               </span>
             )}
@@ -98,7 +98,7 @@ export default function Header({
           {/* Botón Usuario / Menú */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full bg-zinc-900 p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-white transition-all border border-zinc-800 overflow-hidden"
+            className="rounded-full bg-zinc-900 p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-black transition-all border border-zinc-800 overflow-hidden"
           >
             {user ? (
               <div className="bg-gradient-to-br from-gray-700 to-black w-full h-full flex items-center justify-center">
