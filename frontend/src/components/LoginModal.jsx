@@ -60,7 +60,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     // 2. Lógica según el modo
     try {
       if (mode === 'forgot') {
-        const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        // 👇 AQUÍ AGREGUÉ EL /api/
+        const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
@@ -88,7 +89,8 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         ? { firstName, lastName, email, phone, password } 
         : { email, password };
 
-      const res = await fetch(`${API_BASE}/auth/${endpoint}`, {
+      // 👇 AQUÍ AGREGUÉ EL /api/
+      const res = await fetch(`${API_BASE}/api/auth/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
