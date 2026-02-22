@@ -62,17 +62,19 @@ export default function Header({
           </button>
 
           <div className="flex gap-2">
+            {/* BOTÓN TALLAS: Ahora Negro con letras blancas */}
             <button 
               onClick={onMedidasClick} 
-              className="text-black text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all"
             >
               <LiaRulerSolid size={18} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Guía de Tallas</span>
             </button>
 
+            {/* BOTÓN CONTACTO: Ahora Negro con letras blancas */}
             <button 
               onClick={() => setShowContacto(true)} 
-              className="text-black text-[10px] sm:text-sm bg-zinc-900 border border-zinc-800 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-white hover:text-black transition-all"
+              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all"
             >
               <FiPhoneCall size={16} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Contacto</span>
@@ -82,14 +84,14 @@ export default function Header({
 
         {/* 🔹 SECCIÓN DERECHA: Carrito y Perfil */}
         <div className="flex items-center gap-3 sm:gap-5">
-          {/* Botón Carrito */}
+          {/* Botón Carrito: Ahora Negro con letras blancas */}
           <button 
             onClick={handleCartClick} 
-            className="relative bg-zinc-900 text-black p-3 rounded-full shadow-xl border border-zinc-800 hover:bg-white hover:text-black transition-all active:scale-95"
+            className="relative bg-black text-white p-3 rounded-full shadow-xl border border-zinc-700 hover:bg-zinc-800 transition-all active:scale-95"
           >
             <FaShoppingCart size={20} />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-black text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black animate-bounce">
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-black animate-bounce">
                 {cartCount}
               </span>
             )}
@@ -98,7 +100,7 @@ export default function Header({
           {/* Botón Usuario / Menú */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full bg-zinc-900 p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-black transition-all border border-zinc-800 overflow-hidden"
+            className="rounded-full bg-black p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-white transition-all border border-zinc-700 overflow-hidden"
           >
             {user ? (
               <div className="bg-gradient-to-br from-gray-700 to-black w-full h-full flex items-center justify-center">
@@ -180,9 +182,11 @@ export default function Header({
                   </div>
                   <h3 className="text-white font-bold text-xl mb-2 tracking-tight">¡Bienvenido!</h3>
                   <p className="text-zinc-500 text-sm mb-8 px-4">Inicia sesión para gestionar tus pedidos y ver las mejores ofertas.</p>
+                  
+                  {/* BOTÓN INICIAR SESIÓN: Ahora Negro con letras blancas */}
                   <button 
                     onClick={() => { onLoginClick(); setSidebarOpen(false); }} 
-                    className="w-full bg-white text-black px-4 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-gray-200 transition shadow-xl"
+                    className="w-full bg-black text-white px-4 py-4 rounded-xl font-black uppercase tracking-widest border border-zinc-700 hover:bg-zinc-900 transition shadow-xl"
                   >
                     Iniciar sesión
                   </button>
