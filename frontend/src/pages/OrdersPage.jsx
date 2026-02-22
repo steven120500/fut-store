@@ -169,7 +169,7 @@ const OrdersPage = () => {
 
                                         <button 
                                             onClick={() => handleDeleteOrder(order._id)}
-                                            className="absolute top-4 right-4 bg-gray-900 hover:bg-red-600 text-gray-400 hover:text-white p-3 rounded-full transition shadow-lg border border-gray-700 hover:border-red-500 z-10"
+                                            className="top-4 right-4 bg-gray-900 hover:bg-red-600 text-gray-400 hover:text-white p-3 rounded-full transition shadow-lg border border-gray-700 hover:border-red-500 z-10"
                                             title="Eliminar Pedido"
                                         >
                                             <FaTrash size={16} />
