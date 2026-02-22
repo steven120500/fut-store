@@ -44,12 +44,10 @@ export default function Checkout() {
     correo: ''
   });
 
-  // --- NUEVO: DETECTAR REGRESO DE TILOPAY ---
+  // --- DETECTAR REGRESO DE TILOPAY ---
   useEffect(() => {
     const query = new URLSearchParams(location.search);
     const orderId = query.get("order");
-    
-    // 👇 AQUÍ ESTÁ EL CAMBIO MAGISTRAL: Le agregamos 'code' para que detecte la aprobación
     const tiloPayResponse = query.get("Response") || query.get("response") || query.get("code");
 
     if (orderId && tiloPayResponse) {
@@ -155,12 +153,36 @@ export default function Checkout() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 👇 FILTRO INTELIGENTE PARA EL TELÉFONO 👇
+  const handlePhoneChange = (e) => {
+    let rawValue = e.target.value;
+    
+    // 1. Quitar cualquier caracter que NO sea número (espacios, +, guiones, letras)
+    let numbersOnly = rawValue.replace(/\D/g, '');
+    
+    // 2. Si alguien pega "+506 8888 8888", numbersOnly será "50688888888". Le quitamos el 506.
+    if (numbersOnly.startsWith('506') && numbersOnly.length > 8) {
+      numbersOnly = numbersOnly.substring(3);
+    }
+    
+    // 3. Limitar estrictamente a 8 dígitos
+    numbersOnly = numbersOnly.slice(0, 8);
+    
+    setFormData({ ...formData, telefono: numbersOnly });
+  };
+
   const handleProcessOrder = async (e) => {
     e.preventDefault();
     
     if (!formData.nombre || !formData.telefono || !formData.direccionExacta || !selectedDistrito) {
       return toast.warning("Por favor llena todos los datos.");
     }
+    
+    // Validar que el teléfono tenga exactamente 8 dígitos antes de procesar
+    if (formData.telefono.length !== 8) {
+      return toast.warning("El teléfono debe tener exactamente 8 números.");
+    }
+
     if (!envioSeleccionado) return toast.warning("Selecciona un método de envío.");
 
     const totalFinal = cartTotal + envioSeleccionado.precio;
@@ -168,6 +190,7 @@ export default function Checkout() {
     const nombreCanton = cantones[selectedCanton];
     const nombreDistrito = distritos[selectedDistrito];
 
+    // 👇 MENSAJE DE SINPE RESTAURADO CON TODOS LOS DATOS 👇
     if (metodoPago === 'sinpe') {
         let mensaje = `*NUEVO PEDIDO - FUTSTORE*\n`;
         mensaje += `────────────────\n`;
@@ -176,7 +199,26 @@ export default function Checkout() {
         mensaje += `Ubicación: ${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}\n`;
         mensaje += `Detalle: ${formData.direccionExacta}\n`;
         mensaje += `────────────────\n`;
+        
+        mensaje += `*MÉTODO DE ENVÍO:*\n`;
+        mensaje += `➡ ${envioSeleccionado.nombre}\n`;
+        mensaje += `Costo envío: ₡${envioSeleccionado.precio.toLocaleString()}\n`;
+        mensaje += `────────────────\n`;
+
+        mensaje += `*DETALLE DE PRODUCTOS:*\n`;
+        cart.forEach(item => {
+          const version = item.type ? `[${item.type}]` : '';
+          const precioItem = (item.discountPrice || item.price).toLocaleString();
+          mensaje += `*${item.quantity}x ${item.name}* ${version}\n`;
+          mensaje += `   └ Talla: ${item.selectedSize}\n`;
+          mensaje += `   └ Precio c/u: ₡${precioItem}\n`;
+        });
+        
+        mensaje += `────────────────\n`;
         mensaje += `*TOTAL A PAGAR: ₡${totalFinal.toLocaleString()}*\n`;
+        mensaje += `*Método de Pago:* SINPE MÓVIL\n\n`;
+        mensaje += `Quedo atento a la cuenta SINPE para enviar el comprobante. ✅`;
+
         window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
         return;
     }
@@ -225,7 +267,6 @@ export default function Checkout() {
           }
 
         } catch (error) {
-          // 🚀 LOG DETALLADO PARA DEBAGUEAR EL REBOTE
           console.error("DETALLE DEL ERROR TILOPAY:", error);
           toast.error("Error conectando con el banco. Intenta de nuevo.");
         } finally {
@@ -279,7 +320,16 @@ export default function Checkout() {
                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
-                    <input type="tel" name="telefono" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="8888-8888" required />
+                    {/* 👇 INPUT DE TELÉFONO ACTUALIZADO 👇 */}
+                    <input 
+                      type="tel" 
+                      name="telefono" 
+                      value={formData.telefono}
+                      onChange={handlePhoneChange} 
+                      className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" 
+                      placeholder="88888888" 
+                      required 
+                    />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Correo</label>

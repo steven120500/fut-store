@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft } from 'react-icons/fa'; 
+import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
@@ -12,6 +12,12 @@ const OrdersPage = () => {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('paid'); 
     const navigate = useNavigate(); 
+
+    // Estados para el Modal de la Guía
+    const [showTrackingModal, setShowTrackingModal] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [trackingNumber, setTrackingNumber] = useState('');
+    const [sendingTracking, setSendingTracking] = useState(false);
 
     useEffect(() => {
         fetchOrders();
@@ -43,6 +49,39 @@ const OrdersPage = () => {
         }
     };
 
+    // 👇 Función para Enviar la Guía 👇
+    const handleSendTracking = async () => {
+        if (!trackingNumber.trim()) return toast.warning("Ingresa el número de guía.");
+        setSendingTracking(true);
+
+        try {
+            await axios.post(`${API_URL}/orders/${selectedOrder._id}/send-tracking`, { 
+                trackingNumber 
+            });
+            
+            toast.success("¡Guía enviada al cliente con éxito!");
+            
+            // Opcional: Actualizar el estado local a "sent" si tu backend lo cambia
+            setOrders(prev => prev.map(o => 
+                o._id === selectedOrder._id ? { ...o, status: 'sent' } : o
+            ));
+
+            setShowTrackingModal(false);
+            setTrackingNumber('');
+            setSelectedOrder(null);
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al enviar el correo con la guía.");
+        } finally {
+            setSendingTracking(false);
+        }
+    };
+
+    const openTrackingModal = (order) => {
+        setSelectedOrder(order);
+        setShowTrackingModal(true);
+    };
+
     const filteredOrders = orders.filter(order => {
         if (activeTab === 'paid') return order.status === 'paid' || order.status === 'sent';
         else return order.status === 'pending' || order.status === 'failed';
@@ -53,7 +92,6 @@ const OrdersPage = () => {
             <div className="flex-grow pt-24 px-4 md:px-8">
                 <div className="max-w-6xl mx-auto">
                     
-                    {/* 🚀 BOTÓN VOLVER ARRIBA A LA IZQUIERDA */}
                     <div className="flex justify-start mb-4">
                         <button 
                             onClick={() => navigate(-1)} 
@@ -104,7 +142,11 @@ const OrdersPage = () => {
                         </div>
                     ) : (
                         <div className="grid gap-8 mb-20"> 
-                            {filteredOrders.map((order) => (
+                            {filteredOrders.map((order) => {
+                                // Detectar si el envío es por correos
+                                const esEnvioCorreos = order.shipping?.method?.toLowerCase().includes('correo');
+
+                                return (
                                 <div key={order._id} className={`bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative ${
                                     activeTab === 'paid' ? 'border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]' : 'border-gray-800 opacity-80'
                                 }`}>
@@ -117,9 +159,10 @@ const OrdersPage = () => {
                                         </div>
                                         <div className="mt-4 md:mt-0 text-right">
                                             <span className={`inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wide mb-2 ${
+                                                order.status === 'sent' ? 'bg-blue-500 text-white' : 
                                                 order.status === 'paid' ? 'bg-green-500 text-black' : 'bg-yellow-500 text-black'
                                             }`}>
-                                                {order.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
+                                                {order.status === 'sent' ? 'ENVIADO' : order.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
                                             </span>
                                             <p className="text-2xl font-black text-white">₡ {order.total?.toLocaleString()}</p>
                                         </div>
@@ -134,46 +177,58 @@ const OrdersPage = () => {
                                     </div>
 
                                     <div className="p-6 grid md:grid-cols-2 gap-8">
-                                        <div>
-                                            <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2">
-                                                <FaMapMarkerAlt /> Datos de Cliente
-                                            </h3>
-                                            <div className="space-y-3 text-sm">
-                                                <p className="flex items-start gap-3">
-                                                    <span className="text-gray-400 w-5"><FaBoxOpen /></span>
-                                                    <span className="font-bold text-lg text-white">{order.customer?.name}</span>
-                                                </p>
-                                                
-                                                {order.customer?.phone && (
-                                                    <p className="flex items-center gap-3">
-                                                        <span className="text-gray-400 w-5"><FaPhone /></span>
-                                                        <span className="text-[#D4AF37] font-mono font-bold">{order.customer?.phone}</span>
+                                        <div className="flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2">
+                                                    <FaMapMarkerAlt /> Datos de Cliente
+                                                </h3>
+                                                <div className="space-y-3 text-sm">
+                                                    <p className="flex items-start gap-3">
+                                                        <span className="text-gray-400 w-5"><FaBoxOpen /></span>
+                                                        <span className="font-bold text-lg text-white">{order.customer?.name}</span>
                                                     </p>
-                                                )}
-
-                                                <p className="flex items-center gap-3">
-                                                    <span className="text-gray-400 w-5"><FaEnvelope /></span>
-                                                    <span className="text-gray-300">{order.customer?.email}</span>
-                                                </p>
-
-                                                {order.customer?.address && (
-                                                    <div className="mt-3 p-3 bg-[#1a1a1a] rounded border-gray-800">
-                                                        <p className="text-gray-400 text-xs uppercase mb-1">Dirección de entrega:</p>
-                                                        <p className="text-gray-200 leading-relaxed">{order.customer?.address}</p>
-                                                    </div>
-                                                )}
-
-                                                {order.shipping && (
-                                                    <div className="mt-3 p-3 bg-[#111] rounded border border-gray-800">
-                                                        <p className="text-gray-400 text-xs uppercase mb-1 flex items-center gap-1">
-                                                            <FaTruck size={10}/> Método de Envío:
+                                                    
+                                                    {order.customer?.phone && (
+                                                        <p className="flex items-center gap-3">
+                                                            <span className="text-gray-400 w-5"><FaPhone /></span>
+                                                            <span className="text-[#D4AF37] font-mono font-bold">{order.customer?.phone}</span>
                                                         </p>
-                                                        <p className="text-white font-bold text-sm uppercase tracking-wide">
-                                                            {order.shipping.method}
-                                                        </p>
-                                                    </div>
-                                                )}
+                                                    )}
+
+                                                    <p className="flex items-center gap-3">
+                                                        <span className="text-gray-400 w-5"><FaEnvelope /></span>
+                                                        <span className="text-gray-300">{order.customer?.email}</span>
+                                                    </p>
+
+                                                    {order.customer?.address && (
+                                                        <div className="mt-3 p-3 bg-[#1a1a1a] rounded border-gray-800">
+                                                            <p className="text-gray-400 text-xs uppercase mb-1">Dirección de entrega:</p>
+                                                            <p className="text-gray-200 leading-relaxed">{order.customer?.address}</p>
+                                                        </div>
+                                                    )}
+
+                                                    {order.shipping && (
+                                                        <div className="mt-3 p-3 bg-[#111] rounded border border-gray-800">
+                                                            <p className="text-gray-400 text-xs uppercase mb-1 flex items-center gap-1">
+                                                                <FaTruck size={10}/> Método de Envío:
+                                                            </p>
+                                                            <p className="text-white font-bold text-sm uppercase tracking-wide">
+                                                                {order.shipping.method}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
+                                            
+                                            {/* 👇 BOTÓN ENVIAR GUÍA 👇 */}
+                                            {activeTab === 'paid' && esEnvioCorreos && order.status !== 'sent' && (
+                                                <button 
+                                                    onClick={() => openTrackingModal(order)}
+                                                    className="mt-6 w-full bg-[#D4AF37] hover:bg-yellow-500 text-black font-black py-3 rounded-lg transition shadow-lg flex items-center justify-center gap-3"
+                                                >
+                                                    <FaPaperPlane /> AGREGAR GUÍA DE CORREOS
+                                                </button>
+                                            )}
                                         </div>
 
                                         <div>
@@ -214,11 +269,62 @@ const OrdersPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     )}
                 </div>
             </div>
+
+            {/* 👇 MODAL PARA INGRESAR LA GUÍA 👇 */}
+            {showTrackingModal && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-[#111] border border-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
+                        <button 
+                            onClick={() => setShowTrackingModal(false)}
+                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                        >
+                            <FaTimes size={20} />
+                        </button>
+                        
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-[#D4AF37]/20 text-[#D4AF37] rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FaTruck size={28} />
+                            </div>
+                            <h2 className="text-2xl font-black italic uppercase text-white">Enviar Guía</h2>
+                            <p className="text-sm text-gray-400 mt-2">
+                                Cliente: <span className="text-white font-bold">{selectedOrder?.customer?.name}</span>
+                            </p>
+                        </div>
+
+                        <div className="mb-6">
+                            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Número de Guía de Correos</label>
+                            <input 
+                                type="text" 
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                placeholder="Ej: CR123456789"
+                                className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none font-mono tracking-widest uppercase"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setShowTrackingModal(false)}
+                                className="flex-1 py-3 bg-transparent border border-gray-700 text-gray-300 rounded-lg font-bold hover:bg-gray-800 transition"
+                            >
+                                CANCELAR
+                            </button>
+                            <button 
+                                onClick={handleSendTracking}
+                                disabled={sendingTracking}
+                                className="flex-1 py-3 bg-[#D4AF37] text-black rounded-lg font-black hover:bg-yellow-500 transition flex justify-center items-center gap-2"
+                            >
+                                {sendingTracking ? 'ENVIANDO...' : <><FaPaperPlane /> ENVIAR</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <Footer />
         </div>

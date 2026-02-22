@@ -2,7 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import Order from '../models/Order.js'; 
 import Product from '../models/Product.js'; 
-import sendEmail from '../utils/sendEmail.js'; // 👈 Aquí usamos la utilidad que creamos
+import sendEmail from '../utils/sendEmail.js'; 
 
 const router = express.Router();
 
@@ -11,12 +11,12 @@ router.post('/create-link', async (req, res) => {
   try {
     const { cliente, total, productos, envio } = req.body;
     
-    // 1. CREDENCIALES
+    // 1. CREDENCIALES DE PRODUCCIÓN (Deben estar en Render)
     const API_USER = process.env.TILOPAY_USER?.trim();
     const API_PASSWORD = process.env.TILOPAY_PASSWORD?.trim();
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
     
-    // 👇 MAGIA ANTI-REBOTE: Por defecto usa tu dominio real si no está la variable
+    // Redirección al frontend
     const FRONTEND = process.env.FRONTEND_URL || "https://futstorecr.com";
 
     const orderRef = `ORD-${Date.now()}`; 
@@ -56,12 +56,12 @@ router.post('/create-link', async (req, res) => {
         return res.status(500).json({ message: "Error al crear el pedido en base de datos" });
     }
 
-    // --- 3. LOGIN TILOPAY ---
+    // --- 3. LOGIN TILOPAY (PRODUCCIÓN) ---
     if (!API_USER || !API_PASSWORD || !API_KEY) return res.status(500).json({ message: "Faltan credenciales" });
 
     let token = "";
     try {
-      // ⚠️ NOTA: Si usas llaves de Sandbox, cambia "app.tilopay.com" por "sandbox.tilopay.com"
+      // ✅ URL OFICIAL DEL BANCO REAL
       const loginResponse = await axios.post('https://app.tilopay.com/api/v1/login', {
         apiuser: API_USER,
         password: API_PASSWORD
@@ -80,7 +80,6 @@ router.post('/create-link', async (req, res) => {
       key: API_KEY, 
       amount: total,
       currency: "CRC",
-      // 👇 La redirección exacta para que el Frontend detecte la orden
       redirect: `${FRONTEND}/checkout?order=${orderRef}`,
       
       billToFirstName: nameParts[0],
@@ -97,8 +96,9 @@ router.post('/create-link', async (req, res) => {
       description: `Compra FutStore - ${productos?.length || 1} items`
     };
     
-    // --- 5. ENVIAR A TILOPAY ---
+    // --- 5. ENVIAR A TILOPAY (PRODUCCIÓN) ---
     try {
+        // ✅ URL OFICIAL DE PAGOS
         const linkResponse = await axios.post('https://app.tilopay.com/api/v1/processPayment', payload, { 
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' } 
         });
@@ -179,14 +179,14 @@ router.post('/confirm-payment', async (req, res) => {
         message: clienteHTML 
       }),
       sendEmail({ 
-        email: 'scorrales18@gmail.com', // 👈 Tu correo personal
+        email: 'scorrales18@gmail.com',
         subject: `🚨 VENTA PAGADA: ₡${order.total}`, 
         message: adminHTML 
       })
     ]).catch(err => console.error("Error silencioso enviando correos:", err));
     // ---------------------------------------------------------
 
-    // 4. Responder éxito al Frontend (TiloPay redigirá aquí, y esto mostrará el check verde)
+    // 4. Responder éxito al Frontend
     res.json({ success: true, message: "Pago confirmado y stock actualizado." });
 
   } catch (error) { 
