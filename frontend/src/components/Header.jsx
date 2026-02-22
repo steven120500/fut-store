@@ -100,7 +100,7 @@ export default function Header({
             className="rounded-full bg-black p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-white transition-all border border-zinc-700 overflow-hidden"
           >
             {user ? (
-              <div className="bg-gradient-to-br from-gray-700 to-black w-full h-full flex items-center justify-center">
+              <div className="from-gray-700 to-black w-full h-full flex items-center justify-center">
                 <span className="font-black text-xs tracking-tighter text-[#D4AF37]">
                   {getInitials(user.firstName || user.username)}
                 </span>
