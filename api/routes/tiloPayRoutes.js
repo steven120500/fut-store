@@ -17,9 +17,6 @@ router.post('/create-link', async (req, res) => {
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
     const FRONTEND = process.env.FRONTEND_URL || "https://fut-store-frontend.onrender.com";
 
-
-
-
     const orderRef = `ORD-${Date.now()}`; 
 
     // --- 2. GUARDAR DATOS EN MONGO DB ---
@@ -78,8 +75,8 @@ router.post('/create-link', async (req, res) => {
       key: API_KEY, 
       amount: total,
       currency: "CRC",
-      // 👇 Redirige al frontend para que este limpie el carrito y mande al inicio
-      redirect: `${FRONTEND}/checkout?status=success&order=${orderRef}`,
+      // 👇 AQUÍ ESTÁ LA MAGIA: Solo mandamos la orden, dejamos que TiloPay nos responda el estado real
+      redirect: `${FRONTEND}/checkout?order=${orderRef}`,
       
       billToFirstName: nameParts[0],
       billToLastName: nameParts.slice(1).join(" ") || "Cliente",

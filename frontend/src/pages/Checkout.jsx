@@ -47,16 +47,24 @@ export default function Checkout() {
   // --- NUEVO: DETECTAR REGRESO DE TILOPAY ---
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    const status = query.get("status");
     const orderId = query.get("order");
+    
+    // TiloPay envía un parámetro llamado 'Response' (1=Éxito, 2=Rechazado, 3=Cancelado)
+    const tiloPayResponse = query.get("Response") || query.get("response");
 
-    if (status === "success" && orderId) {
-      confirmarPagoBackend(orderId);
-    } else if (status === "cancel") {
-      toast.error("El pago fue cancelado.");
-      navigate('/checkout', { replace: true });
+    // Si hay una orden y un código de respuesta en la URL, evaluamos:
+    if (orderId && tiloPayResponse) {
+      if (tiloPayResponse === "1") {
+        // ✅ Pago Aprobado
+        confirmarPagoBackend(orderId);
+      } else {
+        // ❌ Pago Cancelado o Rechazado
+        toast.error("El pago fue cancelado o la tarjeta fue rechazada.");
+        // Limpiamos la URL para no dejar basura y que el cliente intente de nuevo
+        navigate('/checkout', { replace: true });
+      }
     }
-  }, [location]);
+  }, [location, navigate]); // Añadí navigate a las dependencias por buenas prácticas
 
   const confirmarPagoBackend = async (orderId) => {
     try {
