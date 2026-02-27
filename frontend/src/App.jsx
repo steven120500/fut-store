@@ -67,7 +67,7 @@ export default function App() {
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
-  // --- 🚀 EDICIÓN: ESCUCHAR EVENTOS DEL CARRUSEL (BIENVENIDO) ---
+  // --- 🚀 ESCUCHAR EVENTOS DEL CARRUSEL (BIENVENIDO) ---
   useEffect(() => {
     const handleFilterEvent = (e) => {
       const typeMap = {
@@ -209,7 +209,24 @@ export default function App() {
         <CartDrawer />
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPassword />} />
-          <Route path="/product/:id" element={<ProductDetail user={user} onUpdate={handleProductUpdate} />} />
+          
+          {/* 👇 RUTA DE PRODUCTO ACTUALIZADA CON TODOS LOS PROPS 👇 */}
+          <Route 
+            path="/product/:id" 
+            element={
+              <ProductDetail 
+                user={user} 
+                onUpdate={handleProductUpdate}
+                onLoginClick={() => setShowLogin(true)}
+                onLogout={handleLogout}
+                setShowRegisterUserModal={setShowRegisterUserModal}
+                setShowUserListModal={setShowUserListModal}
+                setShowHistoryModal={setShowHistoryModal}
+                onMedidasClick={() => setShowMedidas(true)}
+              />
+            } 
+          />
+          
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/pedidos" element={<OrdersPage />} /> 
           
@@ -224,24 +241,22 @@ export default function App() {
               
               {loading && <LoadingOverlay message="Cargando productos..." />}
 
-              {!isAnyModalOpen && (
-                <div className="fixed top-0 left-0 w-full z-50">
-                  <TopBanner />
-                  <Header
-                    onLoginClick={() => setShowLogin(true)}
-                    onLogout={handleLogout}
-                    onLogoClick={() => { setFilterType(""); setSearchTerm(""); setPage(1); }}
-                    onMedidasClick={() => setShowMedidas(true)}
-                    user={user}
-                    isSuperUser={isSuperUser}
-                    canSeeHistory={canSeeHistory}
-                    setShowRegisterUserModal={setShowRegisterUserModal}
-                    setShowUserListModal={setShowUserListModal}
-                    setShowHistoryModal={setShowHistoryModal}
-                    setFilterType={setFilterType}
-                  />
-                </div>
-              )}
+              <div className="fixed top-0 left-0 w-full z-50">
+                <TopBanner />
+                <Header
+                  onLoginClick={() => setShowLogin(true)}
+                  onLogout={handleLogout}
+                  onLogoClick={() => { setFilterType(""); setSearchTerm(""); setPage(1); }}
+                  onMedidasClick={() => setShowMedidas(true)}
+                  user={user}
+                  isSuperUser={isSuperUser}
+                  canSeeHistory={canSeeHistory}
+                  setShowRegisterUserModal={setShowRegisterUserModal}
+                  setShowUserListModal={setShowUserListModal}
+                  setShowHistoryModal={setShowHistoryModal}
+                  setFilterType={setFilterType}
+                />
+              </div>
 
               <div className="h-[120px]" />
               <Bienvenido />
@@ -261,7 +276,8 @@ export default function App() {
                       key={getPid(product)}
                       product={product}
                       user={user}
-                      onClick={() => window.location.href = `/product/${getPid(product)}`}
+                      // 👇 Navegación optimizada sin recargar página
+                      onClick={() => window.location.assign(`/product/${getPid(product)}`)}
                     />
                   ))}
                 </div>

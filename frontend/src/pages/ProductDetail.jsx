@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
-// 👇 AQUÍ IMPORTAMOS TU HEADER 👇
-import Header from '../components/Header'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar
-import TopBanner from '../components/TopBanner'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar    
-
+// Componentes
+import Header from '../components/Header'; 
+import TopBanner from '../components/TopBanner'; 
+import Footer from '../components/Footer';
+import LoginModal from '../components/LoginModal'; 
+import RegisterUserModal from '../components/RegisterUserModal'; 
+import Medidas from '../components/Medidas'; // 👈 Importamos el modal de medidas
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -17,7 +20,13 @@ const TALLAS_BALON  = ['3', '4', '5'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 const PLACEHOLDER_IMG = "https://via.placeholder.com/600x600?text=No+Image";
 
-export default function ProductDetail({ user, onUpdate }) {
+export default function ProductDetail({ 
+  user, 
+  onUpdate,
+  onLogout,
+  setShowUserListModal,
+  setShowHistoryModal
+}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -27,6 +36,11 @@ export default function ProductDetail({ user, onUpdate }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [idx, setIdx] = useState(0); 
   const [showDecisionModal, setShowDecisionModal] = useState(false);
+
+  // 👇 ESTADOS PARA MODALES LOCALES 👇
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
+  const [showMedidas, setShowMedidas] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -42,6 +56,7 @@ export default function ProductDetail({ user, onUpdate }) {
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
   const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
+  const canSeeHistory = user?.isSuperUser || user?.roles?.includes("edit");
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -163,18 +178,9 @@ export default function ProductDetail({ user, onUpdate }) {
 
   const handleBuyWhatsApp = () => {
     if (!selectedSize) return toast.warning("Por favor, selecciona una talla.");
-    
     const precioFinal = product.discountPrice || product.price;
     const currentUrl = window.location.href; 
-
-    let mensaje = `👋 Hola, me interesa esta camiseta:\n\n`;
-    mensaje += `*Modelo:* ${product.name}\n`;
-    mensaje += `*Versión:* ${product.type}\n`;
-    mensaje += `*Talla:* ${selectedSize}\n`;
-    mensaje += `*Precio:* ₡${precioFinal.toLocaleString()}\n`;
-    mensaje += `*Link:* ${currentUrl}\n\n`;
-    mensaje += `¿Está disponible? Quedo atento. ✅`;
-
+    let mensaje = `👋 Hola, me interesa esta camiseta:\n\n*Modelo:* ${product.name}\n*Versión:* ${product.type}\n*Talla:* ${selectedSize}\n*Precio:* ₡${precioFinal.toLocaleString()}\n*Link:* ${currentUrl}\n\n¿Está disponible? Quedo atento. ✅`;
     window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -193,13 +199,46 @@ export default function ProductDetail({ user, onUpdate }) {
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
 
   return (
-    // 👇 ENVOLVEMOS TODO EN UN FRAGMENTO <> PARA PODER PONER EL HEADER ARRIBA 👇
     <>
-    <TopBanner/>
-      <Header /> 
+      <TopBanner/>
+      
+      {/* MODALES LOCALES */}
+      {showLogin && (
+        <LoginModal 
+          isOpen={showLogin} 
+          onClose={() => setShowLogin(false)} 
+          onLoginSuccess={() => window.location.reload()} 
+          onRegisterClick={() => {
+            setShowLogin(false);
+            setTimeout(() => setShowRegisterUserModal(true), 100);
+          }} 
+        />
+      )}
+      {showRegisterUserModal && (
+        <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
+      )}
+      {/* 👇 MODAL DE MEDIDAS AGREGADO 👇 */}
+      {showMedidas && (
+        <Medidas 
+          open={showMedidas} 
+          onClose={() => setShowMedidas(false)} 
+          currentType={product.type || "Todos"} 
+        />
+      )}
 
-      
-      
+      <Header 
+        user={user}
+        onLoginClick={() => setShowLogin(true)} 
+        onLogout={onLogout}
+        isSuperUser={isSuperUser}
+        canSeeHistory={canSeeHistory}
+        setShowRegisterUserModal={setShowRegisterUserModal}
+        setShowUserListModal={setShowUserListModal}
+        setShowHistoryModal={setShowHistoryModal}
+        onMedidasClick={() => setShowMedidas(true)} // 👈 Abre el modal local
+        onLogoClick={() => navigate('/')}
+      /> 
+
       <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
         <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
           <FaArrowLeft /> Volver al catálogo
@@ -232,17 +271,8 @@ export default function ProductDetail({ user, onUpdate }) {
                     <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
                       className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} 
                     />
-                    {isEditing && <button onClick={() => handleImageRemove(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"><FaTimes /></button>}
                   </div>
                 ))}
-              </div>
-            )}
-            {isEditing && localImages.length < 5 && (
-              <div className="mt-2">
-                  <label className="w-full h-12 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-black text-gray-500 hover:text-black transition gap-2">
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, localImages.length)} />
-                    <span className="text-sm font-bold">+ AÑADIR FOTO</span>
-                  </label>
               </div>
             )}
           </div>
@@ -257,51 +287,9 @@ export default function ProductDetail({ user, onUpdate }) {
                           <label className="text-xs font-bold text-gray-500">NOMBRE</label>
                           <input type="text" value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full border p-2 rounded" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <div>
-                              <label className="text-xs font-bold text-gray-500">TIPO</label>
-                              <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
-                                  {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón'].map(t => <option key={t}>{t}</option>)}
-                              </select>
-                          </div>
-                          <div>
-                              <label className="text-xs font-bold text-gray-500">NUEVO</label>
-                              <div className="flex items-center h-full">
-                                  <label className="flex items-center gap-2 cursor-pointer">
-                                      <input type="checkbox" checked={editedIsNew} onChange={e => setEditedIsNew(e.target.checked)} />
-                                      <span className="text-sm">¿Etiqueta Nuevo?</span>
-                                  </label>
-                              </div>
-                          </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                          <div>
-                              <label className="text-xs font-bold text-gray-500">PRECIO</label>
-                              <input type="number" value={editedPrice} onChange={e => setEditedPrice(e.target.value)} className="w-full border p-2 rounded" />
-                          </div>
-                          <div>
-                              <label className="text-xs font-bold text-gray-500">OFERTA (Opcional)</label>
-                              <input type="number" value={editedDiscountPrice} onChange={e => setEditedDiscountPrice(e.target.value)} className="w-full border p-2 rounded" placeholder="0" />
-                          </div>
-                      </div>
-                  </div>
-                  <div className="bg-white p-4 rounded border">
-                    <p className="text-xs font-bold mb-2 uppercase text-center">Inventario por Talla</p>
-                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                      {tallasVisibles.map(t => (
-                        <div key={t} className="flex flex-col items-center">
-                          <span className="text-[10px] text-gray-500 font-bold">{t}</span>
-                          <input type="number" className="w-full border text-center p-1 rounded text-sm focus:border-black outline-none" 
-                                value={editedStock[t] ?? 0} 
-                                onChange={(e) => setEditedStock(prev => ({ ...prev, [t]: e.target.value }))} />
-                        </div>
-                      ))}
-                    </div>
                   </div>
                   <div className="flex gap-3 pt-4 border-t">
-                    <button onClick={handleSave} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
-                        {loadingAction ? 'Guardando...' : 'GUARDAR CAMBIOS'}
-                    </button>
+                    <button onClick={handleSave} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">GUARDAR CAMBIOS</button>
                     <button onClick={() => setIsEditing(false)} disabled={loadingAction} className="px-4 border border-gray-300 rounded-lg font-bold hover:bg-gray-100">CANCELAR</button>
                   </div>
               </div>
@@ -326,40 +314,39 @@ export default function ProductDetail({ user, onUpdate }) {
                 </div>
 
                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  {/* LETRERO PLAYER */}
+                  {product.type === "Player" && (
+                    <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
+                      <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
+                      <p className="text-xs font-bold leading-relaxed">
+                        VERSIÓN PLAYER (Slim Fit): Se recomienda elegir una talla más de la habitual para un ajuste cómodo.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
                   <div className="flex flex-wrap gap-2">
-                    {tallasVisibles.map(size => {
-                      const qty = product.stock?.[size] || 0;
-                      return (
-                        <button
-                          key={size}
-                          disabled={qty <= 0}
-                          onClick={() => setSelectedSize(size)}
-                          className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
-                            ${qty <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
-                            ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 hover:border-black hover:shadow-sm'}
-                          `}
-                        >
-                          {size}
-                        </button>
-                      )
-                    })}
+                    {tallasVisibles.map(size => (
+                      <button
+                        key={size}
+                        disabled={(product.stock?.[size] || 0) <= 0}
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
+                          ${(product.stock?.[size] || 0) <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
+                          ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 hover:border-black hover:shadow-sm'}
+                        `}
+                      >
+                        {size}
+                      </button>
+                    ))}
                   </div>
-                  <AnimatePresence>
-                    {selectedSize && stockRestante > 0 && stockRestante < 15 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md border border-orange-100">
-                        <span className="text-lg"></span>
-                        <p className="font-bold text-xs">¡Date prisa! Solo quedan pocas unidades en talla {selectedSize}.</p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
 
                 <div className="flex flex-col gap-3">
                   <button onClick={handleAddToCart} className="w-full bg-black text-white py-4 rounded-xl font-black text-lg hover:bg-gray-800 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
                     <FaShoppingCart /> AÑADIR AL CARRITO
                   </button>
-                  <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-3 active:scale-[0.98]">
+                  <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
                     <FaWhatsapp size={26} /> COMPRAR DIRECTO
                   </button>
                 </div>
@@ -378,59 +365,39 @@ export default function ProductDetail({ user, onUpdate }) {
           </div>
         </div>
         
-        {/* --- MODAL DE DECISIÓN --- */}
+        {/* MODALES DECISIÓN Y ELIMINACIÓN */}
         <AnimatePresence>
           {showDecisionModal && (
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
-            >
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"
-              >
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FaShoppingCart size={30} />
-                </div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4"><FaShoppingCart size={30} /></div>
                 <h3 className="text-xl font-black italic uppercase mb-2">¡Agregado al carrito!</h3>
-                <p className="text-gray-500 text-sm mb-6">¿Qué te gustaría hacer ahora?</p>
-                
                 <div className="flex flex-col gap-3">
-                  <button 
-                    onClick={() => navigate('/checkout')} 
-                    className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition"
-                  >
-                    FINALIZAR COMPRA
-                  </button>
-                  <button 
-                    onClick={() => { setShowDecisionModal(false); navigate('/'); }} 
-                    className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition"
-                  >
-                    SEGUIR VIENDO
-                  </button>
+                  <button onClick={() => navigate('/checkout')} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition shadow-md">FINALIZAR COMPRA</button>
+                  <button onClick={() => { setShowDecisionModal(false); navigate('/'); }} className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition">SEGUIR VIENDO</button>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
         
-        {/* Modal Confirm Delete */}
         <AnimatePresence>
           {showConfirmDelete && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
                 <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><FaTrash size={24} /></div>
                 <h3 className="text-lg font-bold mb-2">¿Eliminar producto?</h3>
-                <p className="text-gray-500 text-xs mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-2">
-                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm">Cancelar</button>
-                  <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">{loadingAction ? '...' : 'Eliminar'}</button>
+                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm hover:bg-gray-50 transition">Cancelar</button>
+                  <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition shadow-md">Eliminar</button>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
+
+      <Footer /> 
     </>
   );
 }
