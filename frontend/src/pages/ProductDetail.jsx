@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
@@ -9,9 +9,8 @@ import { useCart } from '../context/CartContext';
 import Header from '../components/Header'; 
 import TopBanner from '../components/TopBanner'; 
 import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal'; 
-import RegisterUserModal from '../components/RegisterUserModal'; 
-import Medidas from '../components/Medidas';
+import LoginModal from '../components/LoginModal'; // 👈 Importado
+import RegisterUserModal from '../components/RegisterUserModal'; // 👈 Importado
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -25,7 +24,8 @@ export default function ProductDetail({
   onUpdate,
   onLogout,
   setShowUserListModal,
-  setShowHistoryModal
+  setShowHistoryModal,
+  onMedidasClick
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -37,10 +37,9 @@ export default function ProductDetail({
   const [idx, setIdx] = useState(0); 
   const [showDecisionModal, setShowDecisionModal] = useState(false);
 
-  // Modales Locales
+  // 👇 NUEVOS ESTADOS PARA MODALES DE SESIÓN 👇
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
-  const [showMedidas, setShowMedidas] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -58,7 +57,6 @@ export default function ProductDetail({
   const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
   const canSeeHistory = user?.isSuperUser || user?.roles?.includes("edit");
 
-  // 🛠️ REPARADO: Sincronización de datos al cargar
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -66,7 +64,7 @@ export default function ProductDetail({
         if (!res.ok) throw new Error("Producto no encontrado");
         const data = await res.json();
         setProduct(data);
-        syncEditState(data); // 👈 ESTO ES LO QUE FALTABA
+        syncEditState(data);
       } catch (err) {
         console.error(err);
         toast.error("Error cargando producto");
@@ -91,7 +89,9 @@ export default function ProductDetail({
     }
     if (imgs.length === 0 && data.imageSrc && data.imageSrc.startsWith('http')) {
       imgs.push(data.imageSrc);
+      if (data.imageSrc2 && data.imageSrc2.startsWith('http')) imgs.push(data.imageSrc2);
     }
+    if (imgs.length === 0) imgs.push(PLACEHOLDER_IMG);
     setLocalImages(imgs.map(src => ({ src, isNew: false })));
   };
 
@@ -99,18 +99,20 @@ export default function ProductDetail({
     if (loadingAction) return;
     setLoadingAction(true);
     try {
+      const displayName = user?.username || 'Admin';
+      const cleanStock = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, Math.max(0, parseInt(v, 10) || 0)]));
       const payload = {
         name: editedName.trim(),
         price: parseInt(editedPrice, 10) || 0,
         discountPrice: editedDiscountPrice ? parseInt(editedDiscountPrice, 10) : null,
         type: editedType,
-        stock: editedStock,
+        stock: cleanStock(editedStock),
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
       };
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-user': user?.username || 'Admin' },
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Error al actualizar");
@@ -147,6 +149,32 @@ export default function ProductDetail({
     }
   };
 
+  const handleImageChange = (e, index) => {
+    const file = e.target.files?.[0];
+    if (!file || !ACCEPTED_TYPES.includes(file.type)) return toast.error("Formato inválido");
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLocalImages(prev => {
+        const copy = [...prev];
+        if (copy.length === 1 && copy[0].src === PLACEHOLDER_IMG) {
+           return [{ src: reader.result, isNew: true }];
+        }
+        if (index >= copy.length) copy.push({ src: reader.result, isNew: true });
+        else copy[index] = { src: reader.result, isNew: true };
+        return copy;
+      });
+      setIdx(index);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageRemove = (index) => {
+    const newImages = localImages.filter((_, i) => i !== index);
+    if (newImages.length === 0) newImages.push({ src: PLACEHOLDER_IMG, isNew: false });
+    setLocalImages(newImages);
+    setIdx(0);
+  };
+
   const handleBuyWhatsApp = () => {
     if (!selectedSize) return toast.warning("Por favor, selecciona una talla.");
     const precioFinal = product.discountPrice || product.price;
@@ -167,32 +195,40 @@ export default function ProductDetail({
   const currentSrc = localImages[idx]?.src || PLACEHOLDER_IMG;
   const currentType = isEditing ? editedType : product.type;
   const tallasVisibles = currentType === 'Balón' ? TALLAS_BALON : (currentType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
+  const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
 
   return (
     <>
       <TopBanner/>
       
+      {/* 👇 MODALES DE SESIÓN AGREGADOS 👇 */}
       {showLogin && (
         <LoginModal 
           isOpen={showLogin} 
           onClose={() => setShowLogin(false)} 
-          onLoginSuccess={() => window.location.reload()} 
-          onRegisterClick={() => { setShowLogin(false); setTimeout(() => setShowRegisterUserModal(true), 100); }} 
+          onLoginSuccess={(userData) => {
+            window.location.reload(); // Recargamos para actualizar permisos de admin
+          }} 
+          onRegisterClick={() => {
+            setShowLogin(false);
+            setTimeout(() => setShowRegisterUserModal(true), 100);
+          }} 
         />
       )}
-      {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-      {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={product.type || "Todos"} />}
+      {showRegisterUserModal && (
+        <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
+      )}
 
       <Header 
         user={user}
-        onLoginClick={() => setShowLogin(true)} 
+        onLoginClick={() => setShowLogin(true)} // 👈 Abre el modal local
         onLogout={onLogout}
         isSuperUser={isSuperUser}
         canSeeHistory={canSeeHistory}
         setShowRegisterUserModal={setShowRegisterUserModal}
         setShowUserListModal={setShowUserListModal}
         setShowHistoryModal={setShowHistoryModal}
-        onMedidasClick={() => setShowMedidas(true)}
+        onMedidasClick={onMedidasClick}
         onLogoClick={() => navigate('/')}
       /> 
 
@@ -228,6 +264,7 @@ export default function ProductDetail({
                     <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
                       className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} 
                     />
+                    {isEditing && <button onClick={() => handleImageRemove(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"><FaTimes /></button>}
                   </div>
                 ))}
               </div>
@@ -236,77 +273,97 @@ export default function ProductDetail({
 
           {/* INFO */}
           <div className="flex flex-col">
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
-                  {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
+            {isEditing ? (
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+                  <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FaEdit/> Editando Producto</h3>
+                  <div className="space-y-3">
+                      <div>
+                          <label className="text-xs font-bold text-gray-500">NOMBRE</label>
+                          <input type="text" value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full border p-2 rounded" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <label className="text-xs font-bold text-gray-500">TIPO</label>
+                              <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
+                                  {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón'].map(t => <option key={t}>{t}</option>)}
+                              </select>
+                          </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                          <div>
+                              <label className="text-xs font-bold text-gray-500">PRECIO</label>
+                              <input type="number" value={editedPrice} onChange={e => setEditedPrice(e.target.value)} className="w-full border p-2 rounded" />
+                          </div>
+                      </div>
+                  </div>
+                  <div className="flex gap-3 pt-4 border-t">
+                    <button onClick={handleSave} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">GUARDAR CAMBIOS</button>
+                    <button onClick={() => setIsEditing(false)} disabled={loadingAction} className="px-4 border border-gray-300 rounded-lg font-bold hover:bg-gray-100">CANCELAR</button>
+                  </div>
               </div>
-              <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight">{product.name}</h1>
-              <div className="mt-4 flex items-baseline gap-3">
-                {product.discountPrice ? (
-                  <>
-                    <span className="text-4xl font-light text-red-600">₡{product.discountPrice.toLocaleString()}</span>
-                    <span className="text-xl text-gray-400 line-through">₡{product.price.toLocaleString()}</span>
-                  </>
-                ) : (
-                  <span className="text-4xl font-light">₡{product.price.toLocaleString()}</span>
+            ) : (
+              <>
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
+                      {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
+                  </div>
+                  <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight">{product.name}</h1>
+                  <div className="mt-4 flex items-baseline gap-3">
+                    {product.discountPrice ? (
+                      <>
+                        <span className="text-4xl font-light text-red-600">₡{product.discountPrice.toLocaleString()}</span>
+                        <span className="text-xl text-gray-400 line-through">₡{product.price.toLocaleString()}</span>
+                      </>
+                    ) : (
+                      <span className="text-4xl font-light">₡{product.price.toLocaleString()}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {tallasVisibles.map(size => (
+                      <button
+                        key={size}
+                        disabled={(product.stock?.[size] || 0) <= 0}
+                        onClick={() => setSelectedSize(size)}
+                        className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
+                          ${(product.stock?.[size] || 0) <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
+                          ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 hover:border-black hover:shadow-sm'}
+                        `}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <button onClick={handleAddToCart} className="w-full bg-black text-white py-4 rounded-xl font-black text-lg hover:bg-gray-800 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
+                    <FaShoppingCart /> AÑADIR AL CARRITO
+                  </button>
+                  <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-3 active:scale-[0.98]">
+                    <FaWhatsapp size={26} /> COMPRAR DIRECTO
+                  </button>
+                </div>
+
+                {(isSuperUser || canDelete) && (
+                  <div className="mt-12 pt-6 border-t border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 text-center tracking-widest">Zona Administrativa</p>
+                    <div className="flex gap-3">
+                      {isSuperUser && <button onClick={() => setIsEditing(true)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR</button>}
+                      {canDelete && <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><FaTrash /> ELIMINAR</button>}
+                    </div>
+                  </div>
                 )}
-              </div>
-            </div>
-
-            <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-              {product.type === "Player" && (
-                <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
-                  <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
-                  <p className="text-xs font-bold leading-relaxed">
-                    VERSIÓN PLAYER (Slim Fit): Se recomienda elegir una talla más de la habitual para un ajuste cómodo.
-                  </p>
-                </div>
-              )}
-
-              <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
-              <div className="flex flex-wrap gap-2">
-                {tallasVisibles.map(size => {
-                  const qty = (product.stock?.[size] || 0);
-                  return (
-                    <button
-                      key={size}
-                      disabled={qty <= 0}
-                      onClick={() => setSelectedSize(size)}
-                      className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
-                        ${qty <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
-                        ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 hover:border-black hover:shadow-sm'}
-                      `}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button onClick={handleAddToCart} className="w-full bg-black text-white py-4 rounded-xl font-black text-lg hover:bg-gray-800 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
-                <FaShoppingCart /> AÑADIR AL CARRITO
-              </button>
-              <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-3 active:scale-[0.98]">
-                <FaWhatsapp size={26} /> COMPRAR DIRECTO
-              </button>
-            </div>
-
-            {(isSuperUser || canDelete) && (
-              <div className="mt-12 pt-6 border-t border-gray-100">
-                <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 text-center tracking-widest">Zona Administrativa</p>
-                <div className="flex gap-3">
-                  <button onClick={() => setIsEditing(true)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR</button>
-                  <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><FaTrash /> ELIMINAR</button>
-                </div>
-              </div>
+              </>
             )}
           </div>
         </div>
         
-        {/* Modales de Decisión */}
+        {/* --- MODALES --- */}
         <AnimatePresence>
           {showDecisionModal && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -321,7 +378,23 @@ export default function ProductDetail({
             </motion.div>
           )}
         </AnimatePresence>
+        
+        <AnimatePresence>
+          {showConfirmDelete && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
+                <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><FaTrash size={24} /></div>
+                <h3 className="text-lg font-bold mb-2">¿Eliminar producto?</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm">Cancelar</button>
+                  <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">Eliminar</button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
       <Footer /> 
     </>
   );
