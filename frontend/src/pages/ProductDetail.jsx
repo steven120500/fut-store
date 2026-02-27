@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
@@ -9,8 +9,8 @@ import { useCart } from '../context/CartContext';
 import Header from '../components/Header'; 
 import TopBanner from '../components/TopBanner'; 
 import Footer from '../components/Footer';
-import LoginModal from '../components/LoginModal'; // 👈 Importado
-import RegisterUserModal from '../components/RegisterUserModal'; // 👈 Importado
+import LoginModal from '../components/LoginModal'; 
+import RegisterUserModal from '../components/RegisterUserModal'; 
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -37,7 +37,6 @@ export default function ProductDetail({
   const [idx, setIdx] = useState(0); 
   const [showDecisionModal, setShowDecisionModal] = useState(false);
 
-  // 👇 NUEVOS ESTADOS PARA MODALES DE SESIÓN 👇
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
 
@@ -201,13 +200,12 @@ export default function ProductDetail({
     <>
       <TopBanner/>
       
-      {/* 👇 MODALES DE SESIÓN AGREGADOS 👇 */}
       {showLogin && (
         <LoginModal 
           isOpen={showLogin} 
           onClose={() => setShowLogin(false)} 
           onLoginSuccess={(userData) => {
-            window.location.reload(); // Recargamos para actualizar permisos de admin
+            window.location.reload(); 
           }} 
           onRegisterClick={() => {
             setShowLogin(false);
@@ -221,7 +219,7 @@ export default function ProductDetail({
 
       <Header 
         user={user}
-        onLoginClick={() => setShowLogin(true)} // 👈 Abre el modal local
+        onLoginClick={() => setShowLogin(true)} 
         onLogout={onLogout}
         isSuperUser={isSuperUser}
         canSeeHistory={canSeeHistory}
@@ -322,6 +320,16 @@ export default function ProductDetail({
                 </div>
 
                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  {/* 👇 LETRERO DE TALLA PLAYER 👇 */}
+                  {product.type === "Player" && (
+                    <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800">
+                      <FaExclamationTriangle className="flex-shrink-0" />
+                      <p className="text-xs font-bold">
+                        IMPORTANTE: Esta es una versión Player (Corte Slim). Se recomienda elegir una talla más de la habitual para mayor comodidad.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
                   <div className="flex flex-wrap gap-2">
                     {tallasVisibles.map(size => (
