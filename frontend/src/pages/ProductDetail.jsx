@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
-// 👇 AQUÍ IMPORTAMOS TU HEADER 👇
-import Header from '../components/Header'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar
-import TopBanner from '../components/TopBanner'; // Ajusta la ruta o el nombre si tu archivo se llama Navbar    
-
+// Componentes
+import Header from '../components/Header'; 
+import TopBanner from '../components/TopBanner'; 
+import Footer from '../components/Footer';
+import LoginModal from '../components/LoginModal'; 
+import RegisterUserModal from '../components/RegisterUserModal'; 
+import Medidas from '../components/Medidas';
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -17,7 +20,13 @@ const TALLAS_BALON  = ['3', '4', '5'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 const PLACEHOLDER_IMG = "https://via.placeholder.com/600x600?text=No+Image";
 
-export default function ProductDetail({ user, onUpdate }) {
+export default function ProductDetail({ 
+  user, 
+  onUpdate,
+  onLogout,
+  setShowUserListModal,
+  setShowHistoryModal
+}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -27,6 +36,11 @@ export default function ProductDetail({ user, onUpdate }) {
   const [selectedSize, setSelectedSize] = useState("");
   const [idx, setIdx] = useState(0); 
   const [showDecisionModal, setShowDecisionModal] = useState(false);
+
+  // Estados para Modales Locales
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
+  const [showMedidas, setShowMedidas] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
@@ -42,6 +56,7 @@ export default function ProductDetail({ user, onUpdate }) {
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
   const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
+  const canSeeHistory = user?.isSuperUser || user?.roles?.includes("edit");
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -163,18 +178,9 @@ export default function ProductDetail({ user, onUpdate }) {
 
   const handleBuyWhatsApp = () => {
     if (!selectedSize) return toast.warning("Por favor, selecciona una talla.");
-    
     const precioFinal = product.discountPrice || product.price;
     const currentUrl = window.location.href; 
-
-    let mensaje = `👋 Hola, me interesa esta camiseta:\n\n`;
-    mensaje += `*Modelo:* ${product.name}\n`;
-    mensaje += `*Versión:* ${product.type}\n`;
-    mensaje += `*Talla:* ${selectedSize}\n`;
-    mensaje += `*Precio:* ₡${precioFinal.toLocaleString()}\n`;
-    mensaje += `*Link:* ${currentUrl}\n\n`;
-    mensaje += `¿Está disponible? Quedo atento. ✅`;
-
+    let mensaje = `👋 Hola, me interesa esta camiseta:\n\n*Modelo:* ${product.name}\n*Versión:* ${product.type}\n*Talla:* ${selectedSize}\n*Precio:* ₡${precioFinal.toLocaleString()}\n*Link:* ${currentUrl}\n\n¿Está disponible? Quedo atento. ✅`;
     window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
   };
 
@@ -184,8 +190,8 @@ export default function ProductDetail({ user, onUpdate }) {
     setShowDecisionModal(true);
   };
 
-  if (loadingFetch) return <div className="h-screen flex items-center justify-center font-bold text-xl">Cargando...</div>;
-  if (!product) return <div className="h-screen flex items-center justify-center">Producto no encontrado</div>;
+  if (loadingFetch) return <div className="h-screen flex items-center justify-center font-bold text-xl text-black">Cargando...</div>;
+  if (!product) return <div className="h-screen flex items-center justify-center text-black">Producto no encontrado</div>;
 
   const currentSrc = localImages[idx]?.src || PLACEHOLDER_IMG;
   const currentType = isEditing ? editedType : product.type;
@@ -193,13 +199,44 @@ export default function ProductDetail({ user, onUpdate }) {
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
 
   return (
-    // 👇 ENVOLVEMOS TODO EN UN FRAGMENTO <> PARA PODER PONER EL HEADER ARRIBA 👇
     <>
-    <TopBanner/>
-      <Header /> 
+      <TopBanner/>
+      
+      {showLogin && (
+        <LoginModal 
+          isOpen={showLogin} 
+          onClose={() => setShowLogin(false)} 
+          onLoginSuccess={() => window.location.reload()} 
+          onRegisterClick={() => {
+            setShowLogin(false);
+            setTimeout(() => setShowRegisterUserModal(true), 100);
+          }} 
+        />
+      )}
+      {showRegisterUserModal && (
+        <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
+      )}
+      {showMedidas && (
+        <Medidas 
+          open={showMedidas} 
+          onClose={() => setShowMedidas(false)} 
+          currentType={product.type || "Todos"} 
+        />
+      )}
 
-      
-      
+      <Header 
+        user={user}
+        onLoginClick={() => setShowLogin(true)} 
+        onLogout={onLogout}
+        isSuperUser={isSuperUser}
+        canSeeHistory={canSeeHistory}
+        setShowRegisterUserModal={setShowRegisterUserModal}
+        setShowUserListModal={setShowUserListModal}
+        setShowHistoryModal={setShowHistoryModal}
+        onMedidasClick={() => setShowMedidas(true)}
+        onLogoClick={() => navigate('/')}
+      /> 
+
       <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
         <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
           <FaArrowLeft /> Volver al catálogo
@@ -220,8 +257,8 @@ export default function ProductDetail({ user, onUpdate }) {
               </AnimatePresence>
               {!isEditing && localImages.length > 1 && (
                 <>
-                  <button onClick={() => setIdx((i) => (i - 1 + localImages.length) % localImages.length)} className="absolute left-4 bg-white/90 p-3 rounded-full shadow hover:scale-110 transition opacity-0 group-hover:opacity-100"><FaChevronLeft /></button>
-                  <button onClick={() => setIdx((i) => (i + 1) % localImages.length)} className="absolute right-4 bg-white/90 p-3 rounded-full shadow hover:scale-110 transition opacity-0 group-hover:opacity-100"><FaChevronRight /></button>
+                  <button onClick={() => setIdx((i) => (i - 1 + localImages.length) % localImages.length)} className="absolute left-4 bg-white/90 p-3 rounded-full shadow hover:scale-110 transition opacity-0 group-hover:opacity-100 text-black"><FaChevronLeft /></button>
+                  <button onClick={() => setIdx((i) => (i + 1) % localImages.length)} className="absolute right-4 bg-white/90 p-3 rounded-full shadow hover:scale-110 transition opacity-0 group-hover:opacity-100 text-black"><FaChevronRight /></button>
                 </>
               )}
             </div>
@@ -250,7 +287,7 @@ export default function ProductDetail({ user, onUpdate }) {
           {/* INFO */}
           <div className="flex flex-col">
             {isEditing ? (
-              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4 text-black">
                   <h3 className="font-bold text-lg mb-4 flex items-center gap-2"><FaEdit/> Editando Producto</h3>
                   <div className="space-y-3">
                       <div>
@@ -312,7 +349,7 @@ export default function ProductDetail({ user, onUpdate }) {
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
                   </div>
-                  <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight">{product.name}</h1>
+                  <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight text-black">{product.name}</h1>
                   <div className="mt-4 flex items-baseline gap-3">
                     {product.discountPrice ? (
                       <>
@@ -320,12 +357,22 @@ export default function ProductDetail({ user, onUpdate }) {
                         <span className="text-xl text-gray-400 line-through">₡{product.price.toLocaleString()}</span>
                       </>
                     ) : (
-                      <span className="text-4xl font-light">₡{product.price.toLocaleString()}</span>
+                      <span className="text-4xl font-light text-black">₡{product.price.toLocaleString()}</span>
                     )}
                   </div>
                 </div>
 
                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  {/* 👇 LETRERO RECOMENDACIÓN TALLA PLAYER 👇 */}
+                  {product.type === "Player" && (
+                    <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
+                      <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
+                      <p className="text-xs font-bold leading-relaxed">
+                        VERSIÓN PLAYER (Corte Ajustado): Se recomienda elegir una talla más de la habitual para un ajuste óptimo.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
                   <div className="flex flex-wrap gap-2">
                     {tallasVisibles.map(size => {
@@ -337,7 +384,7 @@ export default function ProductDetail({ user, onUpdate }) {
                           onClick={() => setSelectedSize(size)}
                           className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
                             ${qty <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
-                            ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 hover:border-black hover:shadow-sm'}
+                            ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 text-black hover:border-black hover:shadow-sm'}
                           `}
                         >
                           {size}
@@ -348,7 +395,6 @@ export default function ProductDetail({ user, onUpdate }) {
                   <AnimatePresence>
                     {selectedSize && stockRestante > 0 && stockRestante < 15 && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md border border-orange-100">
-                        <span className="text-lg"></span>
                         <p className="font-bold text-xs">¡Date prisa! Solo quedan pocas unidades en talla {selectedSize}.</p>
                       </motion.div>
                     )}
@@ -378,7 +424,7 @@ export default function ProductDetail({ user, onUpdate }) {
           </div>
         </div>
         
-        {/* --- MODAL DE DECISIÓN --- */}
+        {/* MODAL DECISIÓN */}
         <AnimatePresence>
           {showDecisionModal && (
             <motion.div 
@@ -389,10 +435,10 @@ export default function ProductDetail({ user, onUpdate }) {
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
                 className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"
               >
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-black">
                   <FaShoppingCart size={30} />
                 </div>
-                <h3 className="text-xl font-black italic uppercase mb-2">¡Agregado al carrito!</h3>
+                <h3 className="text-xl font-black italic uppercase mb-2 text-black">¡Agregado al carrito!</h3>
                 <p className="text-gray-500 text-sm mb-6">¿Qué te gustaría hacer ahora?</p>
                 
                 <div className="flex flex-col gap-3">
@@ -414,16 +460,15 @@ export default function ProductDetail({ user, onUpdate }) {
           )}
         </AnimatePresence>
         
-        {/* Modal Confirm Delete */}
         <AnimatePresence>
           {showConfirmDelete && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
                 <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><FaTrash size={24} /></div>
-                <h3 className="text-lg font-bold mb-2">¿Eliminar producto?</h3>
+                <h3 className="text-lg font-bold mb-2 text-black">¿Eliminar producto?</h3>
                 <p className="text-gray-500 text-xs mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-2">
-                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm">Cancelar</button>
+                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm text-black">Cancelar</button>
                   <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">{loadingAction ? '...' : 'Eliminar'}</button>
                 </div>
               </div>
@@ -431,6 +476,7 @@ export default function ProductDetail({ user, onUpdate }) {
           )}
         </AnimatePresence>
       </div>
+      <Footer />
     </>
   );
 }
