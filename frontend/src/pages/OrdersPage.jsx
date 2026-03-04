@@ -155,7 +155,7 @@ const OrdersPage = () => {
                                             <span className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString()}</span>
                                         </div>
                                         <div className="mt-4 md:mt-0 text-left md:text-right">
-                                            <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2 ${
+                                            <span className={`inline-block px-3 py-1 rounded text-10px font-black uppercase tracking-wide mb-2  ${
                                                 order.status === 'sent' ? 'bg-blue-500 text-white' : 
                                                 order.status === 'paid' ? 'bg-green-500 text-black' : 'bg-yellow-500 text-black'
                                             }`}>
@@ -168,7 +168,7 @@ const OrdersPage = () => {
                                         {!showTrackingModal && (
                                             <button 
                                                 onClick={() => handleDeleteOrder(order._id)}
-                                                className="absolute top-4 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
+                                                className="absolute top-28 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
                                                 title="Eliminar Pedido"
                                             >
                                                 <FaTrash size={16} />
@@ -280,7 +280,7 @@ const OrdersPage = () => {
                     <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => setShowTrackingModal(false)}
-                            className="absolute top-5 right-5 text-zinc-400 hover:text-black transition"
+                            className="absolute bg-black text-white top-5 right-5 text-zinc-400 hover:text-black transition"
                         >
                             <FaTimes size={20} />
                         </button>
@@ -309,7 +309,7 @@ const OrdersPage = () => {
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => setShowTrackingModal(false)}
-                                className="flex-1 py-4 bg-white border border-zinc-200 text-zinc-500 rounded-xl font-bold hover:bg-zinc-50 transition uppercase text-[10px] tracking-widest"
+                                className="flex-1 py-4 bg-black border border-zinc-200 text-zinc-500 rounded-xl font-bold hover:bg-zinc-50 transition uppercase text-[10px] tracking-widest"
                             >
                                 CANCELAR
                             </button>
