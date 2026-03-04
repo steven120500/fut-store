@@ -22,7 +22,6 @@ export default function HistoryPage({ user }) {
       const params = new URLSearchParams({
         page: "1",
         limit: "1000",
-        // 👇 Si hay fecha seleccionada, la enviamos para que el backend filtre
         ...(selectedDate && { date: selectedDate }),
         _: String(Date.now()), 
       });
@@ -47,7 +46,6 @@ export default function HistoryPage({ user }) {
     }
   };
 
-  // 🚀 REPARADO: Ahora se dispara cada vez que cambias la fecha en el calendario
   useEffect(() => {
     fetchHistory();
   }, [selectedDate]); 
@@ -83,7 +81,6 @@ export default function HistoryPage({ user }) {
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       <div className="flex-grow pt-32 sm:pt-44 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
-        {/* BOTÓN VOLVER */}
         <div className="flex justify-start mb-6">
             <button 
                 onClick={() => navigate(-1)} 
@@ -93,7 +90,6 @@ export default function HistoryPage({ user }) {
             </button>
         </div>
 
-        {/* HEADER Y FILTROS RESPONSIVOS */}
         <div className="flex flex-col mb-10 border-b border-zinc-800 pb-8 gap-6">
           <div className="flex items-center gap-4">
             <div className="bg-[#D4AF37] p-3 rounded-2xl">
@@ -102,8 +98,8 @@ export default function HistoryPage({ user }) {
             <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tighter">Bitácora de Cambios</h1>
           </div>
 
-          {/* 👇 CONTENEDOR DE FILTROS REPARADO PARA CELULAR 👇 */}
-          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 w-full items-stretch">
+            {/* 👇 BUSCADOR CORREGIDO: Texto negro al escribir 👇 */}
             <div className="relative flex-grow">
               <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
               <input
@@ -111,7 +107,7 @@ export default function HistoryPage({ user }) {
                 placeholder="Buscar producto o admin..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white outline-none focus:border-[#D4AF37] transition-all"
+                className="w-full bg-white border border-zinc-300 rounded-xl pl-11 pr-4 py-3 text-sm text-black font-bold outline-none focus:border-[#D4AF37] transition-all"
               />
             </div>
 
@@ -125,7 +121,10 @@ export default function HistoryPage({ user }) {
                 />
 
                 {isSuperUser && (
-                <button onClick={handleClear} className="bg-red-600 text-white px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all">
+                <button 
+                    onClick={handleClear} 
+                    className="flex-grow sm:flex-none bg-red-600 text-white px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg active:scale-95"
+                >
                     LIMPIAR
                 </button>
                 )}
@@ -133,11 +132,10 @@ export default function HistoryPage({ user }) {
           </div>
         </div>
 
-        {/* LISTADO */}
         {loading ? (
-          <div className="text-center py-20">
-             <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-             <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">Sincronizando...</p>
+          <div className="text-center py-20 flex flex-col items-center">
+             <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-4"></div>
+             <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">Sincronizando registros...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
           <div className="text-center py-20 bg-zinc-900/20 rounded-3xl border border-dashed border-zinc-800 px-6">
