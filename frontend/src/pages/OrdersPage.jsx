@@ -276,7 +276,7 @@ const OrdersPage = () => {
 
             {/* MODAL DE GUÍA */}
             {showTrackingModal && (
-                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-500 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => setShowTrackingModal(false)}
