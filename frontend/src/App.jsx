@@ -17,7 +17,7 @@ import Footer from "./components/Footer";
 import LoadingOverlay from "./components/LoadingOverlay";
 import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
-import HistoryModal from "./components/HistoryModal";
+// 🗑️ Se elimina el import de HistoryModal si ya no se usa como modal
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
@@ -32,6 +32,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
 import OrdersPage from "./pages/OrdersPage.jsx"; 
+import HistoryPage from "./pages/HistoryPage.jsx"; // 👈 NUEVA PÁGINA
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -55,10 +56,11 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
   const [showUserListModal, setShowUserListModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  // 🗑️ Se elimina el estado showHistoryModal
   const [showMedidas, setShowMedidas] = useState(false);
 
-  const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showHistoryModal || showMedidas;
+  // 🛠️ Ajuste de condición de modales abiertos
+  const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showMedidas;
 
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
@@ -67,7 +69,6 @@ export default function App() {
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
-  // --- 🚀 ESCUCHAR EVENTOS DEL CARRUSEL (BIENVENIDO) ---
   useEffect(() => {
     const handleFilterEvent = (e) => {
       const typeMap = {
@@ -210,7 +211,6 @@ export default function App() {
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           
-          {/* 👇 RUTA DE PRODUCTO ACTUALIZADA CON TODOS LOS PROPS 👇 */}
           <Route 
             path="/product/:id" 
             element={
@@ -221,20 +221,20 @@ export default function App() {
                 onLogout={handleLogout}
                 setShowRegisterUserModal={setShowRegisterUserModal}
                 setShowUserListModal={setShowUserListModal}
-                setShowHistoryModal={setShowHistoryModal}
                 onMedidasClick={() => setShowMedidas(true)}
               />
             } 
           />
           
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/pedidos" element={<OrdersPage />} /> 
+          <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
+          {/* 👇 RUTA DE HISTORIAL COMO PÁGINA 👇 */}
+          <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
           
           <Route path="/" element={
             <>
               {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
               {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
-              {showHistoryModal && <HistoryModal open={showHistoryModal} onClose={() => setShowHistoryModal(false)} isSuperUser={user?.isSuperUser === true} roles={user?.roles || []} />}
               {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
               {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
               {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
@@ -253,7 +253,6 @@ export default function App() {
                   canSeeHistory={canSeeHistory}
                   setShowRegisterUserModal={setShowRegisterUserModal}
                   setShowUserListModal={setShowUserListModal}
-                  setShowHistoryModal={setShowHistoryModal}
                   setFilterType={setFilterType}
                 />
               </div>
@@ -276,7 +275,6 @@ export default function App() {
                       key={getPid(product)}
                       product={product}
                       user={user}
-                      // 👇 Navegación optimizada sin recargar página
                       onClick={() => window.location.assign(`/product/${getPid(product)}`)}
                     />
                   ))}

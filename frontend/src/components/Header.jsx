@@ -1,5 +1,5 @@
 import logo from "../assets/logo.png";
-import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen } from "react-icons/fa"; 
+import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory } from "react-icons/fa"; 
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState } from "react";
@@ -17,7 +17,7 @@ export default function Header({
   isSuperUser,
   setShowRegisterUserModal,
   setShowUserListModal,
-  setShowHistoryModal,
+  // setShowHistoryModal, // 🗑️ Ya no se requiere el prop del modal
   onMedidasClick,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -53,7 +53,6 @@ export default function Header({
         
         {/* 🔹 IZQUIERDA: Logo y Accesos */}
         <div className="flex items-center gap-2 sm:gap-6">
-          {/* 👇 AQUÍ ESTÁ EL CAMBIO: navigate('/') para ir al inicio 👇 */}
           <button
             onClick={() => {
               navigate('/');
@@ -115,7 +114,7 @@ export default function Header({
         </div>
       </div>
 
-      {/* 🔸 SIDEBAR (Fondo Plateado / Letras Negras) */}
+      {/* 🔸 SIDEBAR */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}>
           <div 
@@ -151,9 +150,13 @@ export default function Header({
                       </>
                     )}
                     
+                    {/* 👇 CAMBIO: Navegación a página de historial 👇 */}
                     {canSeeHistory && (
-                      <button onClick={() => { setShowHistoryModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3">
-                        Historial de Cambios
+                      <button 
+                        onClick={() => { navigate('/historial'); setSidebarOpen(false); }} 
+                        className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3"
+                      >
+                        <FaHistory size={14}/> Historial de Cambios
                       </button>
                     )}
                     
