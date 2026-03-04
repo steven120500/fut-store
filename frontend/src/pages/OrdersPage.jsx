@@ -49,7 +49,6 @@ const OrdersPage = () => {
         }
     };
 
-    // 👇 Función para Enviar la Guía 👇
     const handleSendTracking = async () => {
         if (!trackingNumber.trim()) return toast.warning("Ingresa el número de guía.");
         setSendingTracking(true);
@@ -61,7 +60,6 @@ const OrdersPage = () => {
             
             toast.success("¡Guía enviada al cliente con éxito!");
             
-            // Opcional: Actualizar el estado local a "sent" si tu backend lo cambia
             setOrders(prev => prev.map(o => 
                 o._id === selectedOrder._id ? { ...o, status: 'sent' } : o
             ));
@@ -88,7 +86,7 @@ const OrdersPage = () => {
     });
 
     return (
-        <div className="min-h-screen bg-black text-white flex flex-col">
+        <div className="min-h-screen bg-black text-white flex flex-col font-sans">
             <div className="flex-grow pt-24 px-4 md:px-8">
                 <div className="max-w-6xl mx-auto">
                     
@@ -133,17 +131,16 @@ const OrdersPage = () => {
                     </div>
 
                     {loading ? (
-                        <p className="text-center text-gray-400 animate-pulse mt-10">Cargando datos...</p>
+                        <p className="text-center text-gray-400 animate-pulse mt-10 uppercase font-black tracking-widest text-xs">Cargando base de datos...</p>
                     ) : filteredOrders.length === 0 ? (
                         <div className="text-center py-20 bg-[#111] rounded-xl border border-dashed border-gray-800">
-                            <p className="text-xl text-gray-500 font-medium">
+                            <p className="text-xl text-gray-500 font-medium uppercase tracking-widest text-xs">
                                 {activeTab === 'paid' ? "No hay ventas nuevas hoy." : "La papelera está vacía."}
                             </p>
                         </div>
                     ) : (
                         <div className="grid gap-8 mb-20"> 
                             {filteredOrders.map((order) => {
-                                // Detectar si el envío es por correos
                                 const esEnvioCorreos = order.shipping?.method?.toLowerCase().includes('correo');
 
                                 return (
@@ -151,14 +148,14 @@ const OrdersPage = () => {
                                     activeTab === 'paid' ? 'border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]' : 'border-gray-800 opacity-80'
                                 }`}>
                                     
-                                    <div className="bg-[#111] px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pr-16">
-                                        <div className="flex flex-col">
+                                    <div className="bg-[#111] px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 relative">
+                                        <div className="flex flex-col pr-12 md:pr-0">
                                             <span className="text-xs text-gray-500 uppercase tracking-widest font-bold">Referencia de Orden</span>
                                             <span className="text-[#D4AF37] font-mono text-lg font-bold">{order.orderId}</span>
                                             <span className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString()}</span>
                                         </div>
-                                        <div className="mt-4 md:mt-0 text-right">
-                                            <span className={`inline-block px-3 py-1 rounded text-xs font-black uppercase tracking-wide mb-2 ${
+                                        <div className="mt-4 md:mt-0 text-left md:text-right">
+                                            <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2 ${
                                                 order.status === 'sent' ? 'bg-blue-500 text-white' : 
                                                 order.status === 'paid' ? 'bg-green-500 text-black' : 'bg-yellow-500 text-black'
                                             }`}>
@@ -167,19 +164,22 @@ const OrdersPage = () => {
                                             <p className="text-2xl font-black text-white">₡ {order.total?.toLocaleString()}</p>
                                         </div>
 
-                                        <button 
-                                            onClick={() => handleDeleteOrder(order._id)}
-                                            className="top-4 right-4 bg-gray-900 hover:bg-red-600 text-gray-400 hover:text-white p-3 rounded-full transition shadow-lg border border-gray-700 hover:border-red-500 z-10"
-                                            title="Eliminar Pedido"
-                                        >
-                                            <FaTrash size={16} />
-                                        </button>
+                                        {/* 🛠️ SOLUCIÓN: El botón de borrar solo existe si el modal NO está abierto 🛠️ */}
+                                        {!showTrackingModal && (
+                                            <button 
+                                                onClick={() => handleDeleteOrder(order._id)}
+                                                className="absolute top-4 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
+                                                title="Eliminar Pedido"
+                                            >
+                                                <FaTrash size={16} />
+                                            </button>
+                                        )}
                                     </div>
 
                                     <div className="p-6 grid md:grid-cols-2 gap-8">
                                         <div className="flex flex-col justify-between">
                                             <div>
-                                                <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2">
+                                                <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2 tracking-widest">
                                                     <FaMapMarkerAlt /> Datos de Cliente
                                                 </h3>
                                                 <div className="space-y-3 text-sm">
@@ -189,30 +189,30 @@ const OrdersPage = () => {
                                                     </p>
                                                     
                                                     {order.customer?.phone && (
-                                                        <p className="flex items-center gap-3">
+                                                        <p className="flex items-center gap-3 font-mono font-bold text-[#D4AF37]">
                                                             <span className="text-gray-400 w-5"><FaPhone /></span>
-                                                            <span className="text-[#D4AF37] font-mono font-bold">{order.customer?.phone}</span>
+                                                            {order.customer?.phone}
                                                         </p>
                                                     )}
 
-                                                    <p className="flex items-center gap-3">
+                                                    <p className="flex items-center gap-3 text-gray-300">
                                                         <span className="text-gray-400 w-5"><FaEnvelope /></span>
-                                                        <span className="text-gray-300">{order.customer?.email}</span>
+                                                        {order.customer?.email}
                                                     </p>
 
                                                     {order.customer?.address && (
-                                                        <div className="mt-3 p-3 bg-[#1a1a1a] rounded border-gray-800">
-                                                            <p className="text-gray-400 text-xs uppercase mb-1">Dirección de entrega:</p>
-                                                            <p className="text-gray-200 leading-relaxed">{order.customer?.address}</p>
+                                                        <div className="mt-3 p-3 bg-zinc-900/50 rounded border border-gray-800/50">
+                                                            <p className="text-gray-500 text-[10px] uppercase font-black mb-1 tracking-widest">Dirección:</p>
+                                                            <p className="text-gray-200 leading-relaxed text-xs">{order.customer?.address}</p>
                                                         </div>
                                                     )}
 
                                                     {order.shipping && (
-                                                        <div className="mt-3 p-3 bg-[#111] rounded border border-gray-800">
-                                                            <p className="text-gray-400 text-xs uppercase mb-1 flex items-center gap-1">
-                                                                <FaTruck size={10}/> Método de Envío:
+                                                        <div className="mt-3 p-3 bg-black rounded border border-gray-800">
+                                                            <p className="text-gray-500 text-[10px] uppercase font-black mb-1 flex items-center gap-1 tracking-widest">
+                                                                <FaTruck size={10}/> Método:
                                                             </p>
-                                                            <p className="text-white font-bold text-sm uppercase tracking-wide">
+                                                            <p className="text-[#D4AF37] font-black text-xs uppercase tracking-widest">
                                                                 {order.shipping.method}
                                                             </p>
                                                         </div>
@@ -220,11 +220,10 @@ const OrdersPage = () => {
                                                 </div>
                                             </div>
                                             
-                                            {/* 👇 BOTÓN ENVIAR GUÍA 👇 */}
                                             {activeTab === 'paid' && esEnvioCorreos && order.status !== 'sent' && (
                                                 <button 
                                                     onClick={() => openTrackingModal(order)}
-                                                    className="mt-6 w-full bg-white hover:bg-gray-500 text-black font-black py-3 rounded-lg transition shadow-lg flex items-center justify-center gap-3"
+                                                    className="mt-6 w-full bg-white hover:bg-zinc-200 text-black font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
                                                 >
                                                     <FaPaperPlane /> AGREGAR GUÍA DE CORREOS
                                                 </button>
@@ -232,36 +231,36 @@ const OrdersPage = () => {
                                         </div>
 
                                         <div>
-                                            <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2">
-                                                <FaTshirt /> Artículos a preparar
+                                            <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2 tracking-widest">
+                                                <FaTshirt /> Artículos
                                             </h3>
                                             <div className="space-y-3">
                                                 {order.items?.map((item, index) => (
-                                                    <div key={index} className="flex items-start gap-4 bg-[#111] p-3 rounded border border-gray-800 hover:border-[#D4AF37] transition">
-                                                        <div className="w-14 h-14 bg-black rounded border border-gray-700 overflow-hidden flex-shrink-0">
+                                                    <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#D4AF37]/50 transition">
+                                                        <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden flex-shrink-0">
                                                             {item.image ? (
                                                                 <img src={item.image} alt="Producto" className="w-full h-full object-contain" />
                                                             ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">Sin Foto</div>
+                                                                <div className="w-full h-full flex items-center justify-center text-gray-700 text-[8px] uppercase font-black">N/A</div>
                                                             )}
                                                         </div>
                                                         
                                                         <div className="flex-1">
-                                                            <p className="font-bold text-white text-sm">{item.name}</p>
+                                                            <p className="font-bold text-white text-xs uppercase tracking-tight leading-tight mb-1">{item.name}</p>
                                                             {item.version && (
-                                                                <span className="inline-block bg-white text-black text-[10px] font-bold px-1.5 rounded my-1">
+                                                                <span className="inline-block bg-white text-black text-[9px] font-black px-1.5 rounded uppercase tracking-tighter mb-1">
                                                                     {item.version}
                                                                 </span>
                                                             )}
-                                                            <div className="flex gap-4 text-xs text-gray-400 mt-1">
-                                                                <p>Talla: <span className="text-white font-bold">{item.size}</span></p>
+                                                            <div className="flex gap-4 text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                                                <p>Talla: <span className="text-white">{item.size}</span></p>
                                                                 {item.color && <p>Color: {item.color}</p>}
                                                             </div>
                                                         </div>
 
                                                         <div className="text-right">
-                                                            <span className="block text-gray-500 text-[10px] uppercase">Cant.</span>
-                                                            <span className="text-xl font-bold text-white">{item.quantity}</span>
+                                                            <span className="block text-gray-600 text-[8px] uppercase font-black">Cant.</span>
+                                                            <span className="text-lg font-black text-white">{item.quantity}</span>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -275,49 +274,49 @@ const OrdersPage = () => {
                 </div>
             </div>
 
-            {/* 👇 MODAL PARA INGRESAR LA GUÍA 👇 */}
+            {/* MODAL DE GUÍA */}
             {showTrackingModal && (
-                <div className="fixed inset-0 z-[100] bg-white backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-[#111] border border-gray-800 p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => setShowTrackingModal(false)}
-                            className="absolute top-4 right-4 text-gray-500 hover:text-white"
+                            className="absolute top-5 right-5 text-zinc-400 hover:text-black transition"
                         >
                             <FaTimes size={20} />
                         </button>
                         
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-white text-black rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FaTruck size={28} />
+                            <div className="w-14 h-14 bg-zinc-100 text-black rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FaTruck size={24} />
                             </div>
-                            <h2 className="text-2xl font-black italic uppercase text-white">Enviar Guía</h2>
-                            <p className="text-sm text-gray-400 mt-2">
-                                Cliente: <span className="text-black font-bold">{selectedOrder?.customer?.name}</span>
+                            <h2 className="text-xl font-black italic uppercase text-black tracking-tighter">Enviar Guía</h2>
+                            <p className="text-xs text-zinc-500 mt-2">
+                                Cliente: <span className="text-black font-black uppercase">{selectedOrder?.customer?.name}</span>
                             </p>
                         </div>
 
                         <div className="mb-6">
-                            <label className="text-xs font-bold text-gray-500 uppercase block mb-2">Número de Guía de Correos</label>
+                            <label className="text-[10px] font-black text-zinc-400 uppercase block mb-2 tracking-[0.2em]">Número de Guía de Correos</label>
                             <input 
                                 type="text" 
                                 value={trackingNumber}
                                 onChange={(e) => setTrackingNumber(e.target.value)}
                                 placeholder="Ej: CR123456789"
-                                className="w-full bg-black border border-gray-700 rounded-lg p-3 text-white focus:border-[#D4AF37] outline-none font-mono tracking-widest uppercase"
+                                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl p-4 text-black focus:border-black outline-none font-mono tracking-widest uppercase text-sm transition-all"
                             />
                         </div>
 
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => setShowTrackingModal(false)}
-                                className="flex-1 py-3 bg-transparent border border-gray-700 text-gray-300 rounded-lg font-bold hover:bg-gray-800 transition"
+                                className="flex-1 py-4 bg-white border border-zinc-200 text-zinc-500 rounded-xl font-bold hover:bg-zinc-50 transition uppercase text-[10px] tracking-widest"
                             >
                                 CANCELAR
                             </button>
                             <button 
                                 onClick={handleSendTracking}
                                 disabled={sendingTracking}
-                                className="flex-1 py-3 bg-[#D4AF37] text-black rounded-lg font-black hover:bg-yellow-500 transition flex justify-center items-center gap-2"
+                                className="flex-1 py-4 bg-black text-white rounded-xl font-black hover:bg-zinc-800 transition flex justify-center items-center gap-2 uppercase text-[10px] tracking-widest"
                             >
                                 {sendingTracking ? 'ENVIANDO...' : <><FaPaperPlane /> ENVIAR</>}
                             </button>
