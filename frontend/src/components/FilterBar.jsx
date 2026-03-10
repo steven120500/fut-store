@@ -1,20 +1,10 @@
-// src/components/FilterBar.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const tipos = [
-  "Player",
-  "Fan",
-  "Mujer",
-  "Niño",
-  "Retro",
-  "Abrigos",
-  "Nacional",
-  "Balón", 
-  "Ofertas",
-  "NBA",
-  "MLB",
-  "Todos",
+  "Player", "Fan", "Mujer", "Niño", "Retro",
+  "Abrigos", "Nacional", "Balón", "Ofertas",
+  "NBA", "MLB", "Todos",
 ];
 
 const tallas = [
@@ -22,18 +12,11 @@ const tallas = [
   "S", "M", "L", "XL", "XXL", "3XL", "4XL"
 ];
 
-// 🔹 Mapa de tallas CRC para mostrar visualmente
 const tallasCRC = {
-  "16": "2",
-  "18": "4",
-  "20": "6",
-  "22": "8",
-  "24": "10",
-  "26": "12",
-  "28": "14"
+  "16": "2", "18": "4", "20": "6", "22": "8",
+  "24": "10", "26": "12", "28": "14"
 };
 
-// 🎨 Estilo Plateado Premium (El mismo de tus Cards)
 const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
 
 export default function FilterBar({
@@ -48,54 +31,47 @@ export default function FilterBar({
   const [showTallas, setShowTallas] = useState(false);
   const [localSearch, setLocalSearch] = useState(searchTerm);
 
-  // Referencias para detectar clicks fuera y cerrar menús
   const tiposRef = useRef(null);
   const tallasRef = useRef(null);
 
-  // Detectar modo "Disponibles"
   const isDisponibles = window.__verDisponiblesActivo === true;
 
-  // Debounce para la búsqueda
+  // 🚀 SENSIBILIDAD MEJORADA: Debounce más rápido (150ms)
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      setSearchTerm(localSearch);
-    }, 250);
-    return () => clearTimeout(timeout);
-  }, [localSearch]);
+    if (localSearch.trim() === "") {
+      setSearchTerm(""); // Limpieza instantánea si el input está vacío
+      return;
+    }
 
-  // Cerrar menús al hacer click fuera
+    const timeout = setTimeout(() => {
+      // Enviamos el término normalizado (sin espacios extra y en minúsculas)
+      setSearchTerm(localSearch.trim());
+    }, 150); 
+
+    return () => clearTimeout(timeout);
+  }, [localSearch, setSearchTerm]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (tiposRef.current && !tiposRef.current.contains(event.target)) {
-        setShowTipos(false);
-      }
-      if (tallasRef.current && !tallasRef.current.contains(event.target)) {
-        setShowTallas(false);
-      }
+      if (tiposRef.current && !tiposRef.current.contains(event.target)) setShowTipos(false);
+      if (tallasRef.current && !tallasRef.current.contains(event.target)) setShowTallas(false);
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const tipoLabel = isDisponibles
-    ? "Disponibles"
-    : (filterType || "Versión"); 
+  const tipoLabel = isDisponibles ? "Disponibles" : (filterType || "Versión"); 
 
   const handleClear = () => {
     setLocalSearch("");
+    setSearchTerm("");
     setFilterSizes([]);
-    if (!isDisponibles) {
-      setFilterType("");
-    }
+    if (!isDisponibles) setFilterType("");
   };
 
   const handleTipoClick = (t) => {
     if (isDisponibles) delete window.__verDisponiblesActivo;
-    if (t === "Todos") {
-      setFilterType("");
-    } else {
-      setFilterType(t);
-    }
+    setFilterType(t === "Todos" ? "" : t);
     setShowTipos(false);
   };
 
@@ -103,7 +79,7 @@ export default function FilterBar({
     <div className="mb-6 mt-6 w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-4 items-center justify-between">
         
-        {/* 🔍 BARRA DE BÚSQUEDA ELEGANTE */}
+        {/* 🔍 BARRA DE BÚSQUEDA - Más sensible */}
         <div className="relative w-full md:w-1/3 group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -115,25 +91,21 @@ export default function FilterBar({
             placeholder="Buscar equipo, jugador..."
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all shadow-inner"
+            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-gray-300 transition-all shadow-inner text-black font-medium"
           />
         </div>
 
         {/* 🔽 BOTONES DE FILTRO PLATEADOS */}
         <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
-          
           <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mr-1 hidden sm:block">
             Filtrar:
           </span>
 
-          {/* Botón VERSIÓN (Tipos) */}
+          {/* Versión */}
           <div className="relative" ref={tiposRef}>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowTipos(!showTipos);
-                setShowTallas(false);
-              }}
+              onClick={() => { setShowTipos(!showTipos); setShowTallas(false); }}
               className="px-6 py-2 rounded-full text-gray-800 font-bold text-sm shadow-md flex items-center gap-2 border border-gray-300 hover:shadow-lg transition-all"
               style={{ background: silverGradient }}
             >
@@ -144,18 +116,12 @@ export default function FilterBar({
             <AnimatePresence>
               {showTipos && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                   className="absolute mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden"
                 >
                   <div className="max-h-64 overflow-y-auto py-1">
                     {tipos.map((t) => (
-                      <div
-                        key={t}
-                        className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-black hover:font-bold transition-colors"
-                        onClick={() => handleTipoClick(t)}
-                      >
+                      <div key={t} className="px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer text-gray-700 hover:text-black hover:font-bold transition-colors" onClick={() => handleTipoClick(t)}>
                         {t}
                       </div>
                     ))}
@@ -165,14 +131,11 @@ export default function FilterBar({
             </AnimatePresence>
           </div>
 
-          {/* Botón TALLAS */}
+          {/* Tallas */}
           <div className="relative" ref={tallasRef}>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setShowTallas(!showTallas);
-                setShowTipos(false);
-              }}
+              onClick={() => { setShowTallas(!showTallas); setShowTipos(false); }}
               className="px-6 py-2 rounded-full text-gray-800 font-bold text-sm shadow-md flex items-center gap-2 border border-gray-300 hover:shadow-lg transition-all"
               style={{ background: silverGradient }}
             >
@@ -183,10 +146,8 @@ export default function FilterBar({
             <AnimatePresence>
               {showTallas && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="absolute mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0" // w-48 un poco más ancho
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+                  className="absolute mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0"
                 >
                   <div className="max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
                     {tallas.map((t) => (
@@ -198,14 +159,9 @@ export default function FilterBar({
                             : "bg-gray-50 text-gray-600 border-transparent hover:border-gray-300 hover:bg-gray-100"
                         }`}
                         onClick={() => {
-                          if (filterSizes.includes(t)) {
-                            setFilterSizes(filterSizes.filter((s) => s !== t));
-                          } else {
-                            setFilterSizes([...filterSizes, t]);
-                          }
+                          setFilterSizes(filterSizes.includes(t) ? filterSizes.filter((s) => s !== t) : [...filterSizes, t]);
                         }}
                       >
-                        {/* ✅ AQUI ESTÁ EL CAMBIO: Muestra la talla original + la tica si existe */}
                         {t} {tallasCRC[t] ? <span className="text-[10px] opacity-70">({tallasCRC[t]})</span> : ""}
                       </div>
                     ))}
@@ -215,20 +171,17 @@ export default function FilterBar({
             </AnimatePresence>
           </div>
 
-          {/* ❌ Botón LIMPIAR */}
+          {/* Limpiar */}
           {(localSearch || filterType || filterSizes.length > 0) && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={handleClear}
               className="px-4 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-gray-800 shadow-md transition-colors"
             >
               Limpiar
             </motion.button>
           )}
-
         </div>
       </div>
     </div>
