@@ -1,6 +1,7 @@
 import express from 'express';
 import Order from '../models/Order.js';
-import Product from '../models/Product.js'; // 👈 IMPORTANTE: Importamos el modelo de productos
+import Product from '../models/Product.js';
+import History from '../models/History.js'; // 👈 1. IMPORTAMOS EL MODELO DEL HISTORIAL
 import sendEmail from '../utils/sendEmail.js'; 
 
 const router = express.Router();
@@ -78,7 +79,7 @@ router.post('/:id/send-tracking', async (req, res) => {
     }
 });
 
-// 👇 5. DESCONTAR STOCK AUTOMÁTICAMENTE (NUEVO) 👇
+// 👇 5. DESCONTAR STOCK Y GUARDAR EN HISTORIAL 👇
 router.post('/:orderId/discount-stock', async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -86,23 +87,25 @@ router.post('/:orderId/discount-stock', async (req, res) => {
 
         if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
 
-        // Mapeamos los artículos para restar 1 unidad de la talla específica
+        // Usamos $inc para restar la cantidad exacta directamente en la base de datos
         const updatePromises = order.items.map(async (item) => {
-            const product = await Product.findById(item.productId);
+            const qtyBought = item.quantity || 1;
             
-            // Validamos que el producto exista y la talla sea válida
-            if (product && product.stock && product.stock[item.size] !== undefined) {
-                const currentQty = Number(product.stock[item.size]) || 0;
-                const newQty = Math.max(0, currentQty - 1);
-                
-                // Actualizamos usando dot notation para no borrar otras tallas
-                return Product.findByIdAndUpdate(item.productId, {
-                    $set: { [`stock.${item.size}`]: newQty }
-                });
-            }
+            return Product.findByIdAndUpdate(item.productId, {
+                $inc: { [`stock.${item.size}`]: -qtyBought }
+            });
         });
 
         await Promise.all(updatePromises);
+
+        // 👈 2. GUARDAMOS LA ACCIÓN EN LA BITÁCORA DE HISTORIAL 👈
+        await History.create({
+            user: "Super Admin", // El usuario que ejecuta la acción
+            action: "DESCUENTO DE STOCK AUTO",
+            item: `Orden ${order.orderId}`,
+            details: `Se restaron automáticamente las prendas del inventario (Total: ₡${order.total}).`
+        });
+
         res.json({ ok: true, message: "Stock descontado con éxito" });
 
     } catch (err) {
