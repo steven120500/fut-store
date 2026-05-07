@@ -309,7 +309,7 @@ const OrdersPage = ({ user }) => {
                                             {user?.isSuperUser && !discountedOrders.has(order._id) && (
                                                 <button 
                                                     onClick={() => openDiscountModal(order._id)}
-                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
+                                                    className="w-full bg-white hover:bg-gray-700 text-white font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
                                                 >
                                                     <FaTshirt /> Descontar del Inventario
                                                 </button>
@@ -340,13 +340,13 @@ const OrdersPage = ({ user }) => {
                         <div className="flex gap-3">
                             <button 
                                 onClick={() => setShowDiscountModal(false)}
-                                className="flex-1 py-4 bg-zinc-900 border border-gray-800 text-zinc-400 rounded-xl font-bold hover:bg-zinc-800 hover:text-white transition uppercase text-[10px] tracking-widest"
+                                className="flex-1 py-4 bg-black border border-gray-800 text-zinc-400 rounded-xl font-bold hover:bg-zinc-800 hover:text-white transition uppercase text-[10px] tracking-widest"
                             >
                                 CANCELAR
                             </button>
                             <button 
                                 onClick={confirmAutoDiscount}
-                                className="flex-1 py-4 bg-orange-600 text-white rounded-xl font-black hover:bg-orange-700 transition flex justify-center items-center gap-2 uppercase text-[10px] tracking-widest"
+                                className="flex-1 py-4 bg-black text-white rounded-xl font-black hover:bg-orange-700 transition flex justify-center items-center gap-2 uppercase text-[10px] tracking-widest"
                             >
                                 ACEPTAR
                             </button>
