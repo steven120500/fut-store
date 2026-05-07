@@ -1,7 +1,7 @@
 import express from 'express';
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
-import History from '../models/History.js'; // 👈 1. IMPORTAMOS EL MODELO DEL HISTORIAL
+import History from '../models/History.js'; // 👈 IMPORTAMOS EL MODELO DEL HISTORIAL
 import sendEmail from '../utils/sendEmail.js'; 
 
 const router = express.Router();
@@ -79,7 +79,7 @@ router.post('/:id/send-tracking', async (req, res) => {
     }
 });
 
-// 👇 5. DESCONTAR STOCK Y GUARDAR EN HISTORIAL 👇
+// 👇 5. DESCONTAR STOCK Y GUARDAR EN HISTORIAL (VERSIÓN DEFINITIVA) 👇
 router.post('/:orderId/discount-stock', async (req, res) => {
     try {
         const { orderId } = req.params;
@@ -87,23 +87,49 @@ router.post('/:orderId/discount-stock', async (req, res) => {
 
         if (!order) return res.status(404).json({ error: 'Orden no encontrada' });
 
-        // Usamos $inc para restar la cantidad exacta directamente en la base de datos
-        const updatePromises = order.items.map(async (item) => {
-            const qtyBought = item.quantity || 1;
+        // 🌟 VALIDACIÓN: Evitamos que se presione más de una vez y reste doble
+        if (order.stockDiscounted) {
+            return res.status(400).json({ error: 'El stock ya fue descontado para esta orden.' });
+        }
+
+        let detallesHistorial = [];
+
+        // Usamos un bucle for...of para procesar cada artículo y asegurar que reste bien
+        for (const item of order.items) {
+            // 🚨 Búsqueda exhaustiva del ID del producto para evitar errores
+            const pId = item.product_id || item.productId || item.product; 
             
-            return Product.findByIdAndUpdate(item.productId, {
-                $inc: { [`stock.${item.size}`]: -qtyBought }
-            });
-        });
+            if (!pId) continue;
 
-        await Promise.all(updatePromises);
+            const product = await Product.findById(pId);
+            
+            if (product && product.stock) {
+                const qtyBought = item.quantity || 1;
+                const talla = item.size;
 
-        // 👈 2. GUARDAMOS LA ACCIÓN EN LA BITÁCORA DE HISTORIAL 👈
+                // Extraemos el stock actual, restamos y evitamos números negativos
+                const currentStock = Number(product.stock[talla]) || 0;
+                product.stock[talla] = Math.max(0, currentStock - qtyBought);
+                
+                // ⚠️ Le decimos explícitamente a MongoDB que el objeto stock cambió
+                product.markModified('stock');
+                await product.save();
+
+                // Guardamos el detalle exacto para el historial: "Lamine Yamal Barcelona (Talla: L) x1"
+                detallesHistorial.push(`${item.name} (Talla: ${talla}) x${qtyBought}`);
+            }
+        }
+
+        // 🌟 MARCAMOS LA ORDEN: Para que nunca más se pueda volver a descontar
+        order.stockDiscounted = true;
+        await order.save();
+
+        // GUARDAMOS LA ACCIÓN EN LA BITÁCORA DE HISTORIAL
         await History.create({
-            user: "Super Admin", // El usuario que ejecuta la acción
+            user: "Super Admin", 
             action: "DESCUENTO DE STOCK AUTO",
             item: `Orden ${order.orderId}`,
-            details: `Se restaron automáticamente las prendas del inventario (Total: ₡${order.total}).`
+            details: `Se restó: ${detallesHistorial.join(' | ')}`
         });
 
         res.json({ ok: true, message: "Stock descontado con éxito" });

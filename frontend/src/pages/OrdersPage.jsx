@@ -309,7 +309,7 @@ const OrdersPage = ({ user }) => {
                                             {user?.isSuperUser && !discountedOrders.has(order._id) && (
                                                 <button 
                                                     onClick={() => openDiscountModal(order._id)}
-                                                    className="w-full bg-white hover:bg-gray-700 text-white font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
+                                                    className="w-full bg-white hover:bg-gray-700 text-black font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
                                                 >
                                                     <FaTshirt /> Descontar del Inventario
                                                 </button>

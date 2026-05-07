@@ -23,7 +23,6 @@ const orderSchema = new mongoose.Schema({
     }
   ],
 
-  // 👇 AGREGAR ESTO (Necesario para guardar el tipo de envío y costo)
   shipping: {
     method: { type: String, default: 'Estándar' }, // Ej: "Correos de Costa Rica"
     cost: { type: Number, default: 0 }             // Ej: 3500
@@ -36,7 +35,13 @@ const orderSchema = new mongoose.Schema({
     default: 'pending'
   },
   
-  tiloPayToken: String
+  tiloPayToken: String,
+
+  // 👇 ESTO ES LO ÚNICO NUEVO QUE SE AGREGÓ 👇
+  stockDiscounted: { 
+    type: Boolean, 
+    default: false 
+  }
 
 }, { timestamps: true });
 
