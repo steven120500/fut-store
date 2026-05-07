@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// 📦 DATOS DEL CARRUSEL (Ofertas ahora de primero)
+// 📦 DATOS DEL CARRUSEL
 const slides = [
   { id: 1, isOffer: true, title: "Ver Ofertas", eventName: "filtrarOfertas" },
   { id: 2, image: "/RetroB.png", title: "Ver Retros", eventName: "filtrarRetros" },
@@ -33,7 +33,7 @@ export default function Bienvenido() {
   };
 
   return (
-    <section className="relative w-full h-full sm:min-h-screen flex flex-col items-center justify-center overflow-hidden">
+    <section className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden">
       
       {/* 🖼️ FONDO RESPONSIVE */}
       <div className="absolute inset-0 z-0">

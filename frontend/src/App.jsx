@@ -69,6 +69,7 @@ export default function App() {
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
+  // 1. ESCUCHADOR DE EVENTOS (Reset página al filtrar desde Bienvenido)
   useEffect(() => {
     const handleFilterEvent = (e) => {
       const typeMap = {
@@ -82,7 +83,7 @@ export default function App() {
       const newFilter = typeMap[e.type];
       if (newFilter) {
         setFilterType(newFilter);
-        setPage(1); 
+        setPage(1); // 👈 RESETPÁGINA
         
         if (pageTopRef.current) {
           const rect = pageTopRef.current.getBoundingClientRect();
@@ -99,6 +100,13 @@ export default function App() {
       events.forEach(ev => window.removeEventListener(ev, handleFilterEvent));
     };
   }, []);
+
+  // 👇 2. SOLUCIÓN AL PAGINADO FANTASMA 👇
+  // Este efecto detecta si el usuario cambia el texto, la categoría o las tallas.
+  // Si algo cambia, lo mandamos de vuelta a la página 1.
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, filterType, filterSizes]);
 
   const [user, setUser] = useState(() => {
     try {
@@ -142,7 +150,8 @@ export default function App() {
       const json = await res.json();
       setProducts(json.items);
       setTotal(json.total);
-      setPage(json.page);
+      // Aquí usamos el setPage de forma segura solo si el servidor confirma la página actual
+      if (json.page !== page) setPage(json.page); 
     } catch {
       setProducts([]);
       setTotal(0);
@@ -151,12 +160,15 @@ export default function App() {
     }
   };
 
+  // 3. FETCH DE PRODUCTOS CUANDO CAMBIA LA PÁGINA O FILTROS
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
+    
     if (isFirstRun.current) {
       window.scrollTo(0, 0);
       isFirstRun.current = false;
     } else {
+      // Scroll suave hacia arriba al cambiar de página
       if (pageTopRef.current) {
         const rect = pageTopRef.current.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -228,7 +240,6 @@ export default function App() {
           
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
-          {/* 👇 RUTA DE HISTORIAL COMO PÁGINA 👇 */}
           <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
           
           <Route path="/" element={
