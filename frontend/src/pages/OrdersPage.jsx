@@ -22,7 +22,7 @@ const OrdersPage = ({ user }) => {
     // Estado para llevar control de órdenes descontadas
     const [discountedOrders, setDiscountedOrders] = useState(new Set()); 
 
-    // 👇 NUEVO: Estados para el Modal de Confirmación de Descuento
+    // Estados para el Modal de Confirmación de Descuento
     const [showDiscountModal, setShowDiscountModal] = useState(false);
     const [orderToDiscount, setOrderToDiscount] = useState(null);
 
@@ -42,7 +42,6 @@ const OrdersPage = ({ user }) => {
     };
 
     const handleDeleteOrder = async (orderId) => {
-        // También podríamos cambiar este en el futuro, pero por ahora dejamos la advertencia de borrado
         if (!window.confirm("¿Estás seguro de que quieres ELIMINAR este pedido permanentemente?")) {
             return;
         }
@@ -83,17 +82,15 @@ const OrdersPage = ({ user }) => {
         }
     };
 
-    // 👇 1. Abre el modal en lugar de mostrar window.confirm
     const openDiscountModal = (orderId) => {
         setOrderToDiscount(orderId);
         setShowDiscountModal(true);
     };
 
-    // 👇 2. Ejecuta la acción real cuando el usuario da clic en "Aceptar" en el modal
     const confirmAutoDiscount = async () => {
         if (!orderToDiscount) return;
         
-        setShowDiscountModal(false); // Cerramos el modal inmediatamente
+        setShowDiscountModal(false);
 
         try {
             const res = await axios.post(`${API_URL}/orders/${orderToDiscount}/discount-stock`);
@@ -110,7 +107,7 @@ const OrdersPage = ({ user }) => {
             console.error(error);
             toast.error("Error al descontar del stock");
         } finally {
-            setOrderToDiscount(null); // Limpiamos el estado
+            setOrderToDiscount(null);
         }
     };
 
@@ -305,8 +302,8 @@ const OrdersPage = ({ user }) => {
                                                 </div>
                                             </div>
 
-                                            {/* 👇 ACTUALIZADO: Llama a la función que abre el nuevo Modal 👇 */}
-                                            {user?.isSuperUser && !discountedOrders.has(order._id) && (
+                                            {/* 👇 ACTUALIZADO: Oculta el botón si ya se descontó antes en la DB o en esta sesión */}
+                                            {user?.isSuperUser && !order.stockDiscounted && !discountedOrders.has(order._id) && (
                                                 <button 
                                                     onClick={() => openDiscountModal(order._id)}
                                                     className="w-full bg-white hover:bg-gray-700 text-black font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
