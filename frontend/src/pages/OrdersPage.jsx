@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fut-store.onrender.com/api';
 
-const OrdersPage = () => {
+const OrdersPage = ({ user }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('paid'); 
@@ -18,6 +18,13 @@ const OrdersPage = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [trackingNumber, setTrackingNumber] = useState('');
     const [sendingTracking, setSendingTracking] = useState(false);
+    
+    // Estado para llevar control de órdenes descontadas
+    const [discountedOrders, setDiscountedOrders] = useState(new Set()); 
+
+    // 👇 NUEVO: Estados para el Modal de Confirmación de Descuento
+    const [showDiscountModal, setShowDiscountModal] = useState(false);
+    const [orderToDiscount, setOrderToDiscount] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -35,6 +42,7 @@ const OrdersPage = () => {
     };
 
     const handleDeleteOrder = async (orderId) => {
+        // También podríamos cambiar este en el futuro, pero por ahora dejamos la advertencia de borrado
         if (!window.confirm("¿Estás seguro de que quieres ELIMINAR este pedido permanentemente?")) {
             return;
         }
@@ -75,6 +83,37 @@ const OrdersPage = () => {
         }
     };
 
+    // 👇 1. Abre el modal en lugar de mostrar window.confirm
+    const openDiscountModal = (orderId) => {
+        setOrderToDiscount(orderId);
+        setShowDiscountModal(true);
+    };
+
+    // 👇 2. Ejecuta la acción real cuando el usuario da clic en "Aceptar" en el modal
+    const confirmAutoDiscount = async () => {
+        if (!orderToDiscount) return;
+        
+        setShowDiscountModal(false); // Cerramos el modal inmediatamente
+
+        try {
+            const res = await axios.post(`${API_URL}/orders/${orderToDiscount}/discount-stock`);
+            if (res.data.ok) {
+                toast.success("Inventario actualizado con éxito 📉");
+                
+                setDiscountedOrders(prev => {
+                    const newSet = new Set(prev);
+                    newSet.add(orderToDiscount);
+                    return newSet;
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error al descontar del stock");
+        } finally {
+            setOrderToDiscount(null); // Limpiamos el estado
+        }
+    };
+
     const openTrackingModal = (order) => {
         setSelectedOrder(order);
         setShowTrackingModal(true);
@@ -99,7 +138,6 @@ const OrdersPage = () => {
                         </button>
                     </div>
 
-                    {/* ENCABEZADO Y PESTAÑAS */}
                     <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-800 pb-6 gap-4">
                         <h1 className="text-3xl font-bold text-[#D4AF37] flex items-center gap-3">
                             <FaBoxOpen /> Gestión de Pedidos
@@ -155,7 +193,7 @@ const OrdersPage = () => {
                                             <span className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString()}</span>
                                         </div>
                                         <div className="mt-4 md:mt-0 text-left md:text-right">
-                                            <span className={`inline-block px-3 py-1 rounded text-10px font-black uppercase tracking-wide mb-2  ${
+                                            <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2  ${
                                                 order.status === 'sent' ? 'bg-blue-500 text-white' : 
                                                 order.status === 'paid' ? 'bg-green-500 text-black' : 'bg-yellow-500 text-black'
                                             }`}>
@@ -164,8 +202,7 @@ const OrdersPage = () => {
                                             <p className="text-2xl font-black text-white">₡ {order.total?.toLocaleString()}</p>
                                         </div>
 
-                                        {/* 🛠️ SOLUCIÓN: El botón de borrar solo existe si el modal NO está abierto 🛠️ */}
-                                        {!showTrackingModal && (
+                                        {!showTrackingModal && !showDiscountModal && (
                                             <button 
                                                 onClick={() => handleDeleteOrder(order._id)}
                                                 className="absolute top-28 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
@@ -230,41 +267,53 @@ const OrdersPage = () => {
                                             )}
                                         </div>
 
-                                        <div>
-                                            <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2 tracking-widest">
-                                                <FaTshirt /> Artículos
-                                            </h3>
-                                            <div className="space-y-3">
-                                                {order.items?.map((item, index) => (
-                                                    <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#D4AF37]/50 transition">
-                                                        <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden flex-shrink-0">
-                                                            {item.image ? (
-                                                                <img src={item.image} alt="Producto" className="w-full h-full object-contain" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-gray-700 text-[8px] uppercase font-black">N/A</div>
-                                                            )}
-                                                        </div>
-                                                        
-                                                        <div className="flex-1">
-                                                            <p className="font-bold text-white text-xs uppercase tracking-tight leading-tight mb-1">{item.name}</p>
-                                                            {item.version && (
-                                                                <span className="inline-block bg-white text-black text-[9px] font-black px-1.5 rounded uppercase tracking-tighter mb-1">
-                                                                    {item.version}
-                                                                </span>
-                                                            )}
-                                                            <div className="flex gap-4 text-[10px] text-gray-500 font-black uppercase tracking-widest">
-                                                                <p>Talla: <span className="text-white">{item.size}</span></p>
-                                                                {item.color && <p>Color: {item.color}</p>}
+                                        <div className="flex flex-col justify-between">
+                                            <div>
+                                                <h3 className="text-gray-500 text-xs font-bold uppercase mb-4 flex items-center gap-2 tracking-widest">
+                                                    <FaTshirt /> Artículos
+                                                </h3>
+                                                <div className="space-y-3 mb-6">
+                                                    {order.items?.map((item, index) => (
+                                                        <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#D4AF37]/50 transition">
+                                                            <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden flex-shrink-0">
+                                                                {item.image ? (
+                                                                    <img src={item.image} alt="Producto" className="w-full h-full object-contain" />
+                                                                ) : (
+                                                                    <div className="w-full h-full flex items-center justify-center text-gray-700 text-[8px] uppercase font-black">N/A</div>
+                                                                )}
+                                                            </div>
+                                                            
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-white text-xs uppercase tracking-tight leading-tight mb-1">{item.name}</p>
+                                                                {item.version && (
+                                                                    <span className="inline-block bg-white text-black text-[9px] font-black px-1.5 rounded uppercase tracking-tighter mb-1">
+                                                                        {item.version}
+                                                                    </span>
+                                                                )}
+                                                                <div className="flex gap-4 text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                                                                    <p>Talla: <span className="text-white">{item.size}</span></p>
+                                                                    {item.color && <p>Color: {item.color}</p>}
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="text-right">
+                                                                <span className="block text-gray-600 text-[8px] uppercase font-black">Cant.</span>
+                                                                <span className="text-lg font-black text-white">{item.quantity}</span>
                                                             </div>
                                                         </div>
-
-                                                        <div className="text-right">
-                                                            <span className="block text-gray-600 text-[8px] uppercase font-black">Cant.</span>
-                                                            <span className="text-lg font-black text-white">{item.quantity}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
                                             </div>
+
+                                            {/* 👇 ACTUALIZADO: Llama a la función que abre el nuevo Modal 👇 */}
+                                            {user?.isSuperUser && !discountedOrders.has(order._id) && (
+                                                <button 
+                                                    onClick={() => openDiscountModal(order._id)}
+                                                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
+                                                >
+                                                    <FaTshirt /> Descontar del Inventario
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -273,6 +322,38 @@ const OrdersPage = () => {
                     )}
                 </div>
             </div>
+
+            {/* 🌟 NUEVO MODAL DE CONFIRMACIÓN DE DESCUENTO 🌟 */}
+            {showDiscountModal && (
+                <div className="fixed inset-0 z-500 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white border border-gray-800 p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
+                        <div className="text-center mb-6">
+                            <div className="w-14 h-14 bg-black text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-500/30">
+                                <FaTshirt size={24} />
+                            </div>
+                            <h2 className="text-xl font-black italic uppercase text-black tracking-tighter">¿Descontar Stock?</h2>
+                            <p className="text-xs text-black mt-2">
+                                Esta acción restará automáticamente las prendas de esta orden del inventario general.
+                            </p>
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setShowDiscountModal(false)}
+                                className="flex-1 py-4 bg-zinc-900 border border-gray-800 text-zinc-400 rounded-xl font-bold hover:bg-zinc-800 hover:text-white transition uppercase text-[10px] tracking-widest"
+                            >
+                                CANCELAR
+                            </button>
+                            <button 
+                                onClick={confirmAutoDiscount}
+                                className="flex-1 py-4 bg-orange-600 text-white rounded-xl font-black hover:bg-orange-700 transition flex justify-center items-center gap-2 uppercase text-[10px] tracking-widest"
+                            >
+                                ACEPTAR
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* MODAL DE GUÍA */}
             {showTrackingModal && (
