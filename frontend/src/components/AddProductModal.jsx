@@ -79,6 +79,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [discountPrice, setDiscountPrice] = useState("");
   const [type, setType] = useState("Player");
   const [isNew, setIsNew] = useState(false);
+  const [isMundial, setIsMundial] = useState(false); // 🏆 NUEVO: Estado para el Checkbox del Mundial
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -186,6 +187,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       formData.append("type", type.trim());
       formData.append("stock", JSON.stringify(stockFinal));
       formData.append("isNew", isNew ? "true" : "false");
+      formData.append("isMundial", isMundial ? "true" : "false"); // 🏆 NUEVO: Enviamos el campo al backend
 
       for (let i = 0; i < images.length; i++) {
         const blob = images[i].blob || (await srcToBlob(images[i].src));
@@ -307,7 +309,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
         </select>
 
         {/* Checkbox NUEVO */}
-        <label className="flex items-center gap-2 mb-4 select-none">
+        <label className="flex items-center gap-2 mb-2 select-none">
           <input
             type="checkbox"
             checked={isNew}
@@ -318,26 +320,34 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </span>
         </label>
 
+        {/* 🏆 NUEVO: Checkbox ASIGNAR MUNDIAL */}
+        <label className="flex items-center gap-2 mb-4 select-none">
+          <input
+            type="checkbox"
+            checked={isMundial}
+            onChange={(e) => setIsMundial(e.target.checked)}
+          />
+          <span className="text-sm text-amber-600 font-bold">
+            Asignar Colección <strong>MUNDIAL 2026</strong>
+          </span>
+        </label>
+
         {/* Stock */}
-        
-
-{/* Stock */}
-<div className="grid grid-cols-3 gap-3 mb-6">
-  {tallas.map((size) => (
-    <label key={size} className="text-center">
-      <span className="block mb-1 text-sm font-medium">{size}</span>
-      <input
-        type="number"
-        min="0"
-        value={stock[size] ?? ""}
-        onChange={(e) => handleInvChange(size, e.target.value)}
-        className="w-full px-2 py-1 border border-gray-300 rounded text-center"
-        inputMode="numeric"
-      />
-    </label>
-  ))}
-</div>
-
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {tallas.map((size) => (
+            <label key={size} className="text-center">
+              <span className="block mb-1 text-sm font-medium">{size}</span>
+              <input
+                type="number"
+                min="0"
+                value={stock[size] ?? ""}
+                onChange={(e) => handleInvChange(size, e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                inputMode="numeric"
+              />
+            </label>
+          ))}
+        </div>
 
         {/* Botones */}
         <div className="flex gap-2">

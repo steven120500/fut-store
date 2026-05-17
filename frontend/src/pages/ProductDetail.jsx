@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
@@ -52,6 +52,7 @@ export default function ProductDetail({
   const [editedType, setEditedType] = useState('Player');
   const [editedStock, setEditedStock] = useState({});
   const [editedIsNew, setEditedIsNew] = useState(false);
+  const [editedIsMundial, setEditedIsMundial] = useState(false); // 🏆 NUEVO: Estado para editar clasificación mundialista
   const [localImages, setLocalImages] = useState([]);
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
@@ -83,6 +84,7 @@ export default function ProductDetail({
     setEditedType(data.type || 'Player');
     setEditedStock({ ...(data.stock || {}) });
     setEditedIsNew(Boolean(data.isNew));
+    setEditedIsMundial(Boolean(data.isMundial)); // 🏆 NUEVO: Sincroniza el valor guardado
     
     let imgs = [];
     if (Array.isArray(data.images) && data.images.length > 0) {
@@ -110,6 +112,7 @@ export default function ProductDetail({
         stock: cleanStock(editedStock),
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
+        isMundial: editedIsMundial, // 🏆 NUEVO: Envía el campo actualizado
       };
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
@@ -302,11 +305,16 @@ export default function ProductDetail({
                               </select>
                           </div>
                           <div>
-                              <label className="text-xs font-bold text-gray-500">NUEVO</label>
-                              <div className="flex items-center h-full">
-                                  <label className="flex items-center gap-2 cursor-pointer">
+                              <label className="text-xs font-bold text-gray-500">OPCIONES</label>
+                              <div className="flex flex-col gap-2 mt-1">
+                                  <label className="flex items-center gap-2 cursor-pointer select-none">
                                       <input type="checkbox" checked={editedIsNew} onChange={e => setEditedIsNew(e.target.checked)} />
-                                      <span className="text-sm">¿Etiqueta Nuevo?</span>
+                                      <span className="text-xs">¿Etiqueta Nuevo?</span>
+                                  </label>
+                                  {/* 🏆 NUEVO: Checkbox para cambiar estado mundialista desde edición */}
+                                  <label className="flex items-center gap-2 cursor-pointer select-none text-amber-700 font-bold">
+                                      <input type="checkbox" checked={editedIsMundial} onChange={e => setEditedIsMundial(e.target.checked)} />
+                                      <span className="text-xs">¿Colección Mundial 2026?</span>
                                   </label>
                               </div>
                           </div>
@@ -348,6 +356,8 @@ export default function ProductDetail({
                   <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
+                      {/* 🏆 VISTA DEL DETALLE: Muestra badge de colección si está marcado */}
+                      {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
                   </div>
                   <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight text-black">{product.name}</h1>
                   <div className="mt-4 flex items-baseline gap-3">

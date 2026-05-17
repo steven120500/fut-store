@@ -73,6 +73,9 @@ const productSchema = new mongoose.Schema(
 
     // 👇 Campo adicional para mostrar etiqueta “NUEVO”
     isNew: { type: Boolean, default: false },
+
+    // 🏆 NUEVO: Campo para identificar artículos del Mundial 2026
+    isMundial: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
@@ -113,7 +116,8 @@ productSchema.index({ name: 1 });
 productSchema.index({ type: 1 });
 productSchema.index({ price: 1, createdAt: -1 });
 productSchema.index({ discountPrice: 1 });
-productSchema.index({ isNew: 1 }); // 👈 índice para búsquedas futuras
+productSchema.index({ isNew: 1 });
+productSchema.index({ isMundial: 1 }); // 👈 Índice para optimizar búsquedas del Mundial
 
 // ===== Limpieza de salida =====
 productSchema.set("toJSON", {

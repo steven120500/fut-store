@@ -47,6 +47,8 @@ function diffProduct(prev, next) {
   if (prev.discountPrice !== next.discountPrice) ch.push(`precio oferta: ${prev.discountPrice} -> ${next.discountPrice}`);
   if (prev.type !== next.type) ch.push(`tipo: "${prev.type}" -> "${next.type}"`);
   if (prev.isNew !== next.isNew) ch.push(`nuevo: ${prev.isNew} -> ${next.isNew}`);
+  // 🏆 HISTORIAL: Guardar si se cambió el estado de asignación del Mundial
+  if (prev.isMundial !== next.isMundial) ch.push(`mundial: ${prev.isMundial} -> ${next.isMundial}`);
   ch.push(...diffInv('stock', prev.stock, next.stock));
   ch.push(...diffInv('bodega', prev.bodega, next.bodega));
   return ch;
@@ -109,14 +111,7 @@ router.get('/', async (req, res) => {
       find.type = type;
     }
 
-    if (sizes) {
-      const sizesArray = sizes.split(',').map((s) => s.trim()).filter(Boolean);
-      if (sizesArray.length > 0) {
-        find.$or = sizesArray.map((size) => ({ [`stock.${size}`]: { $gt: 0 } }));
-      }
-    }
-
-    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew';
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial';
 
     const [items, total] = await Promise.all([
       Product.find(find).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
@@ -137,7 +132,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-/** ✅ 2. OBTENER UN SOLO PRODUCTO POR ID (ESTA ERA LA QUE FALTABA) */
+/** ✅ 2. OBTENER UN SOLO PRODUCTO POR ID */
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -147,7 +142,6 @@ router.get('/:id', async (req, res) => {
     res.json(product);
   } catch (err) {
     console.error('GET /api/products/:id error:', err);
-    // Si el ID no tiene formato válido de MongoDB, devuelve 404 en lugar de 500
     if (err.kind === 'ObjectId') {
         return res.status(404).json({ error: 'Producto no encontrado' });
     }
@@ -187,6 +181,9 @@ router.post('/', upload.any(), async (req, res) => {
     const cleanBodega = sanitizeInv(bodega);
 
     const isNew = req.body.isNew === 'true' || req.body.isNew === true || req.body.isNew === 'on';
+    
+    // 🏆 ASIGNAR MUNDIAL: Parseamos el valor booleano desde el formulario
+    const isMundial = req.body.isMundial === 'true' || req.body.isMundial === true || req.body.isMundial === 'on';
 
     const product = await Product.create({
       name: String(req.body.name || '').trim(),
@@ -198,6 +195,7 @@ router.post('/', upload.any(), async (req, res) => {
       imageSrc,
       images,
       isNew,
+      isMundial, // 👈 Almacenamos el campo en el documento
     });
 
     await History.create({
@@ -205,7 +203,7 @@ router.post('/', upload.any(), async (req, res) => {
       action: 'creó producto',
       item: `${product.name} (${product.type})`,
       date: new Date(),
-      details: `img principal: ${imageSrc}`,
+      details: `img principal: ${imageSrc} | Mundial: ${isMundial}`,
     });
 
     res.status(201).json(product);
@@ -244,6 +242,11 @@ router.put('/:id', async (req, res) => {
       update.isNew = req.body.isNew === 'true' || req.body.isNew === true || req.body.isNew === 'on';
     }
 
+    // 🏆 ACTUALIZAR MUNDIAL: Verificamos y actualizamos el estado
+    if (req.body.isMundial !== undefined) {
+      update.isMundial = req.body.isMundial === 'true' || req.body.isMundial === true || req.body.isMundial === 'on';
+    }
+
     if (req.body.imageSrc !== undefined) update.imageSrc = req.body.imageSrc || '';
     if (req.body.imageSrc2 !== undefined) update.imageSrc2 = req.body.imageSrc2 || '';
     if (req.body.imageAlt !== undefined) update.imageAlt = req.body.imageAlt || '';
@@ -254,7 +257,7 @@ router.put('/:id', async (req, res) => {
     if (Array.isArray(incomingImages)) {
       const prevList = prev.images || [];
       const normalized = [];
-      for (const raw of incomingImages.slice(0, 5)) { // Subido a 5 imágenes
+      for (const raw of incomingImages.slice(0, 5)) {
         if (!raw) continue;
         if (typeof raw === 'string' && raw.startsWith('data:')) {
           const up = await cloudinary.uploader.upload(raw, { folder: 'products', resource_type: 'image' });

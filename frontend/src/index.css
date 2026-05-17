@@ -520,3 +520,22 @@ button:focus-visible {
 }
 
 
+/* EFECTO TEXTO PLATEADO (VERSIÓN CLARA / HEADER) */
+.texto-plateado {
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,      /* Blanco puro en la parte superior */
+    #f0f0f0 35%,     /* Gris ultra claro (como el brillo del header) */
+    #cfcfcf 60%,     /* Gris medio sutil para dar la curvatura del metal */
+    #e8e8e8 85%,     /* Vuelve a aclarar */
+    #ffffff 100%     /* Cierra blanco */
+  );
+  
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  
+  /* Usamos drop-shadow en lugar de text-shadow para que el borde negro 
+     no interfiera con la transparencia del texto y resalte sobre el estadio */
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.6));
+}
