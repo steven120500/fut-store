@@ -1,11 +1,11 @@
 import { Toaster } from "react-hot-toast";
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 // --- IMPORTACIONES DEL CARRITO ---
 import { CartProvider } from "./context/CartContext";
-import CartDrawer from "./components/CartDrawer";
+import CartDrawer from "./components/CartDrawer"; 
 
 // Componentes
 import Header from "./components/Header";
@@ -14,7 +14,7 @@ import AddProductModal from "./components/AddProductModal";
 import LoginModal from "./components/LoginModal";
 import RegisterUserModal from "./components/RegisterUserModal";
 import Footer from "./components/Footer";
-import LoadingOverlay from "./components/LoadingOverlay";
+import InicioOverlay from "./components/InicioOverlay"; 
 import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
@@ -45,7 +45,15 @@ const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
 export default function App() {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // 🏆 MEJORA UX: Leemos sessionStorage para saber si ya vimos la animación
+  const [loading, setLoading] = useState(() => {
+    return sessionStorage.getItem("introMundial") ? false : true;
+  });
+  
+  // Guardamos un registro local para saber si esta carga específica empezó con la intro
+  const [startedWithIntro] = useState(loading);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterSizes, setFilterSizes] = useState([]);
@@ -57,16 +65,12 @@ export default function App() {
   const [showUserListModal, setShowUserListModal] = useState(false);
   const [showMedidas, setShowMedidas] = useState(false);
 
-  // Ajuste de condición de modales abiertos
   const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showMedidas;
 
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   
-  // 🏆 CORRECCIÓN DE DUPLICACIÓN:
-  // Si estamos en el filtro Mundial, forzamos que sea exactamente 1 página ya que traemos 
-  // todas las camisetas de golpe. Así se elimina el paginado fantasma y la duplicación entre pág 1 y 2.
   const pages = filterType === "Mundial"
     ? 1
     : Math.max(1, Math.ceil(total / limit));
@@ -74,7 +78,6 @@ export default function App() {
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
-  // 1. ESCUCHADOR DE EVENTOS
   useEffect(() => {
     const handleFilterEvent = (e) => {
       const typeMap = {
@@ -107,7 +110,6 @@ export default function App() {
     };
   }, []);
 
-  // Reset de página al cambiar filtros principales
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterType, filterSizes]);
@@ -132,19 +134,17 @@ export default function App() {
   };
 
   const fetchProducts = async (opts = {}) => {
+    if (loading) return;
+
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
-    
     const currentActualFilter = (opts.type ?? filterType).trim();
     const tp = currentActualFilter === "Mundial" ? "" : currentActualFilter;
-    
     const sizes = (opts.sizes ?? filterSizes).join(",");
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
-    setLoading(true);
     try {
       const params = new URLSearchParams({
-        // Si es Mundial, traemos un lote grande completo (página 1) para filtrar en cliente de forma masiva
         page: currentActualFilter === "Mundial" ? "1" : String(p),
         limit: currentActualFilter === "Mundial" ? "150" : "20",
         ...(q ? { q } : {}),
@@ -162,27 +162,25 @@ export default function App() {
     } catch {
       setProducts([]);
       setTotal(0);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // FETCH DE PRODUCTOS CUANDO CAMBIA LA PÁGINA O FILTROS
   useEffect(() => {
-    fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
-    
-    if (isFirstRun.current) {
+    if (!loading) {
+      fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
+    }
+  }, [loading, page, searchTerm, filterType, filterSizes]);
+
+  useEffect(() => {
+    if (!loading && isFirstRun.current) {
       window.scrollTo(0, 0);
       isFirstRun.current = false;
-    } else {
-      if (pageTopRef.current) {
-        const rect = pageTopRef.current.getBoundingClientRect();
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const targetY = rect.top + scrollTop;
-        window.scrollTo({ top: targetY - 120, behavior: "smooth" });
-      }
+    } else if (!loading && pageTopRef.current) {
+      const rect = pageTopRef.current.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
     }
-  }, [page, searchTerm, filterType, filterSizes]);
+  }, [loading, page, searchTerm, filterType, filterSizes]);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
@@ -199,7 +197,6 @@ export default function App() {
     );
   };
 
-  // Función de filtrado del cliente
   function filteredProducts() {
     return products.filter((product) => {
       const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -211,10 +208,7 @@ export default function App() {
       const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
       const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-      if (filterType === "Mundial") {
-        return matchesSearch && product.isMundial === true;
-      }
-
+      if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
       if (filterType === "Ofertas") return matchesSearch && isOffer;
       if (window.__verDisponiblesActivo) {
         const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
@@ -231,97 +225,115 @@ export default function App() {
 
   return (
     <CartProvider>
-      <Router>
-        <CartDrawer />
-        <Routes>
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
-          
-          <Route 
-            path="/product/:id" 
-            element={
-              <ProductDetail 
-                user={user} 
-                onUpdate={handleProductUpdate}
-                onLoginClick={() => setShowLogin(true)}
-                onLogout={handleLogout}
-                setShowRegisterUserModal={setShowRegisterUserModal}
-                setShowUserListModal={setShowUserListModal}
-                onMedidasClick={() => setShowMedidas(true)}
-              />
-            } 
-          />
-          
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
-          <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
-          
-          <Route path="/" element={
-            <>
-              {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-              {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowRegisterUserModal(false)} />}
-              {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
-              {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
-              {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
-              
-              {loading && <LoadingOverlay message="Cargando productos..." />}
-
-              <div className="fixed top-0 left-0 w-full z-50">
-                <TopBanner />
-                <Header
+      {/* 🏆 CORRECCIÓN: Fondo global 100% blanco (bg-white) */}
+      <div className="w-full min-h-screen bg-white text-black antialiased">
+        <Router>
+          <CartDrawer />
+          <Routes>
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            
+            <Route 
+              path="/product/:id" 
+              element={
+                <ProductDetail 
+                  user={user} 
+                  onUpdate={handleProductUpdate}
                   onLoginClick={() => setShowLogin(true)}
                   onLogout={handleLogout}
-                  onLogoClick={() => { setFilterType(""); setSearchTerm(""); setPage(1); }}
-                  onMedidasClick={() => setShowMedidas(true)}
-                  user={user}
-                  isSuperUser={isSuperUser}
-                  canSeeHistory={canSeeHistory}
                   setShowRegisterUserModal={setShowRegisterUserModal}
                   setShowUserListModal={setShowUserListModal}
-                  setFilterType={setFilterType}
+                  onMedidasClick={() => setShowMedidas(true)}
                 />
-              </div>
+              } 
+            />
+            
+            <Route path="/checkout" element={<Checkout />} />
+            <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
+            <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
+            
+            <Route path="/" element={
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  <InicioOverlay key="loader-global" onComplete={() => {
+                    setLoading(false);
+                    // 🏆 Al terminar, guardamos en sesión para no mostrarlo más si el usuario navega a otras camisas
+                    sessionStorage.setItem("introMundial", "true"); 
+                  }} />
+                ) : (
+                  <motion.div
+                    key="main-store-content"
+                    // Si la pantalla empezó con intro, hace fade in. Si no (entramos desde otra página), aparece al instante.
+                    initial={{ opacity: startedWithIntro ? 0 : 1 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, ease: "easeIn" }}
+                    className="bg-white min-h-screen w-full" 
+                  >
+                    {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
+                    {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowRegisterUserModal(false)} />}
+                    {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
+                    {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
+                    {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
+                    
+                    <div className="fixed top-0 left-0 w-full z-50">
+                      <TopBanner />
+                      <Header
+                        onLoginClick={() => setShowLogin(true)}
+                        onLogout={handleLogout}
+                        onLogoClick={() => { setFilterType(""); setSearchTerm(""); setPage(1); }}
+                        onMedidasClick={() => setShowMedidas(true)}
+                        user={user}
+                        isSuperUser={isSuperUser}
+                        canSeeHistory={canSeeHistory}
+                        setShowRegisterUserModal={setShowRegisterUserModal}
+                        setShowUserListModal={setShowUserListModal}
+                        setFilterType={setFilterType}
+                      />
+                    </div>
 
-              <div className="h-[120px]" />
-              <Bienvenido />
-              <FilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} filterType={filterType} setFilterType={setFilterType} filterSizes={filterSizes} setFilterSizes={setFilterSizes} />
+                    <div className="h-[120px]" />
+                    <Bienvenido />
+                    <FilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} filterType={filterType} setFilterType={setFilterType} filterSizes={filterSizes} setFilterSizes={setFilterSizes} />
 
-              {canAdd && (
-                <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50" onClick={() => setShowAddModal(true)}>
-                  <FaPlus />
-                </button>
-              )}
+                    {canAdd && (
+                      <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50" onClick={() => setShowAddModal(true)}>
+                        <FaPlus />
+                      </button>
+                    )}
 
-              <div className="relative w-full">
-                <div ref={pageTopRef} className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
-                  {filteredProducts().map((product) => (
-                    <ProductCard
-                      canEdit={canEdit}
-                      key={getPid(product)}
-                      product={product}
-                      user={user}
-                      onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-                    />
-                  ))}
-                </div>
-              </div>
+                    <div className="relative w-full">
+                      <div ref={pageTopRef} className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
+                        {filteredProducts().map((product) => (
+                          <ProductCard
+                            canEdit={canEdit}
+                            key={getPid(product)}
+                            product={product}
+                            user={user}
+                            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                          />
+                        ))}
+                      </div>
+                    </div>
 
-              {pages > 1 && (
-                <div className="mt-8 flex flex-col items-center gap-3">
-                  <nav className="flex items-center justify-center gap-2">
-                    <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronLeft /></button>
-                    {buildPages(page, pages).map(n => (
-                      <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
-                    ))}
-                    <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronRight /></button>
-                  </nav>
-                </div>
-              )}
-              <Footer />
-            </>
-          } />
-        </Routes>
-      </Router>
-      <ToastContainer />
+                    {pages > 1 && (
+                      <div className="mt-8 flex flex-col items-center gap-3">
+                        <nav className="flex items-center justify-center gap-2">
+                          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronLeft /></button>
+                          {buildPages(page, pages).map(n => (
+                            <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                          ))}
+                          <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronRight /></button>
+                        </nav>
+                      </div>
+                    )}
+                    <Footer />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            } />
+          </Routes>
+        </Router>
+        <ToastContainer />
+      </div>
     </CartProvider>
   );
 }
