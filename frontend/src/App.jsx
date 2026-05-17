@@ -65,7 +65,14 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
-  const pages = Math.max(1, Math.ceil(total / limit));
+  
+  // 🏆 CORRECCIÓN DE LA PAGINACIÓN FANTASMA:
+  // Si estamos filtrando por el Mundial, calculamos las páginas usando la longitud real de las chemas filtradas.
+  // Si no, delegamos de forma regular en el conteo total devuelto por la consulta del backend.
+  const pages = filterType === "Mundial"
+    ? Math.max(1, Math.ceil(filteredProducts().length / limit))
+    : Math.max(1, Math.ceil(total / limit));
+
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
@@ -195,31 +202,34 @@ export default function App() {
     );
   };
 
-  const filteredProducts = products.filter((product) => {
-    const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-    const name = normalize(product.name || "");
-    const matchesSearch = name.includes(normalize(searchTerm || ""));
-    const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
-    const price = Number(product.price ?? 0);
-    const dpRaw = product.discountPrice;
-    const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
-    const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
+  // 🛠️ Cambiamos a función normal para poder llamarla arriba en el cálculo de las páginas dinámicas
+  function filteredProducts() {
+    return products.filter((product) => {
+      const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const name = normalize(product.name || "");
+      const matchesSearch = name.includes(normalize(searchTerm || ""));
+      const hasStock = Object.values(product.stock || {}).some((qty) => Number(qty) > 0);
+      const price = Number(product.price ?? 0);
+      const dpRaw = product.discountPrice;
+      const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
+      const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-    // 🏆 NUEVO: Filtro inteligente para capturar únicamente los cromos del mundial marcados en la base de datos
-    if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
+      // 🏆 NUEVO: Filtro inteligente para capturar únicamente los cromos del mundial marcados en la base de datos
+      if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
 
-    if (filterType === "Ofertas") return matchesSearch && isOffer;
-    if (window.__verDisponiblesActivo) {
-      const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
-      return matchesSearch && hasStock && noDiscount;
-    }
-    if (filterType) {
-      const productType = normalize(product.type || "");
-      const filter = normalize(filterType);
-      return matchesSearch && productType.includes(filter);
-    }
-    return matchesSearch;
-  });
+      if (filterType === "Ofertas") return matchesSearch && isOffer;
+      if (window.__verDisponiblesActivo) {
+        const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
+        return matchesSearch && hasStock && noDiscount;
+      }
+      if (filterType) {
+        const productType = normalize(product.type || "");
+        const filter = normalize(filterType);
+        return matchesSearch && productType.includes(filter);
+      }
+      return matchesSearch;
+    });
+  }
 
   return (
     <CartProvider>
@@ -250,7 +260,7 @@ export default function App() {
           <Route path="/" element={
             <>
               {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-              {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
+              {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowRegisterUserModal(false)} />}
               {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
               {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
               {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
@@ -285,7 +295,7 @@ export default function App() {
 
               <div className="relative w-full">
                 <div ref={pageTopRef} className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts().map((product) => (
                     <ProductCard
                       canEdit={canEdit}
                       key={getPid(product)}
