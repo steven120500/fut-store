@@ -17,7 +17,6 @@ import Footer from "./components/Footer";
 import LoadingOverlay from "./components/LoadingOverlay";
 import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
-// 🗑️ Se elimina el import de HistoryModal si ya no se usa como modal
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
@@ -32,7 +31,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
 import OrdersPage from "./pages/OrdersPage.jsx"; 
-import HistoryPage from "./pages/HistoryPage.jsx"; // 👈 NUEVA PÁGINA
+import HistoryPage from "./pages/HistoryPage.jsx"; 
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -56,27 +55,26 @@ export default function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
   const [showUserListModal, setShowUserListModal] = useState(false);
-  // 🗑️ Se elimina el estado showHistoryModal
   const [showMedidas, setShowMedidas] = useState(false);
 
-  // 🛠️ Ajuste de condición de modales abiertos
+  // Ajuste de condición de modales abiertos
   const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showMedidas;
 
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   
-  // 🏆 CORRECCIÓN DE LA PAGINACIÓN FANTASMA:
-  // Si estamos filtrando por el Mundial, calculamos las páginas usando la longitud real de las chemas filtradas.
-  // Si no, delegamos de forma regular en el conteo total devuelto por la consulta del backend.
+  // 🏆 CORRECCIÓN DE DUPLICACIÓN:
+  // Si estamos en el filtro Mundial, forzamos que sea exactamente 1 página ya que traemos 
+  // todas las camisetas de golpe. Así se elimina el paginado fantasma y la duplicación entre pág 1 y 2.
   const pages = filterType === "Mundial"
-    ? Math.max(1, Math.ceil(filteredProducts().length / limit))
+    ? 1
     : Math.max(1, Math.ceil(total / limit));
 
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
-  // 1. ESCUCHADOR DE EVENTOS (Reset página al filtrar desde Bienvenido)
+  // 1. ESCUCHADOR DE EVENTOS
   useEffect(() => {
     const handleFilterEvent = (e) => {
       const typeMap = {
@@ -85,13 +83,13 @@ export default function App() {
         filtrarFan: "Fan",
         filtrarNacional: "Nacional",
         filtrarOfertas: "Ofertas",
-        filtrarMundial: "Mundial" // 🏆 NUEVO: Vinculamos el evento del banner para activar el modo Mundial
+        filtrarMundial: "Mundial" 
       };
       
       const newFilter = typeMap[e.type];
       if (newFilter) {
         setFilterType(newFilter);
-        setPage(1); // 👈 RESET PÁGINA
+        setPage(1); 
         
         if (pageTopRef.current) {
           const rect = pageTopRef.current.getBoundingClientRect();
@@ -101,7 +99,6 @@ export default function App() {
       }
     };
 
-    // 🏆 NUEVO: Añadimos "filtrarMundial" a los eventos globales del window
     const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
 
@@ -110,7 +107,7 @@ export default function App() {
     };
   }, []);
 
-  // 👇 2. SOLUCIÓN AL PAGINADO FANTASMA 👇
+  // Reset de página al cambiar filtros principales
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterType, filterSizes]);
@@ -138,9 +135,8 @@ export default function App() {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     
-    // 🏆 CORRECCIÓN: Si el filtro es "Mundial", limpiamos el query param 'type' para que el backend devuelva 
-    // todas las colecciones y el frontend sea quien filtre mediante el campo booleano isMundial.
-    const tp = (opts.type ?? filterType).trim() === "Mundial" ? "" : (opts.type ?? filterType).trim();
+    const currentActualFilter = (opts.type ?? filterType).trim();
+    const tp = currentActualFilter === "Mundial" ? "" : currentActualFilter;
     
     const sizes = (opts.sizes ?? filterSizes).join(",");
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
@@ -148,8 +144,9 @@ export default function App() {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: String(p),
-        limit: "20",
+        // Si es Mundial, traemos un lote grande completo (página 1) para filtrar en cliente de forma masiva
+        page: currentActualFilter === "Mundial" ? "1" : String(p),
+        limit: currentActualFilter === "Mundial" ? "150" : "20",
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(sizes ? { sizes } : {}),
@@ -161,7 +158,7 @@ export default function App() {
       const json = await res.json();
       setProducts(json.items);
       setTotal(json.total);
-      if (json.page !== page) setPage(json.page); 
+      if (json.page !== page && currentActualFilter !== "Mundial") setPage(json.page); 
     } catch {
       setProducts([]);
       setTotal(0);
@@ -170,7 +167,7 @@ export default function App() {
     }
   };
 
-  // 3. FETCH DE PRODUCTOS CUANDO CAMBIA LA PÁGINA O FILTROS
+  // FETCH DE PRODUCTOS CUANDO CAMBIA LA PÁGINA O FILTROS
   useEffect(() => {
     fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
     
@@ -202,7 +199,7 @@ export default function App() {
     );
   };
 
-  // 🛠️ Cambiamos a función normal para poder llamarla arriba en el cálculo de las páginas dinámicas
+  // Función de filtrado del cliente
   function filteredProducts() {
     return products.filter((product) => {
       const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -214,8 +211,9 @@ export default function App() {
       const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
       const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-      // 🏆 NUEVO: Filtro inteligente para capturar únicamente los cromos del mundial marcados en la base de datos
-      if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
+      if (filterType === "Mundial") {
+        return matchesSearch && product.isMundial === true;
+      }
 
       if (filterType === "Ofertas") return matchesSearch && isOffer;
       if (window.__verDisponiblesActivo) {
