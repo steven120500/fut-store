@@ -12,38 +12,38 @@ export default function Bienvenido() {
   }, []);
 
   const handleNavigation = () => {
-    // Despacha el evento para filtrar por las camisetas Nacionales / Mundial
-    window.dispatchEvent(new CustomEvent("filtrarNacional"));
+    // Despacha el evento personalizado para el filtro del mundial
+    window.dispatchEvent(new CustomEvent("filtrarMundial"));
   };
 
   return (
     <section className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black">
       
-      {/* 🖼️ NUEVOS BANNERS MUNDIALISTAS (REEMPLAZO DIRECTO) */}
-      <div className="absolute inset-0 z-0 sm:pt-56 pt-28">
+      {/* 🖼️ IMAGEN DE FONDO (BANNER) */}
+      <div className="absolute inset-0 z-10 sm:pt-56 pt-28">
         <img
           src={isMobile ? "/FondoM.png" : "/FondoD.png"}
           alt="FIFA World Cup 2026 FutStore"
           className="w-full h-full object-cover md:object-fill" 
         />
-        {/* Degradado inferior para conectar limpio con el fondo negro de la FilterBar */}
-        
       </div>
 
-      {/* 🔘 ÁREA INTERACTIVA ENCIMA DEL BOTÓN "COMPRAR AHORA" */}
-      <div className={`absolute z-20 w-full flex justify-center 
-        ${isMobile ? "bottom-[11.5%]" : "bottom-[33.5%] md:left-[-24.5%]"}`}
+      {/* 🔘 MÁSCARA DEL BOTÓN INVISIBLE (Z-INDEX SUPERIOR) */}
+      <div 
+        className={`absolute z-30 w-full flex justify-start ml-36 sm:ml-72
+          ${isMobile ? "bottom-10" : "bottom-72"}`}
       >
         <motion.button
           onClick={handleNavigation}
-          whileHover={{ scale: 1.04 }}
+          // Micro-interacciones para dar feedback visual de que es clickable
+         
           whileTap={{ scale: 0.96 }}
           className="cursor-pointer rounded-xl transition-all"
-          // Dimensiones calculadas para calzar sobre el botón dorado de tus diseños
           style={{
-            width: isMobile ? "240px" : "210px",
-            height: isMobile ? "55px" : "48px",
-            background: "transparent",
+            // Estas dimensiones y posiciones están ajustadas para calzar sobre el botón dorado impreso en la imagen
+            width: isMobile ? "290px" : "800px",
+            height: isMobile ? "60px" : "110px",
+            background: "transparent", // Mantener invisible pero clickable
             border: "none",
             outline: "none"
           }}

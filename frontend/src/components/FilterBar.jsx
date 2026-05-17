@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const tipos = [
   "Player", "Fan", "Mujer", "Niño", "Retro",
   "Abrigos", "Nacional", "Balón", "Ofertas",
+  "Mundial", // 🏆 Mapeado oficial en la barra de navegación
   "NBA", "MLB", "Todos",
 ];
 
@@ -36,20 +37,27 @@ export default function FilterBar({
 
   const isDisponibles = window.__verDisponiblesActivo === true;
 
-  // 🚀 SENSIBILIDAD MEJORADA: Debounce más rápido (150ms)
+  // 🏆 SINCRONIZACIÓN EXTERNA: Si desde afuera (App.jsx) se activa el modo Mundial,
+  // reiniciamos el texto local para que la barra de búsqueda no cause limpiezas accidentales.
+  useEffect(() => {
+    if (filterType === "Mundial") {
+      setLocalSearch("");
+    }
+  }, [filterType]);
+
+  // Debounce controlado para la caja de texto
   useEffect(() => {
     if (localSearch.trim() === "") {
-      setSearchTerm(""); // Limpieza instantánea si el input está vacío
+      if (searchTerm !== "") setSearchTerm(""); 
       return;
     }
 
     const timeout = setTimeout(() => {
-      // Enviamos el término normalizado (sin espacios extra y en minúsculas)
       setSearchTerm(localSearch.trim());
     }, 150); 
 
     return () => clearTimeout(timeout);
-  }, [localSearch, setSearchTerm]);
+  }, [localSearch, searchTerm, setSearchTerm]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -79,7 +87,7 @@ export default function FilterBar({
     <div className="mb-6 mt-6 w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-4 items-center justify-between">
         
-        {/* 🔍 BARRA DE BÚSQUEDA - Más sensible */}
+        {/* 🔍 BARRA DE BÚSQUEDA */}
         <div className="relative w-full md:w-1/3 group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400 group-focus-within:text-black transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -77,13 +77,14 @@ export default function App() {
         filtrarPlayer: "Player",
         filtrarFan: "Fan",
         filtrarNacional: "Nacional",
-        filtrarOfertas: "Ofertas"
+        filtrarOfertas: "Ofertas",
+        filtrarMundial: "Mundial" // 🏆 NUEVO: Vinculamos el evento del banner para activar el modo Mundial
       };
       
       const newFilter = typeMap[e.type];
       if (newFilter) {
         setFilterType(newFilter);
-        setPage(1); // 👈 RESETPÁGINA
+        setPage(1); // 👈 RESET PÁGINA
         
         if (pageTopRef.current) {
           const rect = pageTopRef.current.getBoundingClientRect();
@@ -93,7 +94,8 @@ export default function App() {
       }
     };
 
-    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas"];
+    // 🏆 NUEVO: Añadimos "filtrarMundial" a los eventos globales del window
+    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
 
     return () => {
@@ -102,8 +104,6 @@ export default function App() {
   }, []);
 
   // 👇 2. SOLUCIÓN AL PAGINADO FANTASMA 👇
-  // Este efecto detecta si el usuario cambia el texto, la categoría o las tallas.
-  // Si algo cambia, lo mandamos de vuelta a la página 1.
   useEffect(() => {
     setPage(1);
   }, [searchTerm, filterType, filterSizes]);
@@ -130,7 +130,11 @@ export default function App() {
   const fetchProducts = async (opts = {}) => {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
-    const tp = (opts.type ?? filterType).trim();
+    
+    // 🏆 CORRECCIÓN: Si el filtro es "Mundial", limpiamos el query param 'type' para que el backend devuelva 
+    // todas las colecciones y el frontend sea quien filtre mediante el campo booleano isMundial.
+    const tp = (opts.type ?? filterType).trim() === "Mundial" ? "" : (opts.type ?? filterType).trim();
+    
     const sizes = (opts.sizes ?? filterSizes).join(",");
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
@@ -150,7 +154,6 @@ export default function App() {
       const json = await res.json();
       setProducts(json.items);
       setTotal(json.total);
-      // Aquí usamos el setPage de forma segura solo si el servidor confirma la página actual
       if (json.page !== page) setPage(json.page); 
     } catch {
       setProducts([]);
@@ -168,7 +171,6 @@ export default function App() {
       window.scrollTo(0, 0);
       isFirstRun.current = false;
     } else {
-      // Scroll suave hacia arriba al cambiar de página
       if (pageTopRef.current) {
         const rect = pageTopRef.current.getBoundingClientRect();
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -202,6 +204,9 @@ export default function App() {
     const dpRaw = product.discountPrice;
     const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
     const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
+
+    // 🏆 NUEVO: Filtro inteligente para capturar únicamente los cromos del mundial marcados en la base de datos
+    if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
 
     if (filterType === "Ofertas") return matchesSearch && isOffer;
     if (window.__verDisponiblesActivo) {
