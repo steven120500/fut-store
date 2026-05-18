@@ -20,6 +20,7 @@ import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
+import LoadingOverlay from "./components/LoadingOverlay"; // 🏆 Importamos el loader para la extracción masiva
 import tallaPorTipo from "./utils/tallaPorTipo";
 import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -46,13 +47,12 @@ const getPid = (p) => String(p?._id ?? p?.id ?? "");
 export default function App() {
   const [products, setProducts] = useState([]);
   
-  // 🏆 MEJORA UX: Leemos sessionStorage para saber si ya vimos la animación
   const [loading, setLoading] = useState(() => {
     return sessionStorage.getItem("introMundial") ? false : true;
   });
   
-  // Guardamos un registro local para saber si esta carga específica empezó con la intro
   const [startedWithIntro] = useState(loading);
+  const [isFiltering, setIsFiltering] = useState(false); // 🏆 Nuevo estado para proteger visualmente la carga paralela
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -71,7 +71,9 @@ export default function App() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
   
-  const pages = filterType === "Mundial"
+  const isFrontendFilterActive = filterType === "Mundial" || filterSizes.length > 0;
+
+  const pages = isFrontendFilterActive
     ? 1
     : Math.max(1, Math.ceil(total / limit));
 
@@ -140,28 +142,67 @@ export default function App() {
     const q = (opts.q ?? searchTerm).trim();
     const currentActualFilter = (opts.type ?? filterType).trim();
     const tp = currentActualFilter === "Mundial" ? "" : currentActualFilter;
-    const sizes = (opts.sizes ?? filterSizes).join(",");
+    const currentSizes = opts.sizes ?? filterSizes; 
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
+    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
+
+    if (needsMassiveFetch) setIsFiltering(true); // Bloquea la UI para extraer todo el catálogo silenciosamente
+
     try {
-      const params = new URLSearchParams({
-        page: currentActualFilter === "Mundial" ? "1" : String(p),
-        limit: currentActualFilter === "Mundial" ? "150" : "20",
+      const baseParams = {
+        limit: needsMassiveFetch ? "100" : "20", // Pedimos al límite seguro del backend para que no nos rebote
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
-        ...(sizes ? { sizes } : {}),
         ...(mode ? { mode } : {}),
+      };
+
+      const params = new URLSearchParams({
+        page: needsMassiveFetch ? "1" : String(p),
+        ...baseParams
       });
 
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
-      setProducts(json.items);
-      setTotal(json.total);
-      if (json.page !== page && currentActualFilter !== "Mundial") setPage(json.page); 
+      
+      let fetchedItems = json.items || [];
+      let fetchedTotal = json.total || 0;
+
+      // 🚀 ALGORITMO MAESTRO DE BYPASS: Scraping paralelo
+      // Si el backend nos capó la respuesta a 100 pero hay 2500 en total, disparamos múltiples hilos.
+      if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
+         const limitUsed = fetchedItems.length; 
+         const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
+         
+         const fetchPromises = [];
+         const maxPages = Math.min(totalPagesToFetch, 50); // Protección anti-colapso
+
+         for (let i = 2; i <= maxPages; i++) {
+           const loopParams = new URLSearchParams({ page: String(i), ...baseParams });
+           fetchPromises.push(
+             fetch(`${API_BASE}/api/products?${loopParams.toString()}`)
+               .then(r => r.ok ? r.json() : { items: [] })
+               .catch(() => ({ items: [] }))
+           );
+         }
+         
+         // Espera que lleguen todas juntas (fracciones de segundo)
+         const results = await Promise.all(fetchPromises);
+         results.forEach(result => {
+           if (result.items) fetchedItems = [...fetchedItems, ...result.items];
+         });
+      }
+
+      setProducts(fetchedItems);
+      setTotal(fetchedTotal);
+      if (json.page !== page && !needsMassiveFetch) setPage(json.page); 
+
     } catch {
       setProducts([]);
       setTotal(0);
+    } finally {
+      setIsFiltering(false); // Libera la UI
     }
   };
 
@@ -208,6 +249,18 @@ export default function App() {
       const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
       const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
+      // 🛡️ Filtro Inmune a errores de dedo (Case y Spaces Insensitive)
+      const matchesSizes = filterSizes.length === 0 || filterSizes.some((sizeABuscar) => {
+        if (!product.stock) return false;
+        
+        const cleanSize = sizeABuscar.trim().toLowerCase();
+        const claveReal = Object.keys(product.stock).find(k => k.trim().toLowerCase() === cleanSize);
+        
+        return claveReal ? Number(product.stock[claveReal]) > 0 : false;
+      });
+
+      if (!matchesSizes) return false;
+
       if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
       if (filterType === "Ofertas") return matchesSearch && isOffer;
       if (window.__verDisponiblesActivo) {
@@ -225,7 +278,6 @@ export default function App() {
 
   return (
     <CartProvider>
-      {/* 🏆 CORRECCIÓN: Fondo global 100% blanco (bg-white) */}
       <div className="w-full min-h-screen bg-white text-black antialiased">
         <Router>
           <CartDrawer />
@@ -256,18 +308,19 @@ export default function App() {
                 {loading ? (
                   <InicioOverlay key="loader-global" onComplete={() => {
                     setLoading(false);
-                    // 🏆 Al terminar, guardamos en sesión para no mostrarlo más si el usuario navega a otras camisas
                     sessionStorage.setItem("introMundial", "true"); 
                   }} />
                 ) : (
                   <motion.div
                     key="main-store-content"
-                    // Si la pantalla empezó con intro, hace fade in. Si no (entramos desde otra página), aparece al instante.
                     initial={{ opacity: startedWithIntro ? 0 : 1 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.6, ease: "easeIn" }}
-                    className="bg-white min-h-screen w-full" 
+                    className="bg-white min-h-screen w-full relative" 
                   >
+                    {/* 🏆 LOADER DEL CATÁLOGO: Aparece solo cuando tocas una talla masiva */}
+                    {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
+
                     {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
                     {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowRegisterUserModal(false)} />}
                     {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
