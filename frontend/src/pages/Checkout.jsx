@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard } from 'react-icons/fa';
+import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard, FaStore } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 // 🧠 CEREBRO DEL GAM
@@ -30,6 +30,7 @@ export default function Checkout() {
   const [selectedDistrito, setSelectedDistrito] = useState("");
 
   // Estados de Envío y Pago
+  const [tipoEntrega, setTipoEntrega] = useState("envio"); // "envio" o "recoger"
   const [opcionesEnvio, setOpcionesEnvio] = useState([]); 
   const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
   const [metodoPago, setMetodoPago] = useState("tarjeta");
@@ -140,7 +141,7 @@ export default function Checkout() {
           id: 'mensajero',
           nombre: 'Mensajero Privado',
           precio: precioMensajero,
-          detalle: 'Entrega día siguiente (Solo dentro del GAM)'
+          detalle: 'Entrega Lunes, Miercoles, Viernes o Sabado (Solo dentro del GAM)'
         });
       }
 
@@ -148,6 +149,20 @@ export default function Checkout() {
       setEnvioSeleccionado(nuevasOpciones[0]);
     }
   };
+
+  // Cuando cambian a "recoger", limpiamos los datos de envío
+  const handleTipoEntregaChange = (tipo) => {
+    setTipoEntrega(tipo);
+    if (tipo === "recoger") {
+      setEnvioSeleccionado(null);
+    } else {
+      // Si vuelven a envío y ya tenían algo seleccionado, restauramos la primera opción si es posible
+      if (opcionesEnvio.length > 0) {
+          setEnvioSeleccionado(opcionesEnvio[0]);
+      }
+    }
+  };
+
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -174,35 +189,54 @@ export default function Checkout() {
   const handleProcessOrder = async (e) => {
     e.preventDefault();
     
-    if (!formData.nombre || !formData.telefono || !formData.direccionExacta || !selectedDistrito) {
-      return toast.warning("Por favor llena todos los datos.");
+    if (!formData.nombre || !formData.telefono || !formData.correo) {
+      return toast.warning("Por favor llena todos tus datos de contacto.");
     }
     
-    // Validar que el teléfono tenga exactamente 8 dígitos antes de procesar
+    // Validar teléfono de 8 dígitos
     if (formData.telefono.length !== 8) {
       return toast.warning("El teléfono debe tener exactamente 8 números.");
     }
 
-    if (!envioSeleccionado) return toast.warning("Selecciona un método de envío.");
+    // Validaciones específicas según el tipo de entrega
+    if (tipoEntrega === "envio") {
+        if (!selectedProvincia || !selectedCanton || !selectedDistrito || !formData.direccionExacta) {
+             return toast.warning("Por favor completa toda la información de envío.");
+        }
+        if (!envioSeleccionado) {
+             return toast.warning("Selecciona un método de envío.");
+        }
+    }
 
-    const totalFinal = cartTotal + envioSeleccionado.precio;
-    const nombreProvincia = provincias[selectedProvincia];
-    const nombreCanton = cantones[selectedCanton];
-    const nombreDistrito = distritos[selectedDistrito];
+    const precioEnvioFinal = tipoEntrega === "envio" && envioSeleccionado ? envioSeleccionado.precio : 0;
+    const totalFinal = cartTotal + precioEnvioFinal;
+    
+    const nombreProvincia = provincias[selectedProvincia] || "";
+    const nombreCanton = cantones[selectedCanton] || "";
+    const nombreDistrito = distritos[selectedDistrito] || "";
+    
+    const direccionFinal = tipoEntrega === "recoger" 
+        ? "Recoger en el Local" 
+        : `${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}. ${formData.direccionExacta}`;
 
-    // 👇 MENSAJE DE SINPE RESTAURADO CON TODOS LOS DATOS 👇
+    const metodoEnvioFinal = tipoEntrega === "recoger" ? "Recoger en el Local" : envioSeleccionado?.nombre;
+
     if (metodoPago === 'sinpe') {
         let mensaje = `*NUEVO PEDIDO - FUTSTORE*\n`;
         mensaje += `────────────────\n`;
         mensaje += `Cliente: ${formData.nombre}\n`;
         mensaje += `Tel: ${formData.telefono}\n`;
-        mensaje += `Ubicación: ${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}\n`;
-        mensaje += `Detalle: ${formData.direccionExacta}\n`;
+        mensaje += `Correo: ${formData.correo}\n`;
+        mensaje += `Tipo: ${tipoEntrega === 'recoger' ? '🏬 Recoger en local' : '🚚 Envío a domicilio'}\n`;
+        if(tipoEntrega === 'envio') {
+            mensaje += `Ubicación: ${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}\n`;
+            mensaje += `Detalle: ${formData.direccionExacta}\n`;
+        }
         mensaje += `────────────────\n`;
         
-        mensaje += `*MÉTODO DE ENVÍO:*\n`;
-        mensaje += `➡ ${envioSeleccionado.nombre}\n`;
-        mensaje += `Costo envío: ₡${envioSeleccionado.precio.toLocaleString()}\n`;
+        mensaje += `*MÉTODO DE ENTREGA:*\n`;
+        mensaje += `➡ ${metodoEnvioFinal}\n`;
+        mensaje += `Costo envío: ₡${precioEnvioFinal.toLocaleString()}\n`;
         mensaje += `────────────────\n`;
 
         mensaje += `*DETALLE DE PRODUCTOS:*\n`;
@@ -228,8 +262,8 @@ export default function Checkout() {
           cliente: {
             nombre: formData.nombre,
             telefono: formData.telefono,
-            correo: formData.correo || "cliente@futstore.cr",
-            direccion: `${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}. ${formData.direccionExacta}`
+            correo: formData.correo,
+            direccion: direccionFinal
           },
           productos: cart.map(item => ({
             _id: item._id || item.id,
@@ -241,8 +275,8 @@ export default function Checkout() {
             imgs: [item.imageSrc]
           })),
           envio: {
-            metodo: envioSeleccionado.nombre,
-            precio: envioSeleccionado.precio
+            metodo: metodoEnvioFinal,
+            precio: precioEnvioFinal
           },
           total: totalFinal
         };
@@ -296,8 +330,8 @@ export default function Checkout() {
     );
   }
 
-  const precioEnvio = envioSeleccionado ? envioSeleccionado.precio : 0;
-  const granTotal = cartTotal + precioEnvio;
+  const precioEnvioActual = tipoEntrega === "envio" && envioSeleccionado ? envioSeleccionado.precio : 0;
+  const granTotal = cartTotal + precioEnvioActual;
 
   return (
     <div className="min-h-screen bg-gray-50 pt-28 pb-10 px-4 md:px-8">
@@ -320,7 +354,6 @@ export default function Checkout() {
                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
-                    {/* 👇 INPUT DE TELÉFONO ACTUALIZADO 👇 */}
                     <input 
                       type="tel" 
                       name="telefono" 
@@ -333,32 +366,53 @@ export default function Checkout() {
                   </div>
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Correo</label>
-                    <input type="email" name="correo" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="juan@email.com" required={metodoPago === 'tarjeta'} />
+                    <input type="email" name="correo" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="juan@email.com" required />
                   </div>
                </div>
             </div>
 
+            {/* SELECCIÓN DE TIPO DE ENTREGA */}
             <div className="border-t pt-4">
-              <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> ¿Dónde entregamos?</p>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                 <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedProvincia} onChange={handleProvinciaChange} required>
-                   <option value="">Provincia</option>
-                   {Object.entries(provincias).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                 </select>
-                 <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedCanton} onChange={handleCantonChange} disabled={!selectedProvincia} required>
-                   <option value="">Cantón</option>
-                   {Object.entries(cantones).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                 </select>
-                 <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedDistrito} onChange={(e) => setSelectedDistrito(e.target.value)} disabled={!selectedCanton} required>
-                   <option value="">Distrito</option>
-                   {Object.entries(distritos).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                 </select>
-              </div>
-              <textarea name="direccionExacta" onChange={handleChange} rows="2" className="w-full border p-2 rounded text-sm focus:ring-2 ring-black outline-none" placeholder="Señas exactas..." required></textarea>
+                <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> ¿Cómo quieres recibir tu pedido?</p>
+                <div className="grid grid-cols-2 gap-4">
+                    <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${tipoEntrega === 'envio' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
+                        <input type="radio" name="tipoEntrega" value="envio" className="hidden" checked={tipoEntrega === 'envio'} onChange={() => handleTipoEntregaChange('envio')} />
+                        <FaTruck size={24}/>
+                        <span className="font-bold text-xs text-center">Envío a Domicilio</span>
+                    </label>
+                    <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${tipoEntrega === 'recoger' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
+                        <input type="radio" name="tipoEntrega" value="recoger" className="hidden" checked={tipoEntrega === 'recoger'} onChange={() => handleTipoEntregaChange('recoger')} />
+                        <FaStore size={24}/>
+                        <span className="font-bold text-xs text-center">Recoger en el Local</span>
+                    </label>
+                </div>
             </div>
 
-            {opcionesEnvio.length > 0 && (
-              <div className="border-t pt-4">
+            {/* FORMULARIO DE DIRECCIÓN (SOLO SI ES ENVÍO) */}
+            {tipoEntrega === "envio" && (
+                <div className="border-t pt-4 animate-fade-in">
+                  <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> Dirección de Envío</p>
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedProvincia} onChange={handleProvinciaChange} required>
+                       <option value="">Provincia</option>
+                       {Object.entries(provincias).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                     </select>
+                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedCanton} onChange={handleCantonChange} disabled={!selectedProvincia} required>
+                       <option value="">Cantón</option>
+                       {Object.entries(cantones).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                     </select>
+                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedDistrito} onChange={(e) => setSelectedDistrito(e.target.value)} disabled={!selectedCanton} required>
+                       <option value="">Distrito</option>
+                       {Object.entries(distritos).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                     </select>
+                  </div>
+                  <textarea name="direccionExacta" onChange={handleChange} rows="2" className="w-full border p-2 rounded text-sm focus:ring-2 ring-black outline-none" placeholder="Señas exactas..." required></textarea>
+                </div>
+            )}
+
+            {/* OPCIONES DE ENVÍO (SOLO SI ES ENVÍO Y HAY OPCIONES) */}
+            {tipoEntrega === "envio" && opcionesEnvio.length > 0 && (
+              <div className="border-t pt-4 animate-fade-in">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaTruck/> Método de Envío</p>
                 <div className="space-y-3">
                   {opcionesEnvio.map((opcion) => (
@@ -418,7 +472,7 @@ export default function Checkout() {
 
           <div className="border-t mt-6 pt-4 space-y-2 text-sm font-bold">
             <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>₡{cartTotal.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span>Envío</span><span>₡{precioEnvio.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span>Envío</span><span>₡{precioEnvioActual.toLocaleString()}</span></div>
             <div className="flex justify-between text-xl font-black mt-4 pt-4 border-t border-dashed"><span>TOTAL</span><span>₡{granTotal.toLocaleString()}</span></div>
           </div>
         </div>
