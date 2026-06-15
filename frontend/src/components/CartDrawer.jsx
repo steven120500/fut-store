@@ -1,22 +1,58 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { FaTimes, FaTrash, FaWhatsapp } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify'; // 🏆 Importamos toast para las alertas
+
+const API_BASE = "https://fut-store.onrender.com"; // Conexión a tu backend
 
 export default function CartDrawer() {
   const { cart, removeFromCart, isCartOpen, toggleCart, cartTotal } = useCart();
+  const [isValidating, setIsValidating] = useState(false); // 🏆 Estado para proteger el botón mientras revisa el stock
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) return;
 
-    let mensaje = "👋 *¡Hola! Quiero realizar el siguiente pedido:*\n\n";
-    cart.forEach((item) => {
-      const price = item.discountPrice || item.price;
-      mensaje += `▪️ ${item.quantity}x ${item.name} (Talla: ${item.selectedSize}) - ₡${(price * item.quantity).toLocaleString()}\n`;
-    });
-    mensaje += `\n💰 *TOTAL: ₡${cartTotal.toLocaleString()}*`;
-    
-    window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
+    setIsValidating(true); // Bloqueamos el botón para que no hagan doble click
+
+    try {
+      // 🛡️ VALIDACIÓN EN TIEMPO REAL: Revisamos el stock en tu base de datos antes de dejarlo avanzar
+      for (const item of cart) {
+        const res = await fetch(`${API_BASE}/api/products/${item._id || item.id}`);
+        
+        if (!res.ok) throw new Error("Error al consultar el producto");
+        
+        const dbProduct = await res.json();
+        
+        // Buscamos la talla exacta ignorando mayúsculas/minúsculas para evitar errores
+        const cleanSize = item.selectedSize.trim().toLowerCase();
+        const claveReal = Object.keys(dbProduct.stock || {}).find(k => k.trim().toLowerCase() === cleanSize);
+        const stockDisponible = claveReal ? Number(dbProduct.stock[claveReal]) : 0;
+
+        // Si la persona pide más camisas de las que realmente te quedan en la tienda física:
+        if (stockDisponible < item.quantity) {
+          toast.error(`¡Ups! Ya no nos queda stock de "${item.name}" en talla ${item.selectedSize}.`);
+          setIsValidating(false);
+          return; // 🛑 DETIENE LA COMPRA AQUÍ MISMO
+        }
+      }
+
+      // ✅ SI PASA LA VALIDACIÓN (Hay stock de todo), armamos el mensaje y lo mandamos a WhatsApp
+      let mensaje = "👋 *¡Hola! Quiero realizar el siguiente pedido:*\n\n";
+      cart.forEach((item) => {
+        const price = item.discountPrice || item.price;
+        mensaje += `▪️ ${item.quantity}x ${item.name} (Talla: ${item.selectedSize}) - ₡${(price * item.quantity).toLocaleString()}\n`;
+      });
+      mensaje += `\n💰 *TOTAL: ₡${cartTotal.toLocaleString()}*`;
+      
+      window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
+
+    } catch (error) {
+      console.error("Error validando el stock:", error);
+      toast.error("Hubo un problema al verificar el inventario. Intenta de nuevo.");
+    } finally {
+      setIsValidating(false); // Liberamos el botón
+    }
   };
 
   return (
@@ -83,9 +119,17 @@ export default function CartDrawer() {
                 </div>
                 <button 
                   onClick={handleCheckout}
-                  className="w-full bg-green-600 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition shadow-lg active:scale-95"
+                  disabled={isValidating}
+                  className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg 
+                    ${isValidating ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white active:scale-95'}`}
                 >
-                  <FaWhatsapp size={24} /> COMPLETAR PEDIDO
+                  {isValidating ? (
+                    "VERIFICANDO STOCK..."
+                  ) : (
+                    <>
+                      <FaWhatsapp size={24} /> COMPLETAR PEDIDO
+                    </>
+                  )}
                 </button>
               </div>
             )}

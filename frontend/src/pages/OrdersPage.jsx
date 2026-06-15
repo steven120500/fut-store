@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes } from 'react-icons/fa'; 
+import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes, FaClipboardList } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
@@ -114,6 +114,43 @@ const OrdersPage = ({ user }) => {
     const openTrackingModal = (order) => {
         setSelectedOrder(order);
         setShowTrackingModal(true);
+    };
+
+    // 🏆 FUNCIÓN ACTUALIZADA: Incluye el tipo de versión en el mapeo de camisetas
+    const handleCopiarGuia = (order) => {
+        const camisetas = order.items?.map(item => {
+            const versionText = item.version ? ` [${item.version.toUpperCase()}]` : '';
+            return `${item.quantity}x ${item.name}${versionText} (${item.size})`;
+        }).join(', ') || 'N/A';
+        
+        const cliente = order.customer?.name || 'N/A';
+        const numero = order.customer?.phone || 'N/A';
+        
+        let prov = "N/A", cant = "N/A", dist = "N/A", dirExacta = order.customer?.address || "N/A";
+
+        // Mapeo automático de la dirección estructurada
+        if (dirExacta !== "Recoger en el Local" && dirExacta.includes(",")) {
+            const parts = dirExacta.split(',');
+            if (parts.length >= 3) {
+                prov = parts[0].trim();
+                cant = parts[1].trim();
+                const distDir = parts.slice(2).join(',').split('.'); 
+                dist = distDir[0].trim();
+                dirExacta = distDir.slice(1).join('.').trim() || "N/A";
+            }
+        } else if (dirExacta === "Recoger en el Local") {
+            prov = "N/A";
+            cant = "N/A";
+            dist = "N/A";
+        }
+
+        const textoGuia = `Guia\n\nCamiseta: ${camisetas}\nCliente: ${cliente}\nNumero: ${numero}\nProvincia: ${prov}\nCanton: ${cant}\nDistrito: ${dist}\nDireccion: ${dirExacta}\n\nYA PAGO TODO POR WEB`;
+
+        navigator.clipboard.writeText(textoGuia).then(() => {
+            toast.success("📋 ¡Guía copiada al portapapeles!");
+        }).catch(() => {
+            toast.error("Hubo un error al copiar la guía.");
+        });
     };
 
     const filteredOrders = orders.filter(order => {
@@ -251,6 +288,13 @@ const OrdersPage = ({ user }) => {
                                                             </p>
                                                         </div>
                                                     )}
+
+                                                    <button
+                                                        onClick={() => handleCopiarGuia(order)}
+                                                        className="mt-4 w-full bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-lg transition shadow-lg flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest border border-gray-700 active:scale-95"
+                                                    >
+                                                        <FaClipboardList size={14} /> COPIAR GUÍA AL PORTAPAPELES
+                                                    </button>
                                                 </div>
                                             </div>
                                             
@@ -302,7 +346,6 @@ const OrdersPage = ({ user }) => {
                                                 </div>
                                             </div>
 
-                                            {/* 👇 ACTUALIZADO: Oculta el botón si ya se descontó antes en la DB o en esta sesión */}
                                             {user?.isSuperUser && !order.stockDiscounted && !discountedOrders.has(order._id) && (
                                                 <button 
                                                     onClick={() => openDiscountModal(order._id)}
@@ -320,7 +363,7 @@ const OrdersPage = ({ user }) => {
                 </div>
             </div>
 
-            {/* 🌟 NUEVO MODAL DE CONFIRMACIÓN DE DESCUENTO 🌟 */}
+            {/* 🌟 MODAL DE CONFIRMACIÓN DE DESCUENTO 🌟 */}
             {showDiscountModal && (
                 <div className="fixed inset-0 z-500 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                     <div className="bg-white border border-gray-800 p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">

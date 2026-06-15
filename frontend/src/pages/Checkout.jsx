@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard, FaStore } from 'react-icons/fa';
+import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard, FaStore, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 // 🧠 CEREBRO DEL GAM
@@ -12,7 +12,6 @@ const GAM_CANTONES = {
   "4": ["1", "2", "3", "4", "5", "6", "7", "8", "9"] 
 };
 
-// ⚠️ AJUSTA ESTO SI TU BACKEND TIENE OTRA RUTA
 const API_BASE = "https://fut-store.onrender.com"; 
 
 export default function Checkout() {
@@ -30,13 +29,17 @@ export default function Checkout() {
   const [selectedDistrito, setSelectedDistrito] = useState("");
 
   // Estados de Envío y Pago
-  const [tipoEntrega, setTipoEntrega] = useState("envio"); // "envio" o "recoger"
+  const [tipoEntrega, setTipoEntrega] = useState("envio");
   const [opcionesEnvio, setOpcionesEnvio] = useState([]); 
   const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
   const [metodoPago, setMetodoPago] = useState("tarjeta");
   
   const [loadingPay, setLoadingPay] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
+
+  // 🏆 NUEVOS ESTADOS PARA VALIDACIÓN PROACTIVA
+  const [verifyingCartOnLoad, setVerifyingCartOnLoad] = useState(true);
+  const [outOfStockItems, setOutOfStockItems] = useState([]);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -97,6 +100,44 @@ export default function Checkout() {
       .catch(err => console.error(err));
   }, []);
 
+  // 🏆 EFECTO DE VALIDACIÓN PROACTIVA DEL CARRITO
+  // Se ejecuta al entrar a la página y cada vez que el cliente borra algo del carrito
+  useEffect(() => {
+    const checkCartStock = async () => {
+      if (cart.length === 0) {
+        setVerifyingCartOnLoad(false);
+        setOutOfStockItems([]);
+        return;
+      }
+
+      setVerifyingCartOnLoad(true);
+      const invalidItems = [];
+
+      try {
+        for (const item of cart) {
+          const res = await fetch(`${API_BASE}/api/products/${item._id || item.id}`);
+          if (res.ok) {
+            const dbProduct = await res.json();
+            const cleanSize = item.selectedSize.trim().toLowerCase();
+            const claveReal = Object.keys(dbProduct.stock || {}).find(k => k.trim().toLowerCase() === cleanSize);
+            const stockDisponible = claveReal ? Number(dbProduct.stock[claveReal]) : 0;
+
+            if (stockDisponible < item.quantity) {
+              invalidItems.push(`"${item.name}" (Talla: ${item.selectedSize})`);
+            }
+          }
+        }
+        setOutOfStockItems(invalidItems);
+      } catch (error) {
+        console.error("Error validando el carrito al cargar:", error);
+      } finally {
+        setVerifyingCartOnLoad(false);
+      }
+    };
+
+    checkCartStock();
+  }, [cart]); // Si el usuario elimina la camisa sin stock, esto vuelve a correr y libera el botón
+
   const handleProvinciaChange = (e) => {
     const id = e.target.value;
     setSelectedProvincia(id);
@@ -150,55 +191,47 @@ export default function Checkout() {
     }
   };
 
-  // Cuando cambian a "recoger", limpiamos los datos de envío
   const handleTipoEntregaChange = (tipo) => {
     setTipoEntrega(tipo);
     if (tipo === "recoger") {
       setEnvioSeleccionado(null);
     } else {
-      // Si vuelven a envío y ya tenían algo seleccionado, restauramos la primera opción si es posible
       if (opcionesEnvio.length > 0) {
           setEnvioSeleccionado(opcionesEnvio[0]);
       }
     }
   };
 
-
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 👇 FILTRO INTELIGENTE PARA EL TELÉFONO 👇
   const handlePhoneChange = (e) => {
     let rawValue = e.target.value;
-    
-    // 1. Quitar cualquier caracter que NO sea número (espacios, +, guiones, letras)
     let numbersOnly = rawValue.replace(/\D/g, '');
     
-    // 2. Si alguien pega "+506 8888 8888", numbersOnly será "50688888888". Le quitamos el 506.
     if (numbersOnly.startsWith('506') && numbersOnly.length > 8) {
       numbersOnly = numbersOnly.substring(3);
     }
     
-    // 3. Limitar estrictamente a 8 dígitos
     numbersOnly = numbersOnly.slice(0, 8);
-    
     setFormData({ ...formData, telefono: numbersOnly });
   };
 
   const handleProcessOrder = async (e) => {
     e.preventDefault();
     
+    // Si ya sabemos que hay productos agotados, no hacemos nada extra.
+    if (outOfStockItems.length > 0) return;
+
     if (!formData.nombre || !formData.telefono || !formData.correo) {
       return toast.warning("Por favor llena todos tus datos de contacto.");
     }
     
-    // Validar teléfono de 8 dígitos
     if (formData.telefono.length !== 8) {
       return toast.warning("El teléfono debe tener exactamente 8 números.");
     }
 
-    // Validaciones específicas según el tipo de entrega
     if (tipoEntrega === "envio") {
         if (!selectedProvincia || !selectedCanton || !selectedDistrito || !formData.direccionExacta) {
              return toast.warning("Por favor completa toda la información de envío.");
@@ -208,82 +241,103 @@ export default function Checkout() {
         }
     }
 
-    const precioEnvioFinal = tipoEntrega === "envio" && envioSeleccionado ? envioSeleccionado.precio : 0;
-    const totalFinal = cartTotal + precioEnvioFinal;
-    
-    const nombreProvincia = provincias[selectedProvincia] || "";
-    const nombreCanton = cantones[selectedCanton] || "";
-    const nombreDistrito = distritos[selectedDistrito] || "";
-    
-    const direccionFinal = tipoEntrega === "recoger" 
-        ? "Recoger en el Local" 
-        : `${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}. ${formData.direccionExacta}`;
+    setLoadingPay(true);
 
-    const metodoEnvioFinal = tipoEntrega === "recoger" ? "Recoger en el Local" : envioSeleccionado?.nombre;
+    try {
+      // 🛡️ MANTENEMOS LA DOBLE VERIFICACIÓN (Justo antes de cobrar por si alguien la compró en este preciso segundo)
+      for (const item of cart) {
+        const res = await fetch(`${API_BASE}/api/products/${item._id || item.id}`);
+        if (!res.ok) throw new Error("Error al consultar el producto");
+        
+        const dbProduct = await res.json();
+        
+        const cleanSize = item.selectedSize.trim().toLowerCase();
+        const claveReal = Object.keys(dbProduct.stock || {}).find(k => k.trim().toLowerCase() === cleanSize);
+        const stockDisponible = claveReal ? Number(dbProduct.stock[claveReal]) : 0;
 
-    if (metodoPago === 'sinpe') {
-        let mensaje = `*NUEVO PEDIDO - FUTSTORE*\n`;
-        mensaje += `────────────────\n`;
-        mensaje += `Cliente: ${formData.nombre}\n`;
-        mensaje += `Tel: ${formData.telefono}\n`;
-        mensaje += `Correo: ${formData.correo}\n`;
-        mensaje += `Tipo: ${tipoEntrega === 'recoger' ? '🏬 Recoger en local' : '🚚 Envío a domicilio'}\n`;
-        if(tipoEntrega === 'envio') {
-            mensaje += `Ubicación: ${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}\n`;
-            mensaje += `Detalle: ${formData.direccionExacta}\n`;
+        if (stockDisponible < item.quantity) {
+          toast.error(`¡Ups! Alguien acaba de comprar la última unidad de "${item.name}" en talla ${item.selectedSize}.`);
+          setLoadingPay(false);
+          // Actualizamos la lista roja para bloquear la pantalla
+          setOutOfStockItems(prev => [...prev, `"${item.name}" (Talla: ${item.selectedSize})`]);
+          return; 
         }
-        mensaje += `────────────────\n`;
-        
-        mensaje += `*MÉTODO DE ENTREGA:*\n`;
-        mensaje += `➡ ${metodoEnvioFinal}\n`;
-        mensaje += `Costo envío: ₡${precioEnvioFinal.toLocaleString()}\n`;
-        mensaje += `────────────────\n`;
+      }
 
-        mensaje += `*DETALLE DE PRODUCTOS:*\n`;
-        cart.forEach(item => {
-          const version = item.type ? `[${item.type}]` : '';
-          const precioItem = (item.discountPrice || item.price).toLocaleString();
-          mensaje += `*${item.quantity}x ${item.name}* ${version}\n`;
-          mensaje += `   └ Talla: ${item.selectedSize}\n`;
-          mensaje += `   └ Precio c/u: ₡${precioItem}\n`;
-        });
-        
-        mensaje += `────────────────\n`;
-        mensaje += `*TOTAL A PAGAR: ₡${totalFinal.toLocaleString()}*\n`;
-        mensaje += `*Método de Pago:* SINPE MÓVIL\n\n`;
-        mensaje += `Quedo atento a la cuenta SINPE para enviar el comprobante. ✅`;
+      const precioEnvioFinal = tipoEntrega === "envio" && envioSeleccionado ? envioSeleccionado.precio : 0;
+      const totalFinal = cartTotal + precioEnvioFinal;
+      
+      const nombreProvincia = provincias[selectedProvincia] || "";
+      const nombreCanton = cantones[selectedCanton] || "";
+      const nombreDistrito = distritos[selectedDistrito] || "";
+      
+      const direccionFinal = tipoEntrega === "recoger" 
+          ? "Recoger en el Local" 
+          : `${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}. ${formData.direccionExacta}`;
 
-        window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
-        return;
-    }
+      const metodoEnvioFinal = tipoEntrega === "recoger" ? "Recoger en el Local" : envioSeleccionado?.nombre;
 
-    if (metodoPago === 'tarjeta') {
-        const orderData = {
-          cliente: {
-            nombre: formData.nombre,
-            telefono: formData.telefono,
-            correo: formData.correo,
-            direccion: direccionFinal
-          },
-          productos: cart.map(item => ({
-            _id: item._id || item.id,
-            nombre: item.name,
-            precio: item.discountPrice || item.price,
-            cantidad: item.quantity,
-            tallaSeleccionada: item.selectedSize,
-            version: item.type,
-            imgs: [item.imageSrc]
-          })),
-          envio: {
-            metodo: metodoEnvioFinal,
-            precio: precioEnvioFinal
-          },
-          total: totalFinal
-        };
+      if (metodoPago === 'sinpe') {
+          let mensaje = `*NUEVO PEDIDO - FUTSTORE*\n`;
+          mensaje += `────────────────\n`;
+          mensaje += `Cliente: ${formData.nombre}\n`;
+          mensaje += `Tel: ${formData.telefono}\n`;
+          mensaje += `Correo: ${formData.correo}\n`;
+          mensaje += `Tipo: ${tipoEntrega === 'recoger' ? '🏬 Recoger en local' : '🚚 Envío a domicilio'}\n`;
+          if(tipoEntrega === 'envio') {
+              mensaje += `Ubicación: ${nombreProvincia}, ${nombreCanton}, ${nombreDistrito}\n`;
+              mensaje += `Detalle: ${formData.direccionExacta}\n`;
+          }
+          mensaje += `────────────────\n`;
+          
+          mensaje += `*MÉTODO DE ENTREGA:*\n`;
+          mensaje += `➡ ${metodoEnvioFinal}\n`;
+          mensaje += `Costo envío: ₡${precioEnvioFinal.toLocaleString()}\n`;
+          mensaje += `────────────────\n`;
 
-        setLoadingPay(true);
-        
-        try {
+          mensaje += `*DETALLE DE PRODUCTOS:*\n`;
+          cart.forEach(item => {
+            const version = item.type ? `[${item.type}]` : '';
+            const precioItem = (item.discountPrice || item.price).toLocaleString();
+            mensaje += `*${item.quantity}x ${item.name}* ${version}\n`;
+            mensaje += `   └ Talla: ${item.selectedSize}\n`;
+            mensaje += `   └ Precio c/u: ₡${precioItem}\n`;
+          });
+          
+          mensaje += `────────────────\n`;
+          mensaje += `*TOTAL A PAGAR: ₡${totalFinal.toLocaleString()}*\n`;
+          mensaje += `*Método de Pago:* SINPE MÓVIL\n\n`;
+          mensaje += `Quedo atento a la cuenta SINPE para enviar el comprobante. ✅`;
+
+          window.open(`https://wa.me/50672327096?text=${encodeURIComponent(mensaje)}`, '_blank');
+          setLoadingPay(false);
+          return;
+      }
+
+      if (metodoPago === 'tarjeta') {
+          const orderData = {
+            cliente: {
+              nombre: formData.nombre,
+              telefono: formData.telefono,
+              correo: formData.correo,
+              direccion: direccionFinal
+            },
+            productos: cart.map(item => ({
+              _id: item._id || item.id,
+              nombre: item.name,
+              precio: item.discountPrice || item.price,
+              cantidad: item.quantity,
+              tallaSeleccionada: item.selectedSize,
+              version: item.type,
+              imgs: [item.imageSrc]
+            })),
+            envio: {
+              metodo: metodoEnvioFinal,
+              precio: precioEnvioFinal
+            },
+            total: totalFinal
+          };
+
           const res = await fetch(`${API_BASE}/api/tilopay/create-link`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -298,14 +352,14 @@ export default function Checkout() {
             window.location.href = data.url; 
           } else {
             toast.error("No se recibió el link de pago.");
+            setLoadingPay(false);
           }
+      }
 
-        } catch (error) {
-          console.error("DETALLE DEL ERROR TILOPAY:", error);
-          toast.error("Error conectando con el banco. Intenta de nuevo.");
-        } finally {
-          setLoadingPay(false);
-        }
+    } catch (error) {
+      console.error("DETALLE DEL ERROR:", error);
+      toast.error("Hubo un problema de conexión al procesar la orden. Intenta de nuevo.");
+      setLoadingPay(false);
     }
   };
 
@@ -344,6 +398,20 @@ export default function Checkout() {
           </button>
           
           <h2 className="text-2xl font-black italic uppercase mb-6">Finalizar Compra</h2>
+
+          {/* 🏆 BANNER ROJO DE ALERTA PROACTIVA */}
+          {outOfStockItems.length > 0 && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+              <div className="flex items-center gap-2 font-bold mb-2">
+                <FaExclamationTriangle />
+                <span>¡Atención! Hay artículos agotados en tu carrito:</span>
+              </div>
+              <ul className="list-disc ml-6 text-sm mb-2 font-medium">
+                {outOfStockItems.map((err, i) => <li key={i}>{err}</li>)}
+              </ul>
+              <p className="text-sm">Por favor, elimínalos del resumen de la derecha para poder continuar con tu compra.</p>
+            </div>
+          )}
           
           <form onSubmit={handleProcessOrder} className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
@@ -371,7 +439,6 @@ export default function Checkout() {
                </div>
             </div>
 
-            {/* SELECCIÓN DE TIPO DE ENTREGA */}
             <div className="border-t pt-4">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> ¿Cómo quieres recibir tu pedido?</p>
                 <div className="grid grid-cols-2 gap-4">
@@ -388,7 +455,6 @@ export default function Checkout() {
                 </div>
             </div>
 
-            {/* FORMULARIO DE DIRECCIÓN (SOLO SI ES ENVÍO) */}
             {tipoEntrega === "envio" && (
                 <div className="border-t pt-4 animate-fade-in">
                   <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> Dirección de Envío</p>
@@ -410,7 +476,6 @@ export default function Checkout() {
                 </div>
             )}
 
-            {/* OPCIONES DE ENVÍO (SOLO SI ES ENVÍO Y HAY OPCIONES) */}
             {tipoEntrega === "envio" && opcionesEnvio.length > 0 && (
               <div className="border-t pt-4 animate-fade-in">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaTruck/> Método de Envío</p>
@@ -447,8 +512,18 @@ export default function Checkout() {
                 </div>
             </div>
             
-            <button type="submit" disabled={loadingPay} className="w-full py-4 rounded-xl font-bold text-lg bg-black text-white hover:bg-gray-800 transition shadow-lg mt-6">
-               {loadingPay ? "Procesando..." : metodoPago === 'sinpe' ? "ENVIAR PEDIDO POR WHATSAPP" : "PAGAR CON TARJETA"}
+            {/* 🏆 BOTÓN BLOQUEADO SI ESTÁ VERIFICANDO O SI HAY ERRORES */}
+            <button 
+              type="submit" 
+              disabled={loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0} 
+              className={`w-full py-4 rounded-xl font-bold text-lg text-white transition shadow-lg mt-6 
+                ${(loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0) ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}
+            >
+               {verifyingCartOnLoad ? "Revisando disponibilidad..." 
+                  : loadingPay ? "Procesando..." 
+                  : outOfStockItems.length > 0 ? "QUITA LOS AGOTADOS"
+                  : metodoPago === 'sinpe' ? "ENVIAR PEDIDO POR WHATSAPP" 
+                  : "PAGAR CON TARJETA"}
             </button>
           </form>
         </div>
@@ -457,17 +532,23 @@ export default function Checkout() {
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-fit lg:sticky lg:top-28">
           <h3 className="font-bold text-lg mb-4 border-b pb-2">Resumen</h3>
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
-            {cart.map((item, index) => (
-              <div key={`${item._id}-${index}`} className="flex gap-4 items-start border-b border-gray-50 pb-4">
-                <img src={item.imageSrc} className="w-16 h-16 object-contain rounded border" alt={item.name} />
-                <div className="flex-1">
-                    <p className="font-bold text-xs uppercase">{item.name}</p>
-                    <p className="text-[10px] text-gray-500">Talla: {item.selectedSize} | Cant: {item.quantity}</p>
-                    <p className="font-bold text-sm">₡{((item.discountPrice || item.price) * item.quantity).toLocaleString()}</p>
-                </div>
-                <button onClick={() => removeFromCart(item._id || item.id, item.selectedSize)} className="text-gray-400 hover:text-red-600 p-2"><FaTrash size={14}/></button>
-              </div>
-            ))}
+            {cart.map((item, index) => {
+               // Resaltamos en rojo los ítems en el resumen si están agotados
+               const isExhausted = outOfStockItems.some(errText => errText.includes(item.name) && errText.includes(item.selectedSize));
+
+               return (
+                  <div key={`${item._id}-${index}`} className={`flex gap-4 items-start border-b pb-4 ${isExhausted ? 'bg-red-50 p-2 rounded border-red-200' : 'border-gray-50'}`}>
+                    <img src={item.imageSrc} className="w-16 h-16 object-contain rounded border bg-white" alt={item.name} />
+                    <div className="flex-1">
+                        <p className={`font-bold text-xs uppercase ${isExhausted ? 'text-red-700' : ''}`}>{item.name}</p>
+                        <p className="text-[10px] text-gray-500">Talla: {item.selectedSize} | Cant: {item.quantity}</p>
+                        <p className="font-bold text-sm">₡{((item.discountPrice || item.price) * item.quantity).toLocaleString()}</p>
+                        {isExhausted && <span className="text-[10px] font-bold text-red-600">Agotado</span>}
+                    </div>
+                    <button onClick={() => removeFromCart(item._id || item.id, item.selectedSize)} className="text-gray-400 hover:text-red-600 p-2"><FaTrash size={14}/></button>
+                  </div>
+               )
+            })}
           </div>
 
           <div className="border-t mt-6 pt-4 space-y-2 text-sm font-bold">
