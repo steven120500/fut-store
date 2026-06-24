@@ -32,7 +32,9 @@ export default function Checkout() {
   const [tipoEntrega, setTipoEntrega] = useState("envio");
   const [opcionesEnvio, setOpcionesEnvio] = useState([]); 
   const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
-  const [metodoPago, setMetodoPago] = useState("tarjeta");
+  
+  // 🏆 CAMBIO: Arrancamos con "sinpe" por defecto mientras se arregla la pasarela
+  const [metodoPago, setMetodoPago] = useState("sinpe");
   
   const [loadingPay, setLoadingPay] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
@@ -234,10 +236,10 @@ export default function Checkout() {
 
     if (tipoEntrega === "envio") {
         if (!selectedProvincia || !selectedCanton || !selectedDistrito || !formData.direccionExacta) {
-             return toast.warning("Por favor completa toda la información de envío.");
+            return toast.warning("Por favor completa toda la información de envío.");
         }
         if (!envioSeleccionado) {
-             return toast.warning("Selecciona un método de envío.");
+            return toast.warning("Selecciona un método de envío.");
         }
     }
 
@@ -415,11 +417,11 @@ export default function Checkout() {
           
           <form onSubmit={handleProcessOrder} className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
-               <div>
+              <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Nombre Completo</label>
                   <input type="text" name="nombre" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="Tu nombre" required />
-               </div>
-               <div className="grid grid-cols-2 gap-3">
+              </div>
+              <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
                     <input 
@@ -436,7 +438,7 @@ export default function Checkout() {
                     <label className="text-xs font-bold text-gray-500 uppercase">Correo</label>
                     <input type="email" name="correo" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="juan@email.com" required />
                   </div>
-               </div>
+              </div>
             </div>
 
             <div className="border-t pt-4">
@@ -459,18 +461,18 @@ export default function Checkout() {
                 <div className="border-t pt-4 animate-fade-in">
                   <p className="font-bold text-sm mb-3 flex items-center gap-2"><FaMapMarkerAlt/> Dirección de Envío</p>
                   <div className="grid grid-cols-3 gap-2 mb-3">
-                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedProvincia} onChange={handleProvinciaChange} required>
-                       <option value="">Provincia</option>
-                       {Object.entries(provincias).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                     </select>
-                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedCanton} onChange={handleCantonChange} disabled={!selectedProvincia} required>
-                       <option value="">Cantón</option>
-                       {Object.entries(cantones).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                     </select>
-                     <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedDistrito} onChange={(e) => setSelectedDistrito(e.target.value)} disabled={!selectedCanton} required>
-                       <option value="">Distrito</option>
-                       {Object.entries(distritos).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
-                     </select>
+                    <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedProvincia} onChange={handleProvinciaChange} required>
+                      <option value="">Provincia</option>
+                      {Object.entries(provincias).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                    </select>
+                    <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedCanton} onChange={handleCantonChange} disabled={!selectedProvincia} required>
+                      <option value="">Cantón</option>
+                      {Object.entries(cantones).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                    </select>
+                    <select className="border p-2 rounded bg-gray-50 text-sm" value={selectedDistrito} onChange={(e) => setSelectedDistrito(e.target.value)} disabled={!selectedCanton} required>
+                      <option value="">Distrito</option>
+                      {Object.entries(distritos).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
+                    </select>
                   </div>
                   <textarea name="direccionExacta" onChange={handleChange} rows="2" className="w-full border p-2 rounded text-sm focus:ring-2 ring-black outline-none" placeholder="Señas exactas..." required></textarea>
                 </div>
@@ -498,12 +500,15 @@ export default function Checkout() {
 
             <div className="border-t pt-4">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2">💳 Método de Pago</p>
-                <div className="grid grid-cols-2 gap-4">
+                {/* 🏆 CAMBIO: Reducimos a 1 columna y comentamos la Tarjeta */}
+                <div className="grid grid-cols-1 gap-4">
+                    {/* ⛔ TEMPORALMENTE DESHABILITADO POR MANTENIMIENTO DE PASARELA
                     <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
                         <input type="radio" name="pago" value="tarjeta" className="hidden" checked={metodoPago === 'tarjeta'} onChange={() => setMetodoPago('tarjeta')} />
                         <FaCreditCard size={24}/>
                         <span className="font-bold text-xs">Tarjeta</span>
                     </label>
+                    */}
                     <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${metodoPago === 'sinpe' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
                         <input type="radio" name="pago" value="sinpe" className="hidden" checked={metodoPago === 'sinpe'} onChange={() => setMetodoPago('sinpe')} />
                         <FaWhatsapp size={24}/>
@@ -519,7 +524,7 @@ export default function Checkout() {
               className={`w-full py-4 rounded-xl font-bold text-lg text-white transition shadow-lg mt-6 
                 ${(loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0) ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}
             >
-               {verifyingCartOnLoad ? "Revisando disponibilidad..." 
+              {verifyingCartOnLoad ? "Revisando disponibilidad..." 
                   : loadingPay ? "Procesando..." 
                   : outOfStockItems.length > 0 ? "QUITA LOS AGOTADOS"
                   : metodoPago === 'sinpe' ? "ENVIAR PEDIDO POR WHATSAPP" 
@@ -533,10 +538,10 @@ export default function Checkout() {
           <h3 className="font-bold text-lg mb-4 border-b pb-2">Resumen</h3>
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
             {cart.map((item, index) => {
-               // Resaltamos en rojo los ítems en el resumen si están agotados
-               const isExhausted = outOfStockItems.some(errText => errText.includes(item.name) && errText.includes(item.selectedSize));
+              // Resaltamos en rojo los ítems en el resumen si están agotados
+              const isExhausted = outOfStockItems.some(errText => errText.includes(item.name) && errText.includes(item.selectedSize));
 
-               return (
+              return (
                   <div key={`${item._id}-${index}`} className={`flex gap-4 items-start border-b pb-4 ${isExhausted ? 'bg-red-50 p-2 rounded border-red-200' : 'border-gray-50'}`}>
                     <img src={item.imageSrc} className="w-16 h-16 object-contain rounded border bg-white" alt={item.name} />
                     <div className="flex-1">
@@ -547,7 +552,7 @@ export default function Checkout() {
                     </div>
                     <button onClick={() => removeFromCart(item._id || item.id, item.selectedSize)} className="text-gray-400 hover:text-red-600 p-2"><FaTrash size={14}/></button>
                   </div>
-               )
+              )
             })}
           </div>
 
