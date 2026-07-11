@@ -13,13 +13,14 @@ import {
 
 const API_BASE = "https://fut-store.onrender.com";
 
-export default function UserListModal({ open, onClose }) {
+// Añadimos 'user' a las props por si el token viene desde el componente padre (Header/App)
+export default function UserListModal({ open, onClose, user }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [confirmingId, setConfirmingId] = useState(null); 
   
-  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const currentUser = user || JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     if (!open) return;
@@ -30,7 +31,7 @@ export default function UserListModal({ open, onClose }) {
     setLoading(true);
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = freshUser?.token || currentUser?.token || localStorage.getItem("token"); 
+      const token = user?.token || freshUser?.token || currentUser?.token || localStorage.getItem("token") || ""; 
       
       const res = await fetch(`${API_BASE}/api/auth/users`, { 
         headers: { 
@@ -63,7 +64,7 @@ export default function UserListModal({ open, onClose }) {
     setConfirmingId(u._id);
   }
 
-  // 🔥 FUNCIÓN DE BORRADO BLINDADA
+  // 🔥 FUNCIÓN DE BORRADO LIBERADA
   async function executeDelete(userToDelete) {
     console.log("🟡 1. Iniciando proceso de borrado...");
     const targetId = userToDelete._id || userToDelete.id;
@@ -74,23 +75,19 @@ export default function UserListModal({ open, onClose }) {
     }
 
     setDeletingId(targetId);
-    setConfirmingId(null); // Cierra la barra roja
+    setConfirmingId(null); 
     
-    // Avisito para confirmar que sí dimos clic
-    toastHOT.loading("Procesando...", { id: "borrando" });
+    toastHOT.loading("Borrando usuario...", { id: "borrando" });
 
     try {
-      // Rastreamos el token en todos los escondites del navegador
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = freshUser?.token || currentUser?.token || localStorage.getItem("token") || sessionStorage.getItem("token");
+      
+      // Buscamos el token en todas partes (Props, LocalStorage, SessionStorage)
+      const token = user?.token || freshUser?.token || currentUser?.token || localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 
-      console.log("🟡 2. Token:", token ? "Encontrado" : "Nulo");
+      console.log("🟡 2. Token:", token ? "Encontrado" : "Nulo (Permitiendo paso hacia el servidor)");
 
-      if (!token) {
-        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.", { id: "borrando" });
-        setDeletingId(null);
-        return;
-      }
+      // 🛑 ELIMINAMOS EL BLOQUEO DE "if (!token) return;" PARA QUE LA PETICIÓN VUELE AL SERVIDOR
 
       const res = await fetch(`${API_BASE}/api/auth/users/${targetId}`, {
         method: "DELETE",
@@ -108,6 +105,7 @@ export default function UserListModal({ open, onClose }) {
         throw new Error(errorData.message || errorData.error || "Fallo al eliminar el usuario");
       }
 
+      // Si todo salió bien, lo quitamos de la lista
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
       toastHOT.success(`Usuario eliminado correctamente`, { id: "borrando" });
