@@ -6,7 +6,6 @@ import {
   FaUserShield, 
   FaUser, 
   FaSpinner, 
-  FaExclamationTriangle, 
   FaShieldAlt 
 } from "react-icons/fa";
 
@@ -15,8 +14,9 @@ const API_BASE = "https://fut-store.onrender.com";
 export default function UserListModal({ open, onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   
-  // Obtenemos usuario actual de localStorage
+  // Obtenemos el usuario actual de localStorage
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
@@ -27,7 +27,9 @@ export default function UserListModal({ open, onClose }) {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const token = currentUser.token; 
+      const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const token = freshUser.token || currentUser.token; 
+      
       const res = await fetch(`${API_BASE}/api/auth/users`, { 
         headers: { 
             Accept: "application/json",
@@ -41,13 +43,14 @@ export default function UserListModal({ open, onClose }) {
       setUsers(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      toastHOT.error("No se pudo cargar la lista");
+      toastHOT.error("No se pudo cargar la lista de usuarios");
     } finally {
       setLoading(false);
     }
   };
 
-  function askDeleteUser(userToDelete) {
+  // 🔥 Función de borrado robusta y directa con confirmación nativa
+  async function askDeleteUser(userToDelete) {
     if (currentUser.email === userToDelete.email) {
       toastHOT.error("No puedes eliminar tu propia cuenta.");
       return;
@@ -58,47 +61,24 @@ export default function UserListModal({ open, onClose }) {
     }
 
     const nameToShow = getDisplayName(userToDelete);
+    
+    // Alerta nativa (100% segura, nunca falla ni se esconde detrás del modal)
+    const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar permanentemente a "${nameToShow}"? Esta acción no se puede deshacer.`);
+    
+    if (!confirmDelete) return;
 
-    toastHOT((t) => (
-      <div className="flex flex-col gap-3 p-1 max-w-xs">
-        <div className="flex items-center gap-2 text-red-600 font-bold">
-          <FaExclamationTriangle size={18} />
-          <span>Confirmar eliminación</span>
-        </div>
-        <p className="text-xs text-gray-600 leading-relaxed">
-          ¿Estás seguro de que deseas eliminar permanentemente a <strong className="text-black">{nameToShow}</strong>?
-        </p>
-        <div className="flex gap-2 justify-end mt-1">
-          <button
-            onClick={() => toastHOT.dismiss(t.id)}
-            className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-200 transition"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={() => { toastHOT.dismiss(t.id); doDeleteUser(userToDelete._id); }}
-            className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-700 transition shadow-sm shadow-red-200"
-          >
-            Sí, eliminar
-          </button>
-        </div>
-      </div>
-    ), { duration: 5000 });
-  }
-
-  async function doDeleteUser(userId) {
-    if (!userId) return toastHOT.error("Error: ID inválido");
+    setDeletingId(userToDelete._id);
 
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
       const token = freshUser.token;
 
       if (!token) {
-        toastHOT.error("Sesión expirada.");
+        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.");
         return;
       }
 
-      const res = await fetch(`${API_BASE}/api/auth/users/${userId}`, {
+      const res = await fetch(`${API_BASE}/api/auth/users/${userToDelete._id}`, {
         method: "DELETE",
         headers: { 
             Authorization: `Bearer ${token}`,
@@ -107,14 +87,18 @@ export default function UserListModal({ open, onClose }) {
       });
 
       if (!res.ok) {
-        throw new Error("Fallo al eliminar");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || "Fallo al eliminar el usuario");
       }
 
-      setUsers((prev) => prev.filter((u) => u._id !== userId));
-      toastHOT.success("Usuario eliminado correctamente");
+      // Actualizar la lista en pantalla
+      setUsers((prev) => prev.filter((u) => u._id !== userToDelete._id));
+      toastHOT.success(`Usuario "${nameToShow}" eliminado correctamente.`);
     } catch (e) {
-      console.error(e);
-      toastHOT.error("Error al eliminar usuario");
+      console.error("Error eliminando:", e);
+      toastHOT.error(e.message || "Error al eliminar usuario");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -125,7 +109,6 @@ export default function UserListModal({ open, onClose }) {
     return u.username || u.email || "Usuario";
   };
 
-  // Helper para generar iniciales del Avatar
   const getInitials = (name) => {
     const parts = name.split(" ").filter(Boolean);
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
@@ -133,7 +116,6 @@ export default function UserListModal({ open, onClose }) {
     return "US";
   };
 
-  // Helper para renderizar badges visuales según el rol
   const renderRoleBadges = (u) => {
     if (u.isSuperUser) {
       return (
@@ -166,11 +148,14 @@ export default function UserListModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] transition-all transform scale-100">
+    // ⭐ CENTRADO PERFECTO: fixed, inset-0, z-[9999] y flex items-center justify-center
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
+      
+      {/* Contenedor principal con altura máxima controlada */}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn">
         
         {/* Encabezado */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
               <FaUserShield size={18} />
@@ -183,15 +168,15 @@ export default function UserListModal({ open, onClose }) {
           
           <button 
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-black flex items-center justify-center transition-colors"
+            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold"
             title="Cerrar modal"
           >
             <FaTimes size={14} />
           </button>
         </div>
 
-        {/* Lista de Usuarios */}
-        <div className="p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
+        {/* Lista de Usuarios (con scroll interno) */}
+        <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
               <FaSpinner className="animate-spin text-black" size={28} />
@@ -203,7 +188,6 @@ export default function UserListModal({ open, onClose }) {
                 <FaUser size={24} />
               </div>
               <p className="text-sm font-bold text-gray-600">No se encontraron usuarios</p>
-              <p className="text-xs text-gray-400">La base de datos parece estar vacía.</p>
             </div>
           ) : (
             users.map((u) => {
@@ -212,6 +196,7 @@ export default function UserListModal({ open, onClose }) {
               const isSuper = u.isSuperUser;
               const canDelete = !isMe && !isSuper; 
               const initials = getInitials(displayName);
+              const isDeletingThis = deletingId === u._id;
 
               return (
                 <div 
@@ -224,7 +209,6 @@ export default function UserListModal({ open, onClose }) {
                 >
                   {/* Izquierda: Avatar, Nombre y Rol */}
                   <div className="flex items-center gap-3.5 min-w-0">
-                    {/* Avatar circular */}
                     <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${
                       isSuper 
                         ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' 
@@ -258,13 +242,22 @@ export default function UserListModal({ open, onClose }) {
                     {canDelete ? (
                       <button 
                         onClick={() => askDeleteUser(u)}
-                        className="w-9 h-9 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-all border border-transparent hover:border-red-100"
+                        disabled={isDeletingThis}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
+                          isDeletingThis 
+                            ? 'bg-red-500 text-white cursor-wait' 
+                            : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'
+                        }`}
                         title="Eliminar usuario"
                       >
-                        <FaTrash size={13} />
+                        {isDeletingThis ? (
+                          <FaSpinner className="animate-spin" size={14} />
+                        ) : (
+                          <FaTrash size={13} />
+                        )}
                       </button>
                     ) : (
-                      <span className="text-[10px] font-bold tracking-wider uppercase text-gray-300 bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100 select-none">
+                      <span className="text-[10px] font-bold tracking-wider uppercase text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 select-none">
                         {isMe ? "Activo" : "Protegido"}
                       </span>
                     )}
@@ -276,11 +269,11 @@ export default function UserListModal({ open, onClose }) {
         </div>
 
         {/* Pie del modal */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs text-gray-400 font-medium">
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
           <button 
             onClick={onClose}
-            className="font-bold text-gray-600 hover:text-black transition-colors"
+            className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs"
           >
             Cerrar ventana
           </button>
