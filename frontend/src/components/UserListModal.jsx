@@ -65,12 +65,9 @@ export default function UserListModal({ open, onClose }) {
     setConfirmingId(u._id);
   }
 
-  // 🔥 FUNCIÓN DE BORRADO CON RASTREADORES
+  // 🔥 FUNCIÓN DE BORRADO
   async function executeDelete(userToDelete) {
-    console.log("🟡 1. Botón 'Sí, borrar' presionado.");
-    
     const targetId = userToDelete._id || userToDelete.id;
-    console.log("🟡 2. ID extraído para borrar:", targetId);
 
     if (!targetId) {
       toastHOT.error("Error crítico: ID no encontrado.");
@@ -82,16 +79,14 @@ export default function UserListModal({ open, onClose }) {
 
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = freshUser.token;
-      console.log("🟡 3. Token encontrado:", token ? "Sí" : "No");
+      const token = freshUser.token || localStorage.getItem("token") || currentUser?.token;
 
       if (!token) {
-        toastHOT.error("Tu sesión ha expirado.");
+        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.");
+        setDeletingId(null);
         return;
       }
 
-      console.log(`🟡 4. Haciendo petición DELETE a: ${API_BASE}/api/auth/users/${targetId}`);
-      
       const res = await fetch(`${API_BASE}/api/auth/users/${targetId}`, {
         method: "DELETE",
         headers: { 
@@ -101,15 +96,11 @@ export default function UserListModal({ open, onClose }) {
         },
       });
 
-      console.log("🟡 5. Código de respuesta del servidor:", res.status);
-
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        console.error("🔴 6. El servidor devolvió error:", errorData);
         throw new Error(errorData.message || errorData.error || "Fallo al eliminar el usuario");
       }
 
-      console.log("🟢 7. ¡Borrado exitoso en la base de datos!");
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
       toastHOT.custom((t) => (
@@ -120,7 +111,7 @@ export default function UserListModal({ open, onClose }) {
       ), { duration: 3500, position: "top-right" });
 
     } catch (e) {
-      console.error("🔴 8. Error capturado:", e);
+      console.error("🔴 Error capturado:", e);
       toastHOT.error(e.message || "Error al eliminar usuario");
     } finally {
       setDeletingId(null);
@@ -173,9 +164,10 @@ export default function UserListModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
         
+        {/* Encabezado */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
@@ -192,6 +184,7 @@ export default function UserListModal({ open, onClose }) {
           </button>
         </div>
 
+        {/* Lista de Usuarios */}
         <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
@@ -268,6 +261,7 @@ export default function UserListModal({ open, onClose }) {
           )}
         </div>
 
+        {/* Pie del modal */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
           <button onClick={onClose} className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs">Cerrar ventana</button>
