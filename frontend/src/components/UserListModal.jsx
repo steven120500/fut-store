@@ -17,8 +17,6 @@ export default function UserListModal({ open, onClose }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  
-  // Estado para la confirmación en línea
   const [confirmingId, setConfirmingId] = useState(null); 
   
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -32,7 +30,7 @@ export default function UserListModal({ open, onClose }) {
     setLoading(true);
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = freshUser.token || currentUser.token; 
+      const token = freshUser?.token || currentUser?.token || localStorage.getItem("token"); 
       
       const res = await fetch(`${API_BASE}/api/auth/users`, { 
         headers: { 
@@ -54,7 +52,7 @@ export default function UserListModal({ open, onClose }) {
   };
 
   function startDeleteConfirm(u) {
-    if (currentUser.email === u.email) {
+    if (currentUser?.email === u.email) {
       toastHOT.error("No puedes eliminar tu propia cuenta.");
       return;
     }
@@ -65,24 +63,31 @@ export default function UserListModal({ open, onClose }) {
     setConfirmingId(u._id);
   }
 
-  // 🔥 FUNCIÓN DE BORRADO
+  // 🔥 FUNCIÓN DE BORRADO BLINDADA
   async function executeDelete(userToDelete) {
+    console.log("🟡 1. Iniciando proceso de borrado...");
     const targetId = userToDelete._id || userToDelete.id;
 
     if (!targetId) {
-      toastHOT.error("Error crítico: ID no encontrado.");
+      toastHOT.error("Error: ID no encontrado.");
       return;
     }
 
     setDeletingId(targetId);
-    setConfirmingId(null); 
+    setConfirmingId(null); // Cierra la barra roja
+    
+    // Avisito para confirmar que sí dimos clic
+    toastHOT.loading("Procesando...", { id: "borrando" });
 
     try {
+      // Rastreamos el token en todos los escondites del navegador
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
-      const token = freshUser.token || localStorage.getItem("token") || currentUser?.token;
+      const token = freshUser?.token || currentUser?.token || localStorage.getItem("token") || sessionStorage.getItem("token");
+
+      console.log("🟡 2. Token:", token ? "Encontrado" : "Nulo");
 
       if (!token) {
-        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.");
+        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.", { id: "borrando" });
         setDeletingId(null);
         return;
       }
@@ -96,6 +101,8 @@ export default function UserListModal({ open, onClose }) {
         },
       });
 
+      console.log("🟡 3. Status Backend:", res.status);
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.message || errorData.error || "Fallo al eliminar el usuario");
@@ -103,16 +110,11 @@ export default function UserListModal({ open, onClose }) {
 
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
-      toastHOT.custom((t) => (
-        <div className="bg-black text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-gray-800 animate-fadeIn">
-          <FaCheckCircle className="text-green-400 text-lg flex-shrink-0" />
-          <p className="text-xs font-bold tracking-wide">Usuario eliminado correctamente</p>
-        </div>
-      ), { duration: 3500, position: "top-right" });
+      toastHOT.success(`Usuario eliminado correctamente`, { id: "borrando" });
 
     } catch (e) {
-      console.error("🔴 Error capturado:", e);
-      toastHOT.error(e.message || "Error al eliminar usuario");
+      console.error("🔴 Error:", e);
+      toastHOT.error(e.message || "Error al eliminar usuario", { id: "borrando" });
     } finally {
       setDeletingId(null);
     }
@@ -164,7 +166,7 @@ export default function UserListModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
         
         {/* Encabezado */}
@@ -201,7 +203,7 @@ export default function UserListModal({ open, onClose }) {
           ) : (
             users.map((u) => {
               const displayName = getDisplayName(u);
-              const isMe = (currentUser.email === u.email);
+              const isMe = (currentUser?.email === u.email);
               const isSuper = u.isSuperUser;
               const canDelete = !isMe && !isSuper; 
               const initials = getInitials(displayName);
@@ -220,7 +222,7 @@ export default function UserListModal({ open, onClose }) {
                       <button onClick={() => setConfirmingId(null)} className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition border border-gray-200">
                         Cancelar
                       </button>
-                      <button onClick={() => executeDelete(u)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-200 flex items-center gap-1.5">
+                      <button onClick={() => executeDelete(u)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-200 flex items-center gap-1.5 cursor-pointer">
                         <FaTrash size={11} /> Sí, borrar
                       </button>
                     </div>
@@ -246,7 +248,7 @@ export default function UserListModal({ open, onClose }) {
 
                   <div className="pl-3 flex-shrink-0">
                     {canDelete ? (
-                      <button onClick={() => startDeleteConfirm(u)} disabled={isDeletingThis} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isDeletingThis ? 'bg-red-500 text-white cursor-wait' : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'}`}>
+                      <button onClick={() => startDeleteConfirm(u)} disabled={isDeletingThis} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isDeletingThis ? 'bg-red-500 text-white cursor-wait' : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent cursor-pointer'}`}>
                         {isDeletingThis ? <FaSpinner className="animate-spin" size={14} /> : <FaTrash size={13} />}
                       </button>
                     ) : (
@@ -264,7 +266,7 @@ export default function UserListModal({ open, onClose }) {
         {/* Pie del modal */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
-          <button onClick={onClose} className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs">Cerrar ventana</button>
+          <button onClick={onClose} className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs cursor-pointer">Cerrar ventana</button>
         </div>
 
       </div>
