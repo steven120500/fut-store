@@ -18,7 +18,7 @@ export default function UserListModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   
-  // ⭐ ESTADO PARA LA CONFIRMACIÓN EN LÍNEA: Guarda el ID del usuario que estamos por borrar
+  // Estado para la confirmación en línea
   const [confirmingId, setConfirmingId] = useState(null); 
   
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -53,7 +53,6 @@ export default function UserListModal({ open, onClose }) {
     }
   };
 
-  // Paso 1: Al dar clic al basurero, activamos el modo confirmación en ese renglón
   function startDeleteConfirm(u) {
     if (currentUser.email === u.email) {
       toastHOT.error("No puedes eliminar tu propia cuenta.");
@@ -66,23 +65,33 @@ export default function UserListModal({ open, onClose }) {
     setConfirmingId(u._id);
   }
 
-  // Paso 2: Ejecutar el borrado en el backend
+  // 🔥 FUNCIÓN DE BORRADO CON RASTREADORES
   async function executeDelete(userToDelete) {
+    console.log("🟡 1. Botón 'Sí, borrar' presionado.");
+    
     const targetId = userToDelete._id || userToDelete.id;
-    const nameToShow = getDisplayName(userToDelete);
+    console.log("🟡 2. ID extraído para borrar:", targetId);
+
+    if (!targetId) {
+      toastHOT.error("Error crítico: ID no encontrado.");
+      return;
+    }
 
     setDeletingId(targetId);
-    setConfirmingId(null); // Cerramos el modo confirmación
+    setConfirmingId(null); 
 
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
       const token = freshUser.token;
+      console.log("🟡 3. Token encontrado:", token ? "Sí" : "No");
 
       if (!token) {
-        toastHOT.error("Tu sesión ha expirado. Por favor inicia sesión de nuevo.");
+        toastHOT.error("Tu sesión ha expirado.");
         return;
       }
 
+      console.log(`🟡 4. Haciendo petición DELETE a: ${API_BASE}/api/auth/users/${targetId}`);
+      
       const res = await fetch(`${API_BASE}/api/auth/users/${targetId}`, {
         method: "DELETE",
         headers: { 
@@ -92,24 +101,26 @@ export default function UserListModal({ open, onClose }) {
         },
       });
 
+      console.log("🟡 5. Código de respuesta del servidor:", res.status);
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.message || "Fallo al eliminar el usuario");
+        console.error("🔴 6. El servidor devolvió error:", errorData);
+        throw new Error(errorData.message || errorData.error || "Fallo al eliminar el usuario");
       }
 
-      // Actualizamos la lista en pantalla
+      console.log("🟢 7. ¡Borrado exitoso en la base de datos!");
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
-      // ⭐ NOTIFICACIÓN HERMOSA DE ÉXITO
       toastHOT.custom((t) => (
         <div className="bg-black text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-gray-800 animate-fadeIn">
           <FaCheckCircle className="text-green-400 text-lg flex-shrink-0" />
-          <p className="text-xs font-bold tracking-wide">Usuario "{nameToShow}" eliminado</p>
+          <p className="text-xs font-bold tracking-wide">Usuario eliminado correctamente</p>
         </div>
       ), { duration: 3500, position: "top-right" });
 
     } catch (e) {
-      console.error("Error eliminando:", e);
+      console.error("🔴 8. Error capturado:", e);
       toastHOT.error(e.message || "Error al eliminar usuario");
     } finally {
       setDeletingId(null);
@@ -162,10 +173,9 @@ export default function UserListModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+      <div className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
-        {/* Encabezado */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
@@ -177,16 +187,11 @@ export default function UserListModal({ open, onClose }) {
             </div>
           </div>
           
-          <button 
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold"
-            title="Cerrar modal"
-          >
+          <button onClick={onClose} className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold">
             <FaTimes size={14} />
           </button>
         </div>
 
-        {/* Lista de Usuarios */}
         <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
@@ -210,29 +215,19 @@ export default function UserListModal({ open, onClose }) {
               const isDeletingThis = deletingId === u._id;
               const isConfirmingThis = confirmingId === u._id;
 
-              // ⭐ SI ESTAMOS CONFIRMANDO EL BORRADO DE ESTE USUARIO, MOSTRAMOS ESTA BARRA ROJA EN SU LUGAR
               if (isConfirmingThis) {
                 return (
-                  <div 
-                    key={u._id} 
-                    className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 animate-fadeIn gap-3 shadow-inner"
-                  >
+                  <div key={u._id} className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 animate-fadeIn gap-3 shadow-inner">
                     <div className="flex items-center gap-2 text-red-800 text-xs font-bold min-w-0">
                       <FaExclamationTriangle className="text-red-500 flex-shrink-0" size={16} />
                       <span className="truncate">¿Eliminar a <strong className="underline">{displayName}</strong>?</span>
                     </div>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
-                      <button
-                        onClick={() => setConfirmingId(null)}
-                        className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition border border-gray-200"
-                      >
+                      <button onClick={() => setConfirmingId(null)} className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition border border-gray-200">
                         Cancelar
                       </button>
-                      <button
-                        onClick={() => executeDelete(u)}
-                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-200 flex items-center gap-1.5"
-                      >
+                      <button onClick={() => executeDelete(u)} className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-200 flex items-center gap-1.5">
                         <FaTrash size={11} /> Sí, borrar
                       </button>
                     </div>
@@ -240,62 +235,26 @@ export default function UserListModal({ open, onClose }) {
                 );
               }
 
-              // RENDERIZADO NORMAL DEL USUARIO
               return (
-                <div 
-                  key={u._id} 
-                  className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                    isMe 
-                      ? 'bg-gray-50/80 border-gray-300 shadow-sm' 
-                      : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
-                  }`}
-                >
+                <div key={u._id} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${isMe ? 'bg-gray-50/80 border-gray-300 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'}`}>
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${
-                      isSuper 
-                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' 
-                        : isMe 
-                          ? 'bg-black text-white' 
-                          : 'bg-gray-100 text-gray-600'
-                    }`}>
+                    <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${isSuper ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' : isMe ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}>
                       {initials}
                     </div>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm text-gray-900 truncate capitalize">
-                          {displayName}
-                        </h3>
-                        {isMe && (
-                          <span className="text-[9px] font-black uppercase tracking-widest bg-black text-white px-1.5 py-0.5 rounded-md">
-                            TÚ
-                          </span>
-                        )}
+                        <h3 className="font-bold text-sm text-gray-900 truncate capitalize">{displayName}</h3>
+                        {isMe && <span className="text-[9px] font-black uppercase tracking-widest bg-black text-white px-1.5 py-0.5 rounded-md">TÚ</span>}
                       </div>
-                      
-                      <div className="mt-1 flex items-center gap-1.5">
-                        {renderRoleBadges(u)}
-                      </div>
+                      <div className="mt-1 flex items-center gap-1.5">{renderRoleBadges(u)}</div>
                     </div>
                   </div>
 
                   <div className="pl-3 flex-shrink-0">
                     {canDelete ? (
-                      <button 
-                        onClick={() => startDeleteConfirm(u)}
-                        disabled={isDeletingThis}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
-                          isDeletingThis 
-                            ? 'bg-red-500 text-white cursor-wait' 
-                            : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'
-                        }`}
-                        title="Eliminar usuario"
-                      >
-                        {isDeletingThis ? (
-                          <FaSpinner className="animate-spin" size={14} />
-                        ) : (
-                          <FaTrash size={13} />
-                        )}
+                      <button onClick={() => startDeleteConfirm(u)} disabled={isDeletingThis} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isDeletingThis ? 'bg-red-500 text-white cursor-wait' : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'}`}>
+                        {isDeletingThis ? <FaSpinner className="animate-spin" size={14} /> : <FaTrash size={13} />}
                       </button>
                     ) : (
                       <span className="text-[10px] font-bold tracking-wider uppercase text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 select-none">
@@ -309,15 +268,9 @@ export default function UserListModal({ open, onClose }) {
           )}
         </div>
 
-        {/* Pie del modal */}
         <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
-          <button 
-            onClick={onClose}
-            className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs"
-          >
-            Cerrar ventana
-          </button>
+          <button onClick={onClose} className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs">Cerrar ventana</button>
         </div>
 
       </div>
