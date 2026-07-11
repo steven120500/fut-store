@@ -111,7 +111,8 @@ router.get('/', async (req, res) => {
       find.type = type;
     }
 
-    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial';
+    // 🔒 Añadido lockedBy a la proyección
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
 
     const [items, total] = await Promise.all([
       Product.find(find).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
@@ -129,6 +130,57 @@ router.get('/', async (req, res) => {
   } catch (err) {
     console.error('❌ CRITICAL ERROR GET /api/products:', err);
     res.status(500).json({ error: 'Error al obtener los productos', details: err.message });
+  }
+});
+
+/* ==================== RUTAS DE BLOQUEO (CANDADO) ================== */
+
+// 🔒 PONER CANDADO
+router.post('/:id/lock', async (req, res) => {
+  try {
+      const product = await Product.findById(req.params.id);
+      if (!product) return res.status(404).json({ error: "Producto no encontrado" });
+
+      const user = whoDidIt(req);
+      const now = new Date();
+
+      // Si ya está bloqueado por OTRA persona, y el bloqueo tiene menos de 10 minutos (600000 ms)
+      if (product.lockedBy && product.lockedBy !== user) {
+          const lockAge = now - product.lockedAt;
+          if (lockAge < 600000) { 
+              return res.status(409).json({ 
+                  error: "Bloqueado", 
+                  lockedBy: product.lockedBy 
+              });
+          }
+      }
+
+      // Si no está bloqueado, o el bloqueo expiró, se lo asignamos a este usuario
+      product.lockedBy = user;
+      product.lockedAt = now;
+      await product.save();
+
+      res.json({ success: true, lockedBy: user });
+  } catch (err) {
+      res.status(500).json({ error: "Error al bloquear producto" });
+  }
+});
+
+// 🔓 QUITAR CANDADO
+router.post('/:id/unlock', async (req, res) => {
+  try {
+      const product = await Product.findById(req.params.id);
+      const user = whoDidIt(req);
+
+      // Solo el usuario que lo bloqueó puede desbloquearlo
+      if (product && product.lockedBy === user) {
+          product.lockedBy = null;
+          product.lockedAt = null;
+          await product.save();
+      }
+      res.json({ success: true });
+  } catch (err) {
+      res.status(500).json({ error: "Error al desbloquear producto" });
   }
 });
 
@@ -219,6 +271,15 @@ router.put('/:id', async (req, res) => {
     const prev = await Product.findById(req.params.id).lean();
     if (!prev) return res.status(404).json({ error: 'Producto no encontrado' });
 
+    // 🛡️ Seguridad extra: verificar que nadie más tenga el candado al momento de guardar
+    const user = whoDidIt(req);
+    if (prev.lockedBy && prev.lockedBy !== user) {
+      const lockAge = new Date() - prev.lockedAt;
+      if (lockAge < 600000) {
+        return res.status(409).json({ error: "Producto bloqueado por otro usuario", lockedBy: prev.lockedBy });
+      }
+    }
+
     let incomingStock = req.body.stock;
     if (typeof incomingStock === 'string') { try { incomingStock = JSON.parse(incomingStock); } catch {} }
     let nextStock = prev.stock;
@@ -236,6 +297,9 @@ router.put('/:id', async (req, res) => {
       discountPrice: (req.body.discountPrice !== undefined && req.body.discountPrice !== '') ? Number(req.body.discountPrice) : prev.discountPrice,
       stock: nextStock,
       bodega: nextBodega,
+      // ⭐ Aseguramos que el candado se limpie al guardar exitosamente
+      lockedBy: null,
+      lockedAt: null
     };
 
     if (req.body.isNew !== undefined) {

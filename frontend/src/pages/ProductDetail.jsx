@@ -45,6 +45,7 @@ export default function ProductDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showConfirmSave, setShowConfirmSave] = useState(false); // 🔒 Confirmación antes de guardar
 
   const [editedName, setEditedName] = useState('');
   const [editedPrice, setEditedPrice] = useState(0);
@@ -52,12 +53,14 @@ export default function ProductDetail({
   const [editedType, setEditedType] = useState('Player');
   const [editedStock, setEditedStock] = useState({});
   const [editedIsNew, setEditedIsNew] = useState(false);
-  const [editedIsMundial, setEditedIsMundial] = useState(false); // 🏆 NUEVO: Estado para editar clasificación mundialista
+  const [editedIsMundial, setEditedIsMundial] = useState(false); 
   const [localImages, setLocalImages] = useState([]);
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
   const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
   const canSeeHistory = user?.isSuperUser || user?.roles?.includes("edit");
+  
+  const displayName = user?.username || user?.email || 'Admin';
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -77,6 +80,20 @@ export default function ProductDetail({
     fetchProduct();
   }, [id]);
 
+  // 🔒 Liberar candado si cierran la pestaña o el componente se desmonta mientras editan
+  useEffect(() => {
+    const handleUnload = () => {
+      if (isEditing) {
+        navigator.sendBeacon(`${API_BASE}/api/products/${id}/unlock`);
+      }
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleUnload);
+      if (isEditing) unlockProduct(); 
+    };
+  }, [isEditing, id]);
+
   const syncEditState = (data) => {
     setEditedName(data.name || '');
     setEditedPrice(data.price ?? 0);
@@ -84,7 +101,7 @@ export default function ProductDetail({
     setEditedType(data.type || 'Player');
     setEditedStock({ ...(data.stock || {}) });
     setEditedIsNew(Boolean(data.isNew));
-    setEditedIsMundial(Boolean(data.isMundial)); // 🏆 NUEVO: Sincroniza el valor guardado
+    setEditedIsMundial(Boolean(data.isMundial)); 
     
     let imgs = [];
     if (Array.isArray(data.images) && data.images.length > 0) {
@@ -98,11 +115,74 @@ export default function ProductDetail({
     setLocalImages(imgs.map(src => ({ src, isNew: false })));
   };
 
+  // 🔒 Función para pedir candado de edición
+  const lockProduct = async () => {
+    if (!id) return false;
+    setLoadingAction(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${id}/lock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user": displayName },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(`🔒 ${data.lockedBy || 'Alguien'} ya está editando este producto.`);
+        setLoadingAction(false);
+        return false;
+      }
+      setLoadingAction(false);
+      return true;
+    } catch (error) {
+      toast.error("Error al conectar con el servidor.");
+      setLoadingAction(false);
+      return false;
+    }
+  };
+
+  // 🔓 Función para soltar el candado
+  const unlockProduct = async () => {
+    if (!id) return;
+    try {
+      await fetch(`${API_BASE}/api/products/${id}/unlock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user": displayName },
+      });
+    } catch (error) {
+      console.error("Error desbloqueando el producto", error);
+    }
+  };
+
+  const handleEditClick = async () => {
+    const hasLock = await lockProduct();
+    if (hasLock) {
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEditClick = () => {
+    setIsEditing(false);
+    unlockProduct();
+    if (product) syncEditState(product);
+  };
+
+  // 📊 Calcular diferencias para el modal de confirmación
+  const getInventoryChanges = () => {
+    const changes = [];
+    const tallas = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
+    tallas.forEach((size) => {
+      const oldStock = parseInt(product?.stock?.[size] ?? 0, 10);
+      const newStock = parseInt(editedStock?.[size] ?? 0, 10);
+      if (oldStock !== newStock) {
+        changes.push(`Stock [${size}]: ${oldStock} ➔ ${newStock}`);
+      }
+    });
+    return changes;
+  };
+
   const handleSave = async () => {
     if (loadingAction) return;
     setLoadingAction(true);
     try {
-      const displayName = user?.username || 'Admin';
       const cleanStock = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, Math.max(0, parseInt(v, 10) || 0)]));
       const payload = {
         name: editedName.trim(),
@@ -112,18 +192,25 @@ export default function ProductDetail({
         stock: cleanStock(editedStock),
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
-        isMundial: editedIsMundial, // 🏆 NUEVO: Envía el campo actualizado
+        isMundial: editedIsMundial, 
       };
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user': displayName },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Error al actualizar");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 409) {
+          throw new Error(`Producto bloqueado por ${errorData.lockedBy || 'otro usuario'}`);
+        }
+        throw new Error("Error al actualizar");
+      }
       const updated = await res.json();
       setProduct(updated);
       syncEditState(updated);
       setIsEditing(false);
+      setShowConfirmSave(false);
       if (onUpdate) onUpdate(updated);
       toast.success("Guardado correctamente");
     } catch (err) {
@@ -139,7 +226,7 @@ export default function ProductDetail({
     try {
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json', 'x-user': user?.username || 'Admin' },
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
       });
       if (!res.ok) throw new Error("Error al eliminar");
       toast.success("Producto eliminado");
@@ -200,6 +287,7 @@ export default function ProductDetail({
   const currentType = isEditing ? editedType : product.type;
   const tallasVisibles = currentType === 'Balón' ? TALLAS_BALON : (currentType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
+  const inventoryChanges = getInventoryChanges();
 
   return (
     <>
@@ -241,7 +329,7 @@ export default function ProductDetail({
       /> 
 
       <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-        <button onClick={() => navigate(-1)} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
+        <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
           <FaArrowLeft /> Volver al catálogo
         </button>
 
@@ -311,7 +399,6 @@ export default function ProductDetail({
                                       <input type="checkbox" checked={editedIsNew} onChange={e => setEditedIsNew(e.target.checked)} />
                                       <span className="text-xs">¿Etiqueta Nuevo?</span>
                                   </label>
-                                  {/* 🏆 NUEVO: Checkbox para cambiar estado mundialista desde edición */}
                                   <label className="flex items-center gap-2 cursor-pointer select-none text-amber-700 font-bold">
                                       <input type="checkbox" checked={editedIsMundial} onChange={e => setEditedIsMundial(e.target.checked)} />
                                       <span className="text-xs">¿Colección Mundial 2026?</span>
@@ -336,18 +423,20 @@ export default function ProductDetail({
                       {tallasVisibles.map(t => (
                         <div key={t} className="flex flex-col items-center">
                           <span className="text-[10px] text-gray-500 font-bold">{t}</span>
+                          {/* 🔒 Corrección del scroll agregada */}
                           <input type="number" className="w-full border text-center p-1 rounded text-sm focus:border-black outline-none" 
                                 value={editedStock[t] ?? 0} 
+                                onWheel={(e) => e.target.blur()}
                                 onChange={(e) => setEditedStock(prev => ({ ...prev, [t]: e.target.value }))} />
                         </div>
                       ))}
                     </div>
                   </div>
                   <div className="flex gap-3 pt-4 border-t">
-                    <button onClick={handleSave} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                    <button onClick={() => setShowConfirmSave(true)} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
                         {loadingAction ? 'Guardando...' : 'GUARDAR CAMBIOS'}
                     </button>
-                    <button onClick={() => setIsEditing(false)} disabled={loadingAction} className="px-4 border border-gray-300 rounded-lg font-bold hover:bg-gray-100">CANCELAR</button>
+                    <button onClick={handleCancelEditClick} disabled={loadingAction} className="px-4 border border-gray-300 rounded-lg font-bold hover:bg-gray-100">CANCELAR</button>
                   </div>
               </div>
             ) : (
@@ -356,7 +445,6 @@ export default function ProductDetail({
                   <div className="flex items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
-                      {/* 🏆 VISTA DEL DETALLE: Muestra badge de colección si está marcado */}
                       {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
                   </div>
                   <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight text-black">{product.name}</h1>
@@ -373,7 +461,6 @@ export default function ProductDetail({
                 </div>
 
                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
-                  {/* 👇 LETRERO RECOMENDACIÓN TALLA PLAYER 👇 */}
                   {product.type === "Player" && (
                     <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
                       <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
@@ -424,7 +511,7 @@ export default function ProductDetail({
                   <div className="mt-12 pt-6 border-t border-gray-100">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 text-center tracking-widest">Zona Administrativa</p>
                     <div className="flex gap-3">
-                      {isSuperUser && <button onClick={() => setIsEditing(true)} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR</button>}
+                      {isSuperUser && <button onClick={handleEditClick} disabled={loadingAction} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR</button>}
                       {canDelete && <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><FaTrash /> ELIMINAR</button>}
                     </div>
                   </div>
@@ -466,6 +553,29 @@ export default function ProductDetail({
                   </button>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 🔒 MODAL CONFIRMACIÓN DE GUARDADO */}
+        <AnimatePresence>
+          {showConfirmSave && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center text-black">
+                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-black"><FaEdit size={24} /></div>
+                <h3 className="text-lg font-bold mb-2">¿Guardar estos cambios?</h3>
+                {inventoryChanges.length > 0 ? (
+                  <div className="text-left bg-gray-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto shadow-inner">
+                    {inventoryChanges.map((change, i) => (<div key={i} className="py-1">{change}</div>))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500 mb-4 font-medium">Se actualizarán los datos generales del producto.</p>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => setShowConfirmSave(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm">Cancelar</button>
+                  <button onClick={handleSave} className="flex-1 py-2 bg-black text-white rounded-lg font-bold text-sm hover:bg-gray-800">{loadingAction ? '...' : 'Guardar'}</button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

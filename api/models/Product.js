@@ -76,6 +76,18 @@ const productSchema = new mongoose.Schema(
 
     // 🏆 NUEVO: Campo para identificar artículos del Mundial 2026
     isMundial: { type: Boolean, default: false },
+
+    /* =========================
+       🔒 CAMPOS PARA BLOQUEO (CANDADO)
+       ========================= */
+    lockedBy: { 
+      type: String, 
+      default: null 
+    },
+    lockedAt: { 
+      type: Date, 
+      default: null 
+    }
   },
   { timestamps: true }
 );
