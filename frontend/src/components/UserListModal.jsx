@@ -18,8 +18,8 @@ export default function UserListModal({ open, onClose }) {
   const [loading, setLoading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   
-  // ⭐ ESTADO PARA EL MODAL BONITO DE CONFIRMACIÓN
-  const [userToDelete, setUserToDelete] = useState(null); 
+  // ⭐ ESTADO PARA LA CONFIRMACIÓN EN LÍNEA: Guarda el ID del usuario que estamos por borrar
+  const [confirmingId, setConfirmingId] = useState(null); 
   
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -53,8 +53,8 @@ export default function UserListModal({ open, onClose }) {
     }
   };
 
-  // Paso 1: Abrir el modal bonito de confirmación
-  function askDeleteUser(u) {
+  // Paso 1: Al dar clic al basurero, activamos el modo confirmación en ese renglón
+  function startDeleteConfirm(u) {
     if (currentUser.email === u.email) {
       toastHOT.error("No puedes eliminar tu propia cuenta.");
       return;
@@ -63,20 +63,18 @@ export default function UserListModal({ open, onClose }) {
       toastHOT.error("No se puede eliminar al Superadmin.");
       return;
     }
-    setUserToDelete(u);
+    setConfirmingId(u._id);
   }
 
-  // Paso 2: Ejecutar el borrado real y seguro en la base de datos
-  async function executeDelete() {
-    if (!userToDelete) return;
+  // Paso 2: Ejecutar el borrado en el backend
+  async function executeDelete(userToDelete) {
     const targetId = userToDelete._id;
     const nameToShow = getDisplayName(userToDelete);
 
     setDeletingId(targetId);
-    setUserToDelete(null); // Cerramos el modal de alerta
+    setConfirmingId(null); // Cerramos el modo confirmación
 
     try {
-      // Tomamos el token más fresco del navegador
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
       const token = freshUser.token;
 
@@ -99,7 +97,7 @@ export default function UserListModal({ open, onClose }) {
         throw new Error(errorData.error || errorData.message || "Fallo al eliminar el usuario");
       }
 
-      // Actualizamos la lista instantáneamente
+      // Actualizamos la lista en pantalla
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
       // ⭐ NOTIFICACIÓN HERMOSA DE ÉXITO
@@ -164,173 +162,165 @@ export default function UserListModal({ open, onClose }) {
   if (!open) return null;
 
   return (
-    <>
-      {/* 1. MODAL PRINCIPAL DE USUARIOS (z-[50000] y centrado perfecto) */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
-          
-          {/* Encabezado */}
-          <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
-                <FaUserShield size={18} />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-gray-900 tracking-tight">Gestión de Usuarios</h2>
-                <p className="text-xs text-gray-400 font-medium">Administra accesos y roles del sistema</p>
-              </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
+        
+        {/* Encabezado */}
+        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
+              <FaUserShield size={18} />
             </div>
-            
-            <button 
-              onClick={onClose}
-              className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold"
-              title="Cerrar modal"
-            >
-              <FaTimes size={14} />
-            </button>
+            <div>
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">Gestión de Usuarios</h2>
+              <p className="text-xs text-gray-400 font-medium">Administra accesos y roles del sistema</p>
+            </div>
           </div>
+          
+          <button 
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold"
+            title="Cerrar modal"
+          >
+            <FaTimes size={14} />
+          </button>
+        </div>
 
-          {/* Lista de Usuarios */}
-          <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
-                <FaSpinner className="animate-spin text-black" size={28} />
-                <p className="text-xs font-bold uppercase tracking-wider">Cargando usuarios...</p>
+        {/* Lista de Usuarios */}
+        <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+              <FaSpinner className="animate-spin text-black" size={28} />
+              <p className="text-xs font-bold uppercase tracking-wider">Cargando usuarios...</p>
+            </div>
+          ) : users.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-400">
+              <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
+                <FaUser size={24} />
               </div>
-            ) : users.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-400">
-                <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
-                  <FaUser size={24} />
-                </div>
-                <p className="text-sm font-bold text-gray-600">No se encontraron usuarios</p>
-              </div>
-            ) : (
-              users.map((u) => {
-                const displayName = getDisplayName(u);
-                const isMe = (currentUser.email === u.email);
-                const isSuper = u.isSuperUser;
-                const canDelete = !isMe && !isSuper; 
-                const initials = getInitials(displayName);
-                const isDeletingThis = deletingId === u._id;
+              <p className="text-sm font-bold text-gray-600">No se encontraron usuarios</p>
+            </div>
+          ) : (
+            users.map((u) => {
+              const displayName = getDisplayName(u);
+              const isMe = (currentUser.email === u.email);
+              const isSuper = u.isSuperUser;
+              const canDelete = !isMe && !isSuper; 
+              const initials = getInitials(displayName);
+              const isDeletingThis = deletingId === u._id;
+              const isConfirmingThis = confirmingId === u._id;
 
+              // ⭐ SI ESTAMOS CONFIRMANDO EL BORRADO DE ESTE USUARIO, MOSTRAMOS ESTA BARRA ROJA EN SU LUGAR
+              if (isConfirmingThis) {
                 return (
                   <div 
                     key={u._id} 
-                    className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
-                      isMe 
-                        ? 'bg-gray-50/80 border-gray-300 shadow-sm' 
-                        : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
-                    }`}
+                    className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 animate-fadeIn gap-3 shadow-inner"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${
-                        isSuper 
-                          ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' 
-                          : isMe 
-                            ? 'bg-black text-white' 
-                            : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {initials}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-sm text-gray-900 truncate capitalize">
-                            {displayName}
-                          </h3>
-                          {isMe && (
-                            <span className="text-[9px] font-black uppercase tracking-widest bg-black text-white px-1.5 py-0.5 rounded-md">
-                              TÚ
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="mt-1 flex items-center gap-1.5">
-                          {renderRoleBadges(u)}
-                        </div>
-                      </div>
+                    <div className="flex items-center gap-2 text-red-800 text-xs font-bold min-w-0">
+                      <FaExclamationTriangle className="text-red-500 flex-shrink-0" size={16} />
+                      <span className="truncate">¿Eliminar a <strong className="underline">{displayName}</strong>?</span>
                     </div>
 
-                    <div className="pl-3 flex-shrink-0">
-                      {canDelete ? (
-                        <button 
-                          onClick={() => askDeleteUser(u)}
-                          disabled={isDeletingThis}
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
-                            isDeletingThis 
-                              ? 'bg-red-500 text-white cursor-wait' 
-                              : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'
-                          }`}
-                          title="Eliminar usuario"
-                        >
-                          {isDeletingThis ? (
-                            <FaSpinner className="animate-spin" size={14} />
-                          ) : (
-                            <FaTrash size={13} />
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-[10px] font-bold tracking-wider uppercase text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 select-none">
-                          {isMe ? "Activo" : "Protegido"}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+                      <button
+                        onClick={() => setConfirmingId(null)}
+                        className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition border border-gray-200"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => executeDelete(u)}
+                        className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-200 flex items-center gap-1.5"
+                      >
+                        <FaTrash size={11} /> Sí, borrar
+                      </button>
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
+              }
 
-          {/* Pie del modal */}
-          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
-            <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
-            <button 
-              onClick={onClose}
-              className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs"
-            >
-              Cerrar ventana
-            </button>
-          </div>
+              // RENDERIZADO NORMAL DEL USUARIO
+              return (
+                <div 
+                  key={u._id} 
+                  className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${
+                    isMe 
+                      ? 'bg-gray-50/80 border-gray-300 shadow-sm' 
+                      : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${
+                      isSuper 
+                        ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' 
+                        : isMe 
+                          ? 'bg-black text-white' 
+                          : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {initials}
+                    </div>
 
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-sm text-gray-900 truncate capitalize">
+                          {displayName}
+                        </h3>
+                        {isMe && (
+                          <span className="text-[9px] font-black uppercase tracking-widest bg-black text-white px-1.5 py-0.5 rounded-md">
+                            TÚ
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="mt-1 flex items-center gap-1.5">
+                        {renderRoleBadges(u)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pl-3 flex-shrink-0">
+                    {canDelete ? (
+                      <button 
+                        onClick={() => startDeleteConfirm(u)}
+                        disabled={isDeletingThis}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${
+                          isDeletingThis 
+                            ? 'bg-red-500 text-white cursor-wait' 
+                            : 'bg-gray-100 text-gray-500 hover:bg-red-600 hover:text-white border-transparent'
+                        }`}
+                        title="Eliminar usuario"
+                      >
+                        {isDeletingThis ? (
+                          <FaSpinner className="animate-spin" size={14} />
+                        ) : (
+                          <FaTrash size={13} />
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-bold tracking-wider uppercase text-gray-400 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 select-none">
+                        {isMe ? "Activo" : "Protegido"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
+
+        {/* Pie del modal */}
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
+          <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
+          <button 
+            onClick={onClose}
+            className="font-bold text-gray-600 hover:text-black transition-colors px-3 py-1.5 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs"
+          >
+            Cerrar ventana
+          </button>
+        </div>
+
       </div>
-
-      {/* ⭐ 2. MODAL BONITO DE ALERTA DE CONFIRMACIÓN (z-[99999] - Por encima de TODO) */}
-      {userToDelete && (
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center border border-gray-100 transform transition-all scale-100 my-auto">
-            
-            {/* Ícono rojo brillante */}
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
-              <FaExclamationTriangle size={28} />
-            </div>
-
-            <h3 className="text-lg font-black text-gray-900 tracking-tight mb-2">
-              ¿Eliminar usuario?
-            </h3>
-            
-            <p className="text-xs text-gray-500 leading-relaxed mb-6 px-2">
-              Estás a punto de eliminar permanentemente a <strong className="text-black font-extrabold">"{getDisplayName(userToDelete)}"</strong>. Esta acción no se puede deshacer y perderá su acceso de inmediato.
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setUserToDelete(null)}
-                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs transition"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={executeDelete}
-                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-red-200"
-              >
-                Sí, eliminar
-              </button>
-            </div>
-
-          </div>
-        </div>
-      )}
-    </>
+    </div>
   );
 }
