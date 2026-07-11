@@ -154,7 +154,7 @@ export default function UserListModal({ open, onClose }) {
   return (
     <>
       {/* 1. MODAL PRINCIPAL DE LISTA DE USUARIOS (Nivel z-[9000]) */}
-      <div className="fixed inset-0 z-[9000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 md:p-6 overflow-y-auto">
         <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 overflow-hidden flex flex-col max-h-[85vh] my-auto animate-fadeIn relative">
           
           {/* Encabezado */}
