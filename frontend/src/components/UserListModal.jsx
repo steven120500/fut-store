@@ -68,7 +68,7 @@ export default function UserListModal({ open, onClose }) {
 
   // Paso 2: Ejecutar el borrado en el backend
   async function executeDelete(userToDelete) {
-    const targetId = userToDelete._id;
+    const targetId = userToDelete._id || userToDelete.id;
     const nameToShow = getDisplayName(userToDelete);
 
     setDeletingId(targetId);

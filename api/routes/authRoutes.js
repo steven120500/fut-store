@@ -12,14 +12,12 @@ const router = express.Router();
  */
 router.post('/register', async (req, res) => {
   try {
-    // Aceptamos los nuevos campos: firstName, lastName, phone
     const { firstName, lastName, email, phone, password, roles } = req.body;
 
     if (!firstName || !lastName || !email || !phone || !password) {
       return res.status(400).json({ message: 'Todos los campos son obligatorios' });
     }
 
-    // Validación de celular (8 dígitos)
     if (!/^\d{8}$/.test(phone)) {
       return res.status(400).json({ message: 'El celular debe tener exactamente 8 números' });
     }
@@ -32,14 +30,14 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
-      username: email, // 👈 ¡ESTA ES LA LÍNEA MÁGICA QUE FALTABA!
+      username: email, 
       firstName,
       lastName,
       email,
       phone,
       password: hashedPassword,
       roles: roles || [],
-      isSuperUser: false // Por defecto nadie es SuperUser al registrarse así
+      isSuperUser: false 
     });
 
     await newUser.save();
@@ -52,8 +50,7 @@ router.post('/register', async (req, res) => {
 });
 
 /**
- * 2️⃣ LOGIN DE USUARIOS (CORREGIDO)
- * Ahora devuelve el TOKEN para que el frontend pueda usarlo.
+ * 2️⃣ LOGIN DE USUARIOS
  */
 router.post('/login', async (req, res) => {
   try {
@@ -69,15 +66,14 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
-    // 👇 GENERAR TOKEN (ESTO FALTABA)
     const token = jwt.sign(
       { id: user._id, isSuperUser: user.isSuperUser, roles: user.roles },
-      process.env.JWT_SECRET || 'secreto_super_seguro', // Usa tu variable de entorno
+      process.env.JWT_SECRET || 'secreto_super_seguro', 
       { expiresIn: '30d' }
     );
 
     res.json({
-      token, // 👈 Enviamos el token al frontend
+      token, 
       id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
@@ -174,37 +170,44 @@ router.post('/reset-password/:token', async (req, res) => {
 // Obtener todos los usuarios
 router.get('/users', async (req, res) => {
   try {
-    // Opcional: Podrías verificar el token aquí también si quisieras seguridad extra
-    const users = await User.find({}, '-password').sort({ createdAt: -1 }); // Ordenar por más recientes
+    const users = await User.find({}, '-password').sort({ createdAt: -1 }); 
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Error al obtener usuarios' });
   }
 });
 
-// Eliminar usuario (BLINDADO) 🛡️
+// Eliminar usuario (100% BLINDADO) 🛡️
 router.delete('/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    
+    console.log("➡️ Intentando borrar usuario con ID:", id);
 
-    // 1. Verificar si el usuario existe
-    const userToDelete = await User.findById(id);
-    if (!userToDelete) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // 1. Validar que el ID no llegue como "undefined" desde el frontend
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ message: "ID de usuario inválido proporcionado por el sistema." });
     }
 
-    // 2. SEGURIDAD: Impedir borrar al SuperUser desde el backend
+    // 2. Verificar si el usuario a borrar realmente existe
+    const userToDelete = await User.findById(id);
+    if (!userToDelete) {
+      return res.status(404).json({ message: 'Usuario no encontrado en la base de datos' });
+    }
+
+    // 3. SEGURIDAD: Impedir borrar al SuperUser
     if (userToDelete.isSuperUser) {
       return res.status(403).json({ message: '⛔ No se puede eliminar al SuperAdmin' });
     }
 
-    // 3. Eliminar
+    // 4. Eliminar permanentemente
     await User.findByIdAndDelete(id);
+    console.log("✅ Usuario borrado con éxito:", id);
     res.json({ message: 'Usuario eliminado correctamente' });
 
   } catch (error) {
-    console.error("Error al eliminar:", error);
-    res.status(500).json({ message: 'Error interno al eliminar usuario' });
+    console.error("❌ Error interno al eliminar:", error);
+    res.status(500).json({ message: 'Error interno del servidor al eliminar usuario' });
   }
 });
 
