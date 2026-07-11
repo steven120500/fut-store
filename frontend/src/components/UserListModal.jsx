@@ -161,7 +161,7 @@ export default function UserListModal({ open, onClose, user }) {
   return (
     // ⭐ PT-24 / PT-28 PARA BAJAR LA VENTANA Y APARTARLA DE LA CABECERA
     <div 
-      className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pt-24 pb-16 sm:p-8 sm:pt-28"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pt-24 pb-16 sm:p-8 sm:pt-28"
       onClick={handleBackdropClick}
     >
       {/* ⭐ MAX-H-[72VH] PARA QUE NO CHOQUE CON EL BOTÓN FLOTANTE INFERIOR */}
