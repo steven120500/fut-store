@@ -123,8 +123,9 @@ export default function UserListModal({ open, onClose, user }) {
   const renderRoleBadges = (u) => {
     if (u.isSuperUser) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-black text-amber-400 border border-amber-400/30 shadow-sm">
-          <FaShieldAlt size={10} /> Superadmin
+        // ⭐ LETRA DE ADENTRO BLANCA (text-white)
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-black text-white border border-gray-700 shadow-sm">
+          <FaShieldAlt size={10} className="text-amber-400" /> Superadmin
         </span>
       );
     }
@@ -151,7 +152,6 @@ export default function UserListModal({ open, onClose, user }) {
 
   if (!open) return null;
 
-  // Cierra el modal si dan clic en el fondo negro
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -159,13 +159,13 @@ export default function UserListModal({ open, onClose, user }) {
   };
 
   return (
-    // ⭐ El contenedor padre asegura un centrado absoluto
+    // ⭐ PT-24 / PT-28 PARA BAJAR LA VENTANA Y APARTARLA DE LA CABECERA
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 sm:p-8"
+      className="fixed inset-0 z-[50000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pt-24 pb-16 sm:p-8 sm:pt-28"
       onClick={handleBackdropClick}
     >
-      {/* ⭐ Ajusté max-h-[80vh] para que nunca toque el borde superior ni inferior */}
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 flex flex-col overflow-hidden max-h-[80vh] animate-fadeIn relative">
+      {/* ⭐ MAX-H-[72VH] PARA QUE NO CHOQUE CON EL BOTÓN FLOTANTE INFERIOR */}
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 flex flex-col overflow-hidden max-h-[72vh] animate-fadeIn relative">
         
         {/* Encabezado fijo */}
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
@@ -179,16 +179,18 @@ export default function UserListModal({ open, onClose, user }) {
             </div>
           </div>
           
+          {/* ⭐ SOLO LA X QUEDA PARA CERRAR LA VENTANA */}
           <button 
             type="button"
             onClick={onClose} 
             className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold z-10 cursor-pointer"
+            title="Cerrar ventana"
           >
             <FaTimes size={14} />
           </button>
         </div>
 
-        {/* Lista de Usuarios con Scroll interno */}
+        {/* Lista de Usuarios */}
         <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
@@ -278,16 +280,9 @@ export default function UserListModal({ open, onClose, user }) {
           )}
         </div>
 
-        {/* Pie fijo inferior */}
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/80 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
+        {/* ⭐ Pie de página limpio (SIN EL BOTÓN DE CERRAR) */}
+        <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50/80 flex justify-end items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
-          <button 
-            type="button"
-            onClick={onClose} 
-            className="font-bold text-gray-600 hover:text-black transition-colors px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-xs cursor-pointer z-10"
-          >
-            Cerrar ventana
-          </button>
         </div>
 
       </div>
