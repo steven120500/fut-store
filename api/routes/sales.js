@@ -41,8 +41,7 @@ router.post('/', async (req, res) => {
       productoId: req.body.productoId,
       productoNombre: req.body.productoNombre,
       vendedor: vendedorEstandarizado,
-      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
-      archivado: false
+      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date()
     });
 
     res.status(201).json({ success: true, sale: newSale });
@@ -52,7 +51,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 📤 GET: Obtener ventas (Contaduría ve todo)
+// 📤 GET: Obtener ventas
 router.get('/', async (req, res) => {
   try {
     const { vendedor, fechaInicio, fechaFin } = req.query;
@@ -74,11 +73,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 GET /ranking: Solo suma las no archivadas
+// 📊 GET /ranking: Obtener métricas de rendimiento por empleado
 router.get('/ranking', async (req, res) => {
   try {
     const ranking = await Sale.aggregate([
-      { $match: { archivado: { $ne: true } } },
       {
         $group: {
           _id: "$vendedor",
@@ -99,11 +97,11 @@ router.get('/ranking', async (req, res) => {
   }
 });
 
-// 🔄 DELETE: Cierre de mes (Archivar en vez de borrar para conservar contaduría)
+// 🔄 DELETE: Cierre de mes (Borrado total para limpiar historial y ranking)
 router.delete('/reset/all', async (req, res) => {
   try {
-    await Sale.updateMany({}, { $set: { archivado: true } });
-    res.json({ success: true, message: "Ranking reseteado correctamente." });
+    await Sale.deleteMany({});
+    res.json({ success: true, message: "Todas las ventas han sido borradas para el nuevo mes." });
   } catch (error) {
     console.error("Error al resetear ventas:", error);
     res.status(500).json({ error: "Error al vaciar las ventas del sistema." });
