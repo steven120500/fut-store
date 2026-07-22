@@ -18,18 +18,16 @@ const normalizarVendedor = (inputName) => {
   if (!inputName) return 'Steven Corrales';
   const cleanInput = inputName.trim().toLowerCase();
   
-  // Buscar si coincide con alguno de la lista oficial (ignorando mayúsculas/minúsculas)
   const match = VENDEDORES_OFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
   if (match) return match;
 
-  // Si no está exacto, poner la primera letra de cada palabra en mayúscula
   return inputName
     .trim()
     .toLowerCase()
     .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
 };
 
-// 📥 POST: Guardar una nueva venta desde el modal
+// 📥 POST: Guardar una nueva venta
 router.post('/', async (req, res) => {
   try {
     const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
@@ -46,8 +44,9 @@ router.post('/', async (req, res) => {
       cantidad: Number(req.body.cantidad) || 1,
       productoId: req.body.productoId,
       productoNombre: req.body.productoNombre,
-      vendedor: vendedorEstandarizado, // 👈 Nombre limpio y unificado
-      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date()
+      vendedor: vendedorEstandarizado,
+      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
+      archivado: false // 👈 La venta nace activa para el ranking
     });
 
     res.status(201).json({ success: true, sale: newSale });
@@ -57,7 +56,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 📤 GET: Obtener todas las ventas (Con filtros por fecha o vendedor si se necesitan)
+// 📤 GET: Obtener TODAS las ventas (CONTADURÍA) - Aquí sí mostramos TODO el historial
 router.get('/', async (req, res) => {
   try {
     const { vendedor, fechaInicio, fechaFin } = req.query;
@@ -83,6 +82,7 @@ router.get('/', async (req, res) => {
 router.get('/ranking', async (req, res) => {
   try {
     const ranking = await Sale.aggregate([
+      { $match: { archivado: { $ne: true } } }, // 🛡️ MAGIA AQUÍ: Solo suma al ranking las ventas que NO están archivadas
       {
         $group: {
           _id: "$vendedor",
@@ -103,23 +103,26 @@ router.get('/ranking', async (req, res) => {
   }
 });
 
-// 🔄 DELETE: Reiniciar todas las ventas (Cierre de mes)
+// 🔄 DELETE: Cierre de mes (Archivar en vez de borrar)
 router.delete('/reset/all', async (req, res) => {
   try {
-    await Sale.deleteMany({});
-    res.json({ success: true, message: "Todas las ventas han sido reseteadas para el nuevo mes." });
+    // 🛡️ MAGIA AQUÍ: En vez de 'deleteMany', usamos 'updateMany' para pasarlas a contaduría
+    await Sale.updateMany({}, { $set: { archivado: true } });
+    res.json({ success: true, message: "Ranking reseteado. Las ventas pasaron al historial de contaduría." });
   } catch (error) {
     console.error("Error al resetear ventas:", error);
     res.status(500).json({ error: "Error al vaciar las ventas del sistema." });
   }
 });
-// 🗑️ DELETE: Eliminar una venta individual por ID
+
+// 🗑️ DELETE: Eliminar una venta individual por ID (Por si te equivocas)
 router.delete('/:id', async (req, res) => {
   try {
     await Sale.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "Venta eliminada" });
+    res.json({ success: true, message: "Venta eliminada permanentemente" });
   } catch (error) {
     res.status(500).json({ error: "Error al eliminar la venta" });
   }
 });
+
 export default router;

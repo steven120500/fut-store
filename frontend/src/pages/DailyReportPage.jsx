@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import Header from '../components/Header';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -42,7 +43,7 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 📄 EXPORTAR PDF DIARIO (Ventas de Hoy)
+  // 📄 EXPORTAR PDF DIARIO
   const exportDailyPDF = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     const dailySales = sales.filter(sale => sale.fecha && sale.fecha.startsWith(todayStr));
@@ -71,14 +72,14 @@ export default function DailyReportPage({ user, onLogout }) {
       sale.productoNombre || 'Camiseta',
       sale.tallaVendida || 'N/A',
       sale.cantidad || 1,
-      `₡${(sale.totalPago || 0).toLocaleString()}`,
-      `₡${(sale.costoEnvio || 0).toLocaleString()}`,
-      `₡${(sale.montoTotal || 0).toLocaleString()}`
+      `CRC ${(sale.totalPago || 0).toLocaleString()}`,
+      `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
+      `CRC ${(sale.montoTotal || 0).toLocaleString()}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
-      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cédula', 'Teléfono', 'Producto', 'Talla', 'Cant.', 'Chema (₡)', 'Envío (₡)', 'Total (₡)']],
+      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Producto', 'Talla', 'Cant.', 'Chema (CRC)', 'Envio (CRC)', 'Total (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
@@ -95,13 +96,13 @@ export default function DailyReportPage({ user, onLogout }) {
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     doc.text(`Total Chemas Vendidas Hoy: ${totalChemas} unds`, 14, finalY);
-    doc.text(`Gran Total Caja del Día: ₡${granTotal.toLocaleString()}`, 14, finalY + 6);
+    doc.text(`Gran Total Caja del Dia: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
 
     doc.save(`Corte_Diario_${todayStr}.pdf`);
     toast.success("📄 PDF Diario exportado correctamente");
   };
 
-  // 📄 EXPORTAR PDF MENSUAL (Exporta todo el acumulado actual sin restricciones de fecha estricta)
+  // 📄 EXPORTAR PDF MENSUAL
   const exportMonthlyPDF = () => {
     if (!sales || sales.length === 0) {
       return toast.warning("No hay ventas registradas en el sistema para exportar.");
@@ -129,14 +130,14 @@ export default function DailyReportPage({ user, onLogout }) {
       sale.productoNombre || 'Camiseta',
       sale.tallaVendida || 'N/A',
       sale.cantidad || 1,
-      `₡${(sale.totalPago || 0).toLocaleString()}`,
-      `₡${(sale.costoEnvio || 0).toLocaleString()}`,
-      `₡${(sale.montoTotal || 0).toLocaleString()}`
+      `CRC ${(sale.totalPago || 0).toLocaleString()}`,
+      `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
+      `CRC ${(sale.montoTotal || 0).toLocaleString()}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 35,
-      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cédula', 'Teléfono', 'Producto', 'Talla', 'Cant.', 'Chema (₡)', 'Envío (₡)', 'Total (₡)']],
+      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Producto', 'Talla', 'Cant.', 'Chema (CRC)', 'Envio (CRC)', 'Total (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
@@ -153,13 +154,12 @@ export default function DailyReportPage({ user, onLogout }) {
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     doc.text(`Total Chemas Acumuladas: ${totalChemasMes} unds`, 14, finalY);
-    doc.text(`Ingreso Bruto Total Mensual: ₡${granTotalMes.toLocaleString()}`, 14, finalY + 6);
+    doc.text(`Ingreso Bruto Total Mensual: CRC ${granTotalMes.toLocaleString()}`, 14, finalY + 6);
 
     doc.save(`Reporte_Mensual_${currentMonthName}.pdf`);
     toast.success("📄 PDF Mensual exportado correctamente");
   };
 
-  // 🔄 EJECUTAR CIERRE DE MES (RESET DE VENTAS)
   const confirmResetMonthlySales = async () => {
     setResetting(true);
     try {
@@ -188,11 +188,10 @@ export default function DailyReportPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
+      
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
-        {/* NAVEGACIÓN Y BOTONES SUPERIORES */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
@@ -213,7 +212,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
             <button 
               onClick={exportDailyPDF}
-              className="px-4 py-3 bg-[#D4AF37] hover:bg-[#b8972f] text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
             >
               <FaFilePdf size={14} /> PDF Diario 📄
             </button>
@@ -227,7 +226,6 @@ export default function DailyReportPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* ENCABEZADO LIMPIO */}
         <div className="border-b border-gray-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
@@ -237,7 +235,6 @@ export default function DailyReportPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* TARJETAS DE RESUMEN GENERAL */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
@@ -268,7 +265,6 @@ export default function DailyReportPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* TABLA DE VENTAS ACUMULADAS */}
         {loading ? (
           <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
             Cargando registros...
@@ -333,7 +329,6 @@ export default function DailyReportPage({ user, onLogout }) {
 
       </div>
 
-      {/* ⚠️ MODAL DE CONFIRMACIÓN DE CIERRE DE MES */}
       {showResetModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">

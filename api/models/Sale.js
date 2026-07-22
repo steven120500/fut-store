@@ -1,4 +1,3 @@
-import mongoose from 'express'; // o import mongoose from 'mongoose'; asegúrate de usar 'mongoose'
 import { Schema, model } from 'mongoose';
 
 const saleSchema = new Schema({
@@ -13,7 +12,8 @@ const saleSchema = new Schema({
   productoId: { type: String },
   productoNombre: { type: String, required: true },
   vendedor: { type: String, required: true, default: 'Sistema' },
-  fecha: { type: Date, default: Date.now }
+  fecha: { type: Date, default: Date.now },
+  archivado: { type: Boolean, default: false } // 👈 Mantiene las ventas ocultas del ranking pero vivas para contaduría
 }, {
   timestamps: true
 });
