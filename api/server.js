@@ -13,7 +13,7 @@ import pdfRoutes from './routes/pdfRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
 import tiloPayRoutes from './routes/tiloPayRoutes.js';
 import orderRoutes from './routes/orderRoutes.js'; 
-import salesRoutes from './routes/salesRoutes.js'; // 👈 3. NUEVA IMPORTACIÓN DE VENTAS
+import salesRoutes from './routes/sales.js'; // 👈 3. NUEVA IMPORTACIÓN DE VENTAS
 
 dotenv.config();
 
