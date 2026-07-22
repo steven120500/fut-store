@@ -3,9 +3,38 @@ import Sale from '../models/Sale.js';
 
 const router = express.Router();
 
+// 👥 Lista oficial permitida para unificar nombres exactos
+const VENDEDORES_OFICIALES = [
+  'LaR Delflow',
+  'Justin Lobo',
+  'Carlos Lobo',
+  'Alonso Lobo',
+  'Dylan Gomez',
+  'Steven Corrales'
+];
+
+// Función auxiliar para estandarizar el nombre del vendedor
+const normalizarVendedor = (inputName) => {
+  if (!inputName) return 'Steven Corrales';
+  const cleanInput = inputName.trim().toLowerCase();
+  
+  // Buscar si coincide con alguno de la lista oficial (ignorando mayúsculas/minúsculas)
+  const match = VENDEDORES_OFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
+  if (match) return match;
+
+  // Si no está exacto, poner la primera letra de cada palabra en mayúscula
+  return inputName
+    .trim()
+    .toLowerCase()
+    .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
+};
+
 // 📥 POST: Guardar una nueva venta desde el modal
 router.post('/', async (req, res) => {
   try {
+    const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
+    const vendedorEstandarizado = normalizarVendedor(rawVendedor);
+
     const newSale = await Sale.create({
       cedula: req.body.cedula,
       nombre: req.body.nombre,
@@ -17,7 +46,7 @@ router.post('/', async (req, res) => {
       cantidad: Number(req.body.cantidad) || 1,
       productoId: req.body.productoId,
       productoNombre: req.body.productoNombre,
-      vendedor: req.body.vendedor || req.headers['x-user'] || 'Empleado',
+      vendedor: vendedorEstandarizado, // 👈 Nombre limpio y unificado
       fecha: req.body.fecha ? new Date(req.body.fecha) : new Date()
     });
 
@@ -42,7 +71,6 @@ router.get('/', async (req, res) => {
       };
     }
 
-    // Ordenar de la más reciente a la más antigua
     const sales = await Sale.find(query).sort({ fecha: -1 }).lean();
     res.json(sales);
   } catch (error) {
@@ -58,14 +86,14 @@ router.get('/ranking', async (req, res) => {
       {
         $group: {
           _id: "$vendedor",
-          totalVentas: { $sum: 1 },                  // Cantidad de transacciones
-          totalPrendas: { $sum: "$cantidad" },       // Cantidad de chemas vendidas
-          dineroGenerado: { $sum: "$totalPago" },    // Dinero solo en chemas
-          enviosGenerados: { $sum: "$costoEnvio" },  // Dinero en envíos
-          montoTotal: { $sum: "$montoTotal" }        // Total bruto
+          totalVentas: { $sum: 1 },                  
+          totalPrendas: { $sum: "$cantidad" },       
+          dineroGenerado: { $sum: "$totalPago" },    
+          enviosGenerados: { $sum: "$costoEnvio" },  
+          montoTotal: { $sum: "$montoTotal" }        
         }
       },
-      { $sort: { totalPrendas: -1, dineroGenerado: -1 } } // Ordenar por el que más chemas vendió
+      { $sort: { totalPrendas: -1, dineroGenerado: -1 } } 
     ]);
 
     res.json(ranking);
@@ -76,7 +104,6 @@ router.get('/ranking', async (req, res) => {
 });
 
 // 🔄 DELETE: Reiniciar todas las ventas (Cierre de mes)
-// ⚠️ IMPORTANTE: Debe colocarse ANTES de la ruta '/:id' para que Express no confunda la palabra 'reset' con un ID.
 router.delete('/reset/all', async (req, res) => {
   try {
     await Sale.deleteMany({});
@@ -86,7 +113,6 @@ router.delete('/reset/all', async (req, res) => {
     res.status(500).json({ error: "Error al vaciar las ventas del sistema." });
   }
 });
-
 // 🗑️ DELETE: Eliminar una venta individual por ID
 router.delete('/:id', async (req, res) => {
   try {
@@ -96,5 +122,4 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: "Error al eliminar la venta" });
   }
 });
-
 export default router;

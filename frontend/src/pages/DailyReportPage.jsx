@@ -4,7 +4,7 @@ import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashR
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -63,7 +63,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
     const tableData = dailySales.map((sale, index) => [
       index + 1,
-      new Date(sale.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sale.fecha ? new Date(sale.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
       sale.vendedor || 'General',
       sale.nombre || 'N/A',
       sale.cedula || 'N/A',
@@ -101,10 +101,10 @@ export default function DailyReportPage({ user, onLogout }) {
     toast.success("📄 PDF Diario exportado correctamente");
   };
 
-  // 📄 EXPORTAR PDF MENSUAL (Todas las acumuladas del mes)
+  // 📄 EXPORTAR PDF MENSUAL (Exporta todo el acumulado actual sin restricciones de fecha estricta)
   const exportMonthlyPDF = () => {
-    if (sales.length === 0) {
-      return toast.warning("No hay ventas registradas este mes para exportar.");
+    if (!sales || sales.length === 0) {
+      return toast.warning("No hay ventas registradas en el sistema para exportar.");
     }
 
     const doc = new jsPDF('landscape');
@@ -121,7 +121,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
     const tableData = sales.map((sale, index) => [
       index + 1,
-      new Date(sale.fecha).toLocaleDateString(),
+      sale.fecha ? new Date(sale.fecha).toLocaleDateString() : 'N/A',
       sale.vendedor || 'General',
       sale.nombre || 'N/A',
       sale.cedula || 'N/A',
@@ -152,7 +152,7 @@ export default function DailyReportPage({ user, onLogout }) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Total Chemas del Mes: ${totalChemasMes} unds`, 14, finalY);
+    doc.text(`Total Chemas Acumuladas: ${totalChemasMes} unds`, 14, finalY);
     doc.text(`Ingreso Bruto Total Mensual: ₡${granTotalMes.toLocaleString()}`, 14, finalY + 6);
 
     doc.save(`Reporte_Mensual_${currentMonthName}.pdf`);
@@ -188,7 +188,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-    
+      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
@@ -213,18 +213,16 @@ export default function DailyReportPage({ user, onLogout }) {
 
             <button 
               onClick={exportDailyPDF}
-              disabled={sales.length === 0}
-              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest disabled:opacity-40"
-              >
-              <FaFilePdf size={14} /> PDF Diario 
+              className="px-4 py-3 bg-[#D4AF37] hover:bg-[#b8972f] text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+            >
+              <FaFilePdf size={14} /> PDF Diario 📄
             </button>
 
             <button 
               onClick={exportMonthlyPDF}
-              disabled={sales.length === 0}
-              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest disabled:opacity-40"
+              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
             >
-              <FaFilePdf size={14} /> PDF Mensual 
+              <FaFilePdf size={14} /> PDF Mensual 📊
             </button>
           </div>
         </div>
@@ -299,7 +297,7 @@ export default function DailyReportPage({ user, onLogout }) {
                     <tr key={sale._id} className="hover:bg-zinc-900/40 transition">
                       <td className="p-4">
                         <span className="font-bold text-white block">
-                          {new Date(sale.fecha).toLocaleDateString()}
+                          {sale.fecha ? new Date(sale.fecha).toLocaleDateString() : 'N/A'}
                         </span>
                         <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{sale.vendedor}</span>
                       </td>
@@ -362,7 +360,7 @@ export default function DailyReportPage({ user, onLogout }) {
                 onClick={confirmResetMonthlySales} 
                 className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
               >
-                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR '}
+                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
               </button>
             </div>
           </div>

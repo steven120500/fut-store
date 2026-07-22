@@ -279,7 +279,7 @@ export default function SalesPage({ user, onLogout }) {
                         <span className="font-bold text-white">{emp.totalVentas}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
+                        <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas Vendidas:</span>
                         <span className="font-black text-[#D4AF37] text-sm">{emp.totalPrendas} unds</span>
                       </div>
                       <div className="flex justify-between items-center">
