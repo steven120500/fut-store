@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle, FaCashRegister, FaUser, FaIdCard, FaPhone, FaMoneyBillWave } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
@@ -45,7 +45,20 @@ export default function ProductDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [showConfirmSave, setShowConfirmSave] = useState(false); // 🔒 Confirmación antes de guardar
+  const [showConfirmSave, setShowConfirmSave] = useState(false); 
+
+  // 🏆 ESTADOS ACTUALIZADOS PARA REGISTRO DE VENTAS
+  const [isRegisteringSale, setIsRegisteringSale] = useState(false);
+  const [loadingCedula, setLoadingCedula] = useState(false); 
+  const [saleForm, setSaleForm] = useState({
+    cedula: '',
+    nombre: '',
+    numero: '',
+    totalPago: 0,
+    costoEnvio: 0, 
+    tallaVendida: '',
+    cantidadVendida: 1
+  });
 
   const [editedName, setEditedName] = useState('');
   const [editedPrice, setEditedPrice] = useState(0);
@@ -80,7 +93,6 @@ export default function ProductDetail({
     fetchProduct();
   }, [id]);
 
-  // 🔒 Liberar candado si cierran la pestaña o el componente se desmonta mientras editan
   useEffect(() => {
     const handleUnload = () => {
       if (isEditing) {
@@ -94,6 +106,32 @@ export default function ProductDetail({
     };
   }, [isEditing, id]);
 
+  // 🇨🇷 EFECTO PARA BUSCAR CÉDULA AUTOMÁTICAMENTE EN COSTA RICA (TSE)
+  useEffect(() => {
+    const checkCedulaTSE = async () => {
+      const cleanCedula = saleForm.cedula.replace(/\D/g, '');
+      if (cleanCedula.length === 9) {
+        setLoadingCedula(true);
+        try {
+          const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.nombre) {
+              setSaleForm(prev => ({ ...prev, nombre: data.nombre }));
+              toast.success("Cliente encontrado en el registro");
+            }
+          }
+        } catch (error) {
+          console.error("No se pudo obtener el nombre de la cédula:", error);
+        } finally {
+          setLoadingCedula(false);
+        }
+      }
+    };
+    
+    checkCedulaTSE();
+  }, [saleForm.cedula]);
+
   const syncEditState = (data) => {
     setEditedName(data.name || '');
     setEditedPrice(data.price ?? 0);
@@ -102,6 +140,14 @@ export default function ProductDetail({
     setEditedStock({ ...(data.stock || {}) });
     setEditedIsNew(Boolean(data.isNew));
     setEditedIsMundial(Boolean(data.isMundial)); 
+    
+    setSaleForm(prev => ({
+      ...prev,
+      totalPago: data.discountPrice || data.price || 0,
+      costoEnvio: 0,
+      tallaVendida: selectedSize || 'L',
+      cantidadVendida: 1
+    }));
     
     let imgs = [];
     if (Array.isArray(data.images) && data.images.length > 0) {
@@ -115,7 +161,6 @@ export default function ProductDetail({
     setLocalImages(imgs.map(src => ({ src, isNew: false })));
   };
 
-  // 🔒 Función para pedir candado de edición
   const lockProduct = async () => {
     if (!id) return false;
     setLoadingAction(true);
@@ -139,7 +184,6 @@ export default function ProductDetail({
     }
   };
 
-  // 🔓 Función para soltar el candado
   const unlockProduct = async () => {
     if (!id) return;
     try {
@@ -161,11 +205,11 @@ export default function ProductDetail({
 
   const handleCancelEditClick = () => {
     setIsEditing(false);
+    setIsRegisteringSale(false);
     unlockProduct();
     if (product) syncEditState(product);
   };
 
-  // 📊 Calcular diferencias para el modal de confirmación
   const getInventoryChanges = () => {
     const changes = [];
     const tallas = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
@@ -179,17 +223,71 @@ export default function ProductDetail({
     return changes;
   };
 
-  const handleSave = async () => {
+  // 🏆 ESCÁNER MULTI-TALLA: Detecta si restaste 1 talla, o varias diferentes (Ej: 1 XL y 1 M)
+  const handleOpenSaleForm = () => {
+    let detectedSizes = [];
+    let totalQty = 0;
+
+    if (product && editedStock) {
+      const tallas = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
+      for (const t of tallas) {
+        const oldQty = parseInt(product?.stock?.[t] ?? 0, 10);
+        const newQty = parseInt(editedStock?.[t] ?? 0, 10);
+        if (oldQty > newQty) {
+          const diff = oldQty - newQty;
+          detectedSizes.push(`${t} (${diff})`);
+          totalQty += diff; 
+        }
+      }
+    }
+
+    let finalSizeStr = selectedSize || 'L';
+    let finalQty = 1;
+
+    if (detectedSizes.length === 1) {
+      // Solo 1 talla modificada (ej: 2 chemas talla XL)
+      finalSizeStr = detectedSizes[0].split(' ')[0];
+      finalQty = totalQty;
+    } else if (detectedSizes.length > 1) {
+      // Múltiples tallas modificadas (ej: 1 XL y 1 M)
+      finalSizeStr = detectedSizes.join(', ');
+      finalQty = totalQty;
+    }
+
+    const precioBase = product?.discountPrice || product?.price || 0;
+
+    setSaleForm(prev => ({
+      ...prev,
+      tallaVendida: finalSizeStr,
+      cantidadVendida: finalQty,
+      totalPago: precioBase * finalQty
+    }));
+
+    setIsRegisteringSale(true);
+  };
+
+  const handleQuantityChange = (val) => {
+    const newQty = Math.max(1, parseInt(val, 10) || 1);
+    const precioBase = product?.discountPrice || product?.price || 0;
+    setSaleForm(prev => ({
+      ...prev,
+      cantidadVendida: newQty,
+      totalPago: precioBase * newQty
+    }));
+  };
+
+  const handleSave = async (overrideStock = null) => {
     if (loadingAction) return;
     setLoadingAction(true);
     try {
+      const stockToUse = overrideStock || editedStock;
       const cleanStock = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, Math.max(0, parseInt(v, 10) || 0)]));
       const payload = {
         name: editedName.trim(),
         price: parseInt(editedPrice, 10) || 0,
         discountPrice: editedDiscountPrice ? parseInt(editedDiscountPrice, 10) : null,
         type: editedType,
-        stock: cleanStock(editedStock),
+        stock: cleanStock(stockToUse),
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
         isMundial: editedIsMundial, 
@@ -211,11 +309,65 @@ export default function ProductDetail({
       syncEditState(updated);
       setIsEditing(false);
       setShowConfirmSave(false);
+      setIsRegisteringSale(false);
       if (onUpdate) onUpdate(updated);
       toast.success("Guardado correctamente");
     } catch (err) {
       toast.error(err.message);
     } finally {
+      setLoadingAction(false);
+    }
+  };
+
+  const handleRegisterSaleSubmit = async (e) => {
+    e.preventDefault();
+    if (!saleForm.cedula || !saleForm.nombre || !saleForm.numero) {
+      return toast.warning("Por favor completa los datos del cliente.");
+    }
+
+    const subtotalPrenda = Number(saleForm.totalPago) || 0;
+    const montoEnvio = Number(saleForm.costoEnvio) || 0;
+    const granTotal = subtotalPrenda + montoEnvio;
+    const cant = Number(saleForm.cantidadVendida) || 1;
+    const talla = saleForm.tallaVendida;
+
+    setLoadingAction(true);
+    try {
+      const salePayload = {
+        cedula: saleForm.cedula,
+        nombre: saleForm.nombre,
+        numero: saleForm.numero,
+        totalPago: subtotalPrenda,
+        costoEnvio: montoEnvio,    
+        montoTotal: granTotal,     
+        tallaVendida: talla,
+        cantidad: cant,
+        productoId: id,
+        productoNombre: editedName,
+        vendedor: displayName,
+        fecha: new Date().toISOString()
+      };
+
+      await fetch(`${API_BASE}/api/sales`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
+        body: JSON.stringify(salePayload),
+      });
+
+      let finalStock = { ...editedStock };
+      const oldStockSize = parseInt(product?.stock?.[talla] ?? 0, 10);
+      const currentEditedStockSize = parseInt(editedStock?.[talla] ?? 0, 10);
+
+      // Si no restaron el stock en los cuadritos y es una sola talla normal, lo rebajamos automáticamente
+      if (tallasVisibles.includes(talla) && oldStockSize === currentEditedStockSize) {
+        finalStock[talla] = Math.max(0, currentEditedStockSize - cant);
+        setEditedStock(finalStock);
+      }
+
+      await handleSave(finalStock);
+      toast.success(`💰 Venta registrada con éxito por ${displayName}`);
+    } catch (err) {
+      toast.error("Error al registrar la venta");
       setLoadingAction(false);
     }
   };
@@ -288,6 +440,10 @@ export default function ProductDetail({
   const tallasVisibles = currentType === 'Balón' ? TALLAS_BALON : (currentType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
   const inventoryChanges = getInventoryChanges();
+
+  const subTotalChema = Number(saleForm.totalPago) || 0;
+  const costoDeEnvio = Number(saleForm.costoEnvio) || 0;
+  const totalConEnvio = subTotalChema + costoDeEnvio;
 
   return (
     <>
@@ -423,7 +579,6 @@ export default function ProductDetail({
                       {tallasVisibles.map(t => (
                         <div key={t} className="flex flex-col items-center">
                           <span className="text-[10px] text-gray-500 font-bold">{t}</span>
-                          {/* 🔒 Corrección del scroll agregada */}
                           <input type="number" className="w-full border text-center p-1 rounded text-sm focus:border-black outline-none" 
                                 value={editedStock[t] ?? 0} 
                                 onWheel={(e) => e.target.blur()}
@@ -433,10 +588,10 @@ export default function ProductDetail({
                     </div>
                   </div>
                   <div className="flex gap-3 pt-4 border-t">
-                    <button onClick={() => setShowConfirmSave(true)} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                    <button onClick={() => { setIsRegisteringSale(false); setShowConfirmSave(true); }} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
                         {loadingAction ? 'Guardando...' : 'GUARDAR CAMBIOS'}
                     </button>
-                    <button onClick={handleCancelEditClick} disabled={loadingAction} className="px-4 border border-gray-300 rounded-lg font-bold hover:bg-gray-100">CANCELAR</button>
+                    <button onClick={handleCancelEditClick} disabled={loadingAction} className="px-4 border border-gray-300 text-red-500 rounded-lg font-bold hover:bg-gray-800">CANCELAR</button>
                   </div>
               </div>
             ) : (
@@ -511,7 +666,7 @@ export default function ProductDetail({
                   <div className="mt-12 pt-6 border-t border-gray-100">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 text-center tracking-widest">Zona Administrativa</p>
                     <div className="flex gap-3">
-                      {isSuperUser && <button onClick={handleEditClick} disabled={loadingAction} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR</button>}
+                      {isSuperUser && <button onClick={handleEditClick} disabled={loadingAction} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR / VENTAS</button>}
                       {canDelete && <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><FaTrash /> ELIMINAR</button>}
                     </div>
                   </div>
@@ -557,24 +712,143 @@ export default function ProductDetail({
           )}
         </AnimatePresence>
 
-        {/* 🔒 MODAL CONFIRMACIÓN DE GUARDADO */}
+        {/* 🏆 MODAL DE CONFIRMACIÓN ALINEADO Y CON ESCÁNER MULTI-TALLA */}
         <AnimatePresence>
           {showConfirmSave && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center text-black">
-                <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-black"><FaEdit size={24} /></div>
-                <h3 className="text-lg font-bold mb-2">¿Guardar estos cambios?</h3>
-                {inventoryChanges.length > 0 ? (
-                  <div className="text-left bg-gray-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-mono text-gray-700 max-h-32 overflow-y-auto shadow-inner">
-                    {inventoryChanges.map((change, i) => (<div key={i} className="py-1">{change}</div>))}
-                  </div>
+              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center text-black overflow-hidden">
+                
+                {!isRegisteringSale ? (
+                  <>
+                    <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-black"><FaEdit size={24} /></div>
+                    <h3 className="text-lg font-black uppercase mb-2">¿Cómo deseas guardar?</h3>
+                    
+                    {inventoryChanges.length > 0 ? (
+                      <div className="text-left bg-gray-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-mono text-gray-700 max-h-28 overflow-y-auto shadow-inner">
+                        {inventoryChanges.map((change, i) => (<div key={i} className="py-1">{change}</div>))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 mb-4 font-medium">Se actualizarán los datos del producto o inventario.</p>
+                    )}
+
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={handleOpenSaleForm} 
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition"
+                      >
+                        <FaCashRegister size={18} /> VENTA
+                      </button>
+
+                      <button 
+                        onClick={() => handleSave()} 
+                        disabled={loadingAction}
+                        className="w-full py-3 bg-black hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition"
+                      >
+                        {loadingAction ? '...' : 'SOLO ACTUALIZAR'}
+                      </button>
+
+                      <button 
+                        onClick={() => setShowConfirmSave(false)} 
+                        className="w-full py-2 border border-gray-200 rounded-xl font-bold text-xs text-red-500 hover:text-red-500 hover:bg-gray-800 mt-1"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <p className="text-xs text-gray-500 mb-4 font-medium">Se actualizarán los datos generales del producto.</p>
+                  /* 💰 FORMULARIO CON ALINEACIÓN PERFECTA (GRID 12 COLUMNAS + ITEMS-END) */
+                  <form onSubmit={handleRegisterSaleSubmit} className="text-left space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center justify-between border-b pb-2 mb-3">
+                      <h3 className="font-black uppercase text-sm flex items-center gap-2 text-green-700">
+                        <FaCashRegister /> Registrar Venta
+                      </h3>
+                      <span className="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded text-gray-600 uppercase">
+                        POR: {displayName}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Cédula Cliente *</label>
+                        <div className="relative">
+                          <input type="text" required value={saleForm.cedula} onChange={e => setSaleForm({...saleForm, cedula: e.target.value})} placeholder="Ej: 101110111" className="w-full border p-2 rounded-lg text-xs font-mono focus:border-black outline-none pl-7 h-9.5" />
+                          <FaIdCard className="absolute left-2.5 top-3 text-gray-400 text-xs" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Teléfono *</label>
+                        <div className="relative">
+                          <input type="tel" required value={saleForm.numero} onChange={e => setSaleForm({...saleForm, numero: e.target.value})} placeholder="88888888" className="w-full border p-2 rounded-lg text-xs font-mono focus:border-black outline-none pl-7 h-9.5" />
+                          <FaPhone className="absolute left-2.5 top-3 text-gray-400 text-xs" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre del Cliente *</label>
+                        {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando...</span>}
+                      </div>
+                      <div className="relative">
+                        <input type="text" required value={saleForm.nombre} onChange={e => setSaleForm({...saleForm, nombre: e.target.value})} placeholder={loadingCedula ? "Autocompletando..." : "Nombre completo"} className="w-full border p-2 rounded-lg text-xs focus:border-black outline-none pl-7 font-bold h-9.5" />
+                        <FaUser className="absolute left-2.5 top-3 text-gray-400 text-xs" />
+                      </div>
+                    </div>
+
+                    {/* 🏆 FILA ALINEADA QUIRÚRGICAMENTE AL FONDO */}
+                    <div className="grid grid-cols-12 gap-2 items-end">
+                      
+                      {/* TALLA (Ancho: 4 columnas) */}
+                      <div className="col-span-4">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">Talla *</label>
+                        <select value={saleForm.tallaVendida} onChange={e => setSaleForm({...saleForm, tallaVendida: e.target.value})} className="w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-gray-50 h-9.5">
+                          {!tallasVisibles.includes(saleForm.tallaVendida) && (
+                            <option value={saleForm.tallaVendida}>{saleForm.tallaVendida}</option>
+                          )}
+                          {tallasVisibles.map(t => <option key={t} value={t}>{t}</option>)}
+                          <option value="Varias Tallas">Varias Tallas</option>
+                        </select>
+                      </div>
+
+                      {/* CANTIDAD (Ancho: 2 columnas) */}
+                      <div className="col-span-2">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center truncate">Cant.</label>
+                        <input type="number" min="1" required value={saleForm.cantidadVendida} onChange={e => handleQuantityChange(e.target.value)} className="w-full border p-2 rounded-lg text-xs font-black text-center text-black focus:border-black outline-none bg-amber-50 h-9.5" />
+                      </div>
+
+                      {/* CHEMAS (Ancho: 3 columnas) */}
+                      <div className="col-span-3">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">Chemas (₡)</label>
+                        <input type="number" required value={saleForm.totalPago} onChange={e => setSaleForm({...saleForm, totalPago: e.target.value})} className="w-full border p-2 rounded-lg text-xs font-bold text-gray-800 focus:border-black outline-none h-9.5 px-1" />
+                      </div>
+
+                      {/* ENVÍO (Ancho: 3 columnas) */}
+                      <div className="col-span-3">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">+ Envío (₡)</label>
+                        <input type="number" required value={saleForm.costoEnvio} onChange={e => setSaleForm({...saleForm, costoEnvio: e.target.value})} placeholder="0" className="w-full border p-2 rounded-lg text-xs font-bold text-blue-600 focus:border-black outline-none h-9.5 px-1" />
+                      </div>
+
+                    </div>
+
+                    {/* 🏆 CUADRO DE RESUMEN FINAL AUTOMÁTICO */}
+                    <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2">
+                      <span className="font-bold text-green-800 flex items-center gap-1.5">
+                        <FaMoneyBillWave /> TOTAL GENERAL:
+                      </span>
+                      <span className="font-black text-green-700 text-sm">
+                        ₡{totalConEnvio.toLocaleString()}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2 pt-2 border-t mt-3">
+                      <button type="button" onClick={() => setIsRegisteringSale(false)} className="w-1/3 py-2.5 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-50">Atrás</button>
+                      <button type="submit" disabled={loadingAction || loadingCedula} className="w-2/3 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-xs shadow-md transition">
+                        {loadingAction ? 'Guardando...' : 'CONFIRMAR VENTA '}
+                      </button>
+                    </div>
+                  </form>
                 )}
-                <div className="flex gap-2">
-                  <button onClick={() => setShowConfirmSave(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm">Cancelar</button>
-                  <button onClick={handleSave} className="flex-1 py-2 bg-black text-white rounded-lg font-bold text-sm hover:bg-gray-800">{loadingAction ? '...' : 'Guardar'}</button>
-                </div>
+
               </div>
             </motion.div>
           )}

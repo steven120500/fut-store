@@ -1,5 +1,5 @@
 import logo from "../assets/logo.png";
-import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory } from "react-icons/fa"; 
+import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory, FaCashRegister, FaChartLine } from "react-icons/fa"; 
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState } from "react";
@@ -17,7 +17,6 @@ export default function Header({
   isSuperUser,
   setShowRegisterUserModal,
   setShowUserListModal,
-  // setShowHistoryModal, // 🗑️ Ya no se requiere el prop del modal
   onMedidasClick,
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -150,7 +149,7 @@ export default function Header({
                       </>
                     )}
                     
-                    {/* 👇 CAMBIO: Navegación a página de historial 👇 */}
+                    {/* 🔹 HISTORIAL DE CAMBIOS (SEPARADO COMO SIEMPRE) */}
                     {canSeeHistory && (
                       <button 
                         onClick={() => { navigate('/historial'); setSidebarOpen(false); }} 
@@ -161,12 +160,29 @@ export default function Header({
                     )}
                     
                     {(isSuperUser || canSeeHistory) && (
-                      <button 
-                        onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} 
-                        className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4"
-                      >
-                        <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
-                      </button>
+                      <>
+                        <button 
+                          onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} 
+                          className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4"
+                        >
+                          <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
+                        </button>
+
+                        {/* 🏆 APARTADO DE VENTAS Y REPORTES */}
+                        <button 
+                          onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} 
+                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2"
+                        >
+                          <FaCashRegister size={16} /> Registro de Ventas
+                        </button>
+
+                        <button 
+                          onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} 
+                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10"
+                        >
+                          <FaChartLine size={16} /> Reporte Diario
+                        </button>
+                      </>
                     )}
                   </nav>
 
@@ -212,7 +228,7 @@ export default function Header({
             >
               <FaTimes size={24} />
             </button>
-            <h2 className="text-2xl font-black uppercase mb-6 text-center tracking-tight">Contáctanos</h2>
+            <h2 className="text-xl font-black uppercase mb-6 text-center tracking-tight">Contáctanos</h2>
             <Contacto />
           </div>
         </div>

@@ -20,7 +20,7 @@ import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
-import LoadingOverlay from "./components/LoadingOverlay"; // 🏆 Importamos el loader para la extracción masiva
+import LoadingOverlay from "./components/LoadingOverlay"; 
 import tallaPorTipo from "./utils/tallaPorTipo";
 import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -33,6 +33,8 @@ import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
 import OrdersPage from "./pages/OrdersPage.jsx"; 
 import HistoryPage from "./pages/HistoryPage.jsx"; 
+import SalesPage from "./pages/SalesPage.jsx"; // 👈 Nueva página de Ventas
+import DailyReportPage from "./pages/DailyReportPage.jsx"; // 👈 Nueva página de Reportes
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -52,7 +54,7 @@ export default function App() {
   });
   
   const [startedWithIntro] = useState(loading);
-  const [isFiltering, setIsFiltering] = useState(false); // 🏆 Nuevo estado para proteger visualmente la carga paralela
+  const [isFiltering, setIsFiltering] = useState(false); 
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -64,8 +66,6 @@ export default function App() {
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
   const [showUserListModal, setShowUserListModal] = useState(false);
   const [showMedidas, setShowMedidas] = useState(false);
-
-  const isAnyModalOpen = showAddModal || showLogin || showRegisterUserModal || showUserListModal || showMedidas;
 
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
@@ -127,7 +127,6 @@ export default function App() {
   const canSeeHistory = user?.isSuperUser || user?.roles?.includes("history");
   const canAdd = user?.isSuperUser || user?.roles?.includes("add");
   const canEdit = user?.isSuperUser || user?.roles?.includes("edit");
-  const canDelete = user?.isSuperUser || user?.roles?.includes("delete");
 
   const handleLogout = () => {
     setUser(null);
@@ -147,11 +146,11 @@ export default function App() {
 
     const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
 
-    if (needsMassiveFetch) setIsFiltering(true); // Bloquea la UI para extraer todo el catálogo silenciosamente
+    if (needsMassiveFetch) setIsFiltering(true); 
 
     try {
       const baseParams = {
-        limit: needsMassiveFetch ? "100" : "20", // Pedimos al límite seguro del backend para que no nos rebote
+        limit: needsMassiveFetch ? "100" : "20", 
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(mode ? { mode } : {}),
@@ -169,14 +168,12 @@ export default function App() {
       let fetchedItems = json.items || [];
       let fetchedTotal = json.total || 0;
 
-      // 🚀 ALGORITMO MAESTRO DE BYPASS: Scraping paralelo
-      // Si el backend nos capó la respuesta a 100 pero hay 2500 en total, disparamos múltiples hilos.
       if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
          const limitUsed = fetchedItems.length; 
          const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
          
          const fetchPromises = [];
-         const maxPages = Math.min(totalPagesToFetch, 50); // Protección anti-colapso
+         const maxPages = Math.min(totalPagesToFetch, 50); 
 
          for (let i = 2; i <= maxPages; i++) {
            const loopParams = new URLSearchParams({ page: String(i), ...baseParams });
@@ -187,7 +184,6 @@ export default function App() {
            );
          }
          
-         // Espera que lleguen todas juntas (fracciones de segundo)
          const results = await Promise.all(fetchPromises);
          results.forEach(result => {
            if (result.items) fetchedItems = [...fetchedItems, ...result.items];
@@ -202,7 +198,7 @@ export default function App() {
       setProducts([]);
       setTotal(0);
     } finally {
-      setIsFiltering(false); // Libera la UI
+      setIsFiltering(false); 
     }
   };
 
@@ -249,13 +245,10 @@ export default function App() {
       const dp = dpRaw === null || dpRaw === undefined ? null : Number(dpRaw);
       const isOffer = Number.isFinite(dp) && dp > 0 && dp < price;
 
-      // 🛡️ Filtro Inmune a errores de dedo (Case y Spaces Insensitive)
       const matchesSizes = filterSizes.length === 0 || filterSizes.some((sizeABuscar) => {
         if (!product.stock) return false;
-        
         const cleanSize = sizeABuscar.trim().toLowerCase();
         const claveReal = Object.keys(product.stock).find(k => k.trim().toLowerCase() === cleanSize);
-        
         return claveReal ? Number(product.stock[claveReal]) > 0 : false;
       });
 
@@ -303,6 +296,10 @@ export default function App() {
             <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
             <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
             
+            {/* 🏆 NUEVAS RUTAS CONECTADAS PARA VENTAS Y REPORTES */}
+            <Route path="/ventas" element={<SalesPage user={user} onLogout={handleLogout} />} />
+            <Route path="/reportes" element={<DailyReportPage user={user} onLogout={handleLogout} />} />
+            
             <Route path="/" element={
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -318,7 +315,6 @@ export default function App() {
                     transition={{ duration: 0.6, ease: "easeIn" }}
                     className="bg-white min-h-screen w-full relative" 
                   >
-                    {/* 🏆 LOADER DEL CATÁLOGO: Aparece solo cuando tocas una talla masiva */}
                     {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
 
                     {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}

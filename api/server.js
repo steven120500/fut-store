@@ -1,4 +1,3 @@
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -13,7 +12,8 @@ import authRoutes from './routes/authRoutes.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
 import tiloPayRoutes from './routes/tiloPayRoutes.js';
-import orderRoutes from './routes/orderRoutes.js'; // 👈 1. NUEVA IMPORTACIÓN
+import orderRoutes from './routes/orderRoutes.js'; 
+import salesRoutes from './routes/salesRoutes.js'; // 👈 3. NUEVA IMPORTACIÓN DE VENTAS
 
 dotenv.config();
 
@@ -34,11 +34,10 @@ app.use(compression());
 app.use(morgan('dev'));                     
 
 // CORS: Lista blanca
-
 const allowedOrigins = [
   'https://fut-store-frontend.onrender.com',
   'http://localhost:5173',
-  "https://futstorecr.com",                  // 👈 ¡TU NUEVO DOMINIO!
+  "https://futstorecr.com",                  
   "https://www.futstorecr.com"
 ];
 
@@ -63,14 +62,11 @@ app.use('/api', pdfRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/tilopay', tiloPayRoutes);
-app.use('/api/orders', orderRoutes); // 👈 2. NUEVA RUTA CONECTADA
+app.use('/api/orders', orderRoutes); 
+app.use('/api/sales', salesRoutes); // 👈 4. NUEVA RUTA DE VENTAS CONECTADA
 
 app.get('/', (req, res) => res.send('BACKEND ONLINE 🚀'));
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`✅ Server en puerto ${PORT}`));
-
-
-
-
