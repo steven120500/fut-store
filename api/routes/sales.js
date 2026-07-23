@@ -1,6 +1,7 @@
 import express from 'express';
 import Sale from '../models/Sale.js';
-import Product from '../models/Product.js'; // 👈 IMPORTAMOS EL CATÁLOGO PARA DESCONTAR Y DEVOLVER STOCK
+import Product from '../models/Product.js';
+import History from '../models/History.js'; // 👈 IMPORTANTE: Importamos el modelo de historial
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ const normalizarVendedor = (inputName) => {
     .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
 };
 
-// 📥 POST: Guardar venta con DESCUENTO AUTOMÁTICO DE INVENTARIO
+// 📥 POST: Guardar venta con DESCUENTO DE INVENTARIO Y REGISTRO EN HISTORIAL
 router.post('/', async (req, res) => {
   try {
     const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
@@ -35,22 +36,18 @@ router.post('/', async (req, res) => {
     // 🛡️ MAGIA DE INVENTARIO: Descontar stock en la base de datos si la chema tiene ID del catálogo
     if (productosVendidos.length > 0) {
       for (const prod of productosVendidos) {
-        if (prod.productoId) {
+        if (prod.tipoVenta === 'stock' && prod.productoId) {
           try {
             const dbProduct = await Product.findById(prod.productoId);
             if (dbProduct && dbProduct.stock) {
               const talla = String(prod.talla);
               const cantidadVendida = Number(prod.cantidad) || 1;
               
-              // Verificamos cuánto stock hay actualmente en esa talla
               const stockActual = Number(dbProduct.stock[talla]) || 0;
-              
-              // Restamos asegurando que no quede en números negativos
               const nuevoStock = Math.max(0, stockActual - cantidadVendida);
               
-              // Modificamos el objeto stock y guardamos
               dbProduct.stock[talla] = nuevoStock;
-              dbProduct.markModified('stock'); // Le avisamos a Mongoose que el objeto mixto cambió
+              dbProduct.markModified('stock');
               await dbProduct.save();
             }
           } catch (err) {
@@ -60,13 +57,14 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Calcular cantidad total de chemas en el pedido
     let cantidadTotal = 0;
     if (productosVendidos.length > 0) {
       cantidadTotal = productosVendidos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
     } else {
       cantidadTotal = Number(req.body.cantidad) || 1;
     }
+
+    const resumenChemas = req.body.productoNombre || (productosVendidos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta');
 
     const newSale = await Sale.create({
       cedula: req.body.cedula,
@@ -78,12 +76,21 @@ router.post('/', async (req, res) => {
       
       tallaVendida: req.body.tallaVendida || (productosVendidos[0]?.talla || 'N/A'),
       cantidad: cantidadTotal,
-      productoNombre: req.body.productoNombre || (productosVendidos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta'),
+      productoNombre: resumenChemas,
       productos: productosVendidos,
 
       vendedor: vendedorEstandarizado,
       fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
       archivado: false
+    });
+
+    // 🏆 REGISTRAR EN EL HISTORIAL DEL SISTEMA
+    await History.create({
+      user: vendedorEstandarizado,
+      action: 'registró venta rápida',
+      item: `Cliente: ${req.body.nombre} (${cantidadTotal} unds)`,
+      date: new Date(),
+      details: `Detalle: ${resumenChemas} | Total: ₡${(Number(req.body.montoTotal) || 0).toLocaleString()}`
     });
 
     res.status(201).json({ success: true, sale: newSale });
@@ -143,6 +150,15 @@ router.get('/ranking', async (req, res) => {
 router.delete('/reset/all', async (req, res) => {
   try {
     await Sale.deleteMany({});
+    
+    await History.create({
+      user: req.headers['x-user'] || 'Admin',
+      action: 'reseteó todas las ventas',
+      item: 'Cierre de mes de ventas',
+      date: new Date(),
+      details: 'Se vaciaron todas las ventas del sistema'
+    });
+
     res.json({ success: true, message: "Todas las ventas han sido borradas para el nuevo mes." });
   } catch (error) {
     console.error("Error al resetear ventas:", error);
@@ -150,7 +166,7 @@ router.delete('/reset/all', async (req, res) => {
   }
 });
 
-// 🗑️ DELETE: Eliminar venta por ID y DEVOLVER STOCK AL INVENTARIO
+// 🗑️ DELETE: Eliminar venta por ID, devolver stock y registrar en historial
 router.delete('/:id', async (req, res) => {
   try {
     const saleToDelete = await Sale.findById(req.params.id);
@@ -158,10 +174,10 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    // 🔄 REVERTIR STOCK: Si la venta tenía productos vinculados, devolvemos las unidades a la bodega
+    // 🔄 REVERTIR STOCK
     if (saleToDelete.productos && saleToDelete.productos.length > 0) {
       for (const prod of saleToDelete.productos) {
-        if (prod.productoId) {
+        if (prod.tipoVenta === 'stock' && prod.productoId) {
           try {
             const dbProduct = await Product.findById(prod.productoId);
             if (dbProduct && dbProduct.stock) {
@@ -169,7 +185,7 @@ router.delete('/:id', async (req, res) => {
               const cantidadDevuelta = Number(prod.cantidad) || 1;
               
               const stockActual = Number(dbProduct.stock[talla]) || 0;
-              dbProduct.stock[talla] = stockActual + cantidadDevuelta; // Devolvemos el stock
+              dbProduct.stock[talla] = stockActual + cantidadDevuelta;
               
               dbProduct.markModified('stock');
               await dbProduct.save();
@@ -182,6 +198,16 @@ router.delete('/:id', async (req, res) => {
     }
 
     await Sale.findByIdAndDelete(req.params.id);
+
+    // 🏆 REGISTRAR LA ELIMINACIÓN EN EL HISTORIAL
+    await History.create({
+      user: req.headers['x-user'] || 'Admin',
+      action: 'eliminó venta',
+      item: `Cliente: ${saleToDelete.nombre}`,
+      date: new Date(),
+      details: `Venta eliminada por monto de ₡${saleToDelete.montoTotal?.toLocaleString()}`
+    });
+
     res.json({ success: true, message: "Venta eliminada y stock restaurado en bodega" });
   } catch (error) {
     console.error("Error al eliminar la venta:", error);
