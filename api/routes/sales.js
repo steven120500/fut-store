@@ -23,11 +23,19 @@ const normalizarVendedor = (inputName) => {
     .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
 };
 
-// 📥 POST: Guardar venta
+// 📥 POST: Guardar venta (Soporta múltiples productos o producto único)
 router.post('/', async (req, res) => {
   try {
     const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
     const vendedorEstandarizado = normalizarVendedor(rawVendedor);
+
+    // Calcular cantidad total de chemas en el pedido
+    let cantidadTotal = 0;
+    if (req.body.productos && req.body.productos.length > 0) {
+      cantidadTotal = req.body.productos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
+    } else {
+      cantidadTotal = Number(req.body.cantidad) || 1;
+    }
 
     const newSale = await Sale.create({
       cedula: req.body.cedula,
@@ -36,12 +44,16 @@ router.post('/', async (req, res) => {
       totalPago: Number(req.body.totalPago) || 0,
       costoEnvio: Number(req.body.costoEnvio) || 0,
       montoTotal: Number(req.body.montoTotal) || 0,
-      tallaVendida: req.body.tallaVendida,
-      cantidad: Number(req.body.cantidad) || 1,
-      productoId: req.body.productoId,
-      productoNombre: req.body.productoNombre,
+      
+      // Datos guardados
+      tallaVendida: req.body.tallaVendida || (req.body.productos?.[0]?.talla || 'N/A'),
+      cantidad: cantidadTotal,
+      productoNombre: req.body.productoNombre || (req.body.productos?.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta'),
+      productos: req.body.productos || [],
+
       vendedor: vendedorEstandarizado,
-      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date()
+      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
+      archivado: false
     });
 
     res.status(201).json({ success: true, sale: newSale });
@@ -51,7 +63,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 📤 GET: Obtener ventas
+// 📤 GET: Obtener todas las ventas
 router.get('/', async (req, res) => {
   try {
     const { vendedor, fechaInicio, fechaFin } = req.query;
@@ -97,7 +109,7 @@ router.get('/ranking', async (req, res) => {
   }
 });
 
-// 🔄 DELETE: Cierre de mes (Borrado total para limpiar historial y ranking)
+// 🔄 DELETE: Cierre de mes (Borrado total)
 router.delete('/reset/all', async (req, res) => {
   try {
     await Sale.deleteMany({});

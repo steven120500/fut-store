@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard, FaStore, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaMapMarkerAlt, FaTruck, FaTrash, FaWhatsapp, FaCreditCard, FaStore, FaExclamationTriangle, FaIdCard, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 // 🧠 CEREBRO DEL GAM
@@ -39,11 +39,13 @@ export default function Checkout() {
   const [loadingPay, setLoadingPay] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
 
-  // 🏆 NUEVOS ESTADOS PARA VALIDACIÓN PROACTIVA
+  // 🏆 NUEVOS ESTADOS PARA VALIDACIÓN PROACTIVA Y CÉDULA
   const [verifyingCartOnLoad, setVerifyingCartOnLoad] = useState(true);
   const [outOfStockItems, setOutOfStockItems] = useState([]);
+  const [loadingCedula, setLoadingCedula] = useState(false);
 
   const [formData, setFormData] = useState({
+    cedula: '',
     nombre: '',
     telefono: '',
     direccionExacta: '',
@@ -102,8 +104,33 @@ export default function Checkout() {
       .catch(err => console.error(err));
   }, []);
 
+  // 🇨🇷 EFECTO PARA AUTOCOMPLETAR NOMBRE MEDIANTE LA CÉDULA (TSE / HACIENDA)
+  useEffect(() => {
+    const checkCedulaTSE = async () => {
+      const cleanCedula = formData.cedula.replace(/\D/g, '');
+      if (cleanCedula.length === 9) {
+        setLoadingCedula(true);
+        try {
+          const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.nombre) {
+              setFormData(prev => ({ ...prev, nombre: data.nombre }));
+              toast.success("¡Nombre autocompletado exitosamente!");
+            }
+          }
+        } catch (error) {
+          console.error("No se pudo obtener el nombre de la cédula:", error);
+        } finally {
+          setLoadingCedula(false);
+        }
+      }
+    };
+    
+    checkCedulaTSE();
+  }, [formData.cedula]);
+
   // 🏆 EFECTO DE VALIDACIÓN PROACTIVA DEL CARRITO
-  // Se ejecuta al entrar a la página y cada vez que el cliente borra algo del carrito
   useEffect(() => {
     const checkCartStock = async () => {
       if (cart.length === 0) {
@@ -138,7 +165,7 @@ export default function Checkout() {
     };
 
     checkCartStock();
-  }, [cart]); // Si el usuario elimina la camisa sin stock, esto vuelve a correr y libera el botón
+  }, [cart]);
 
   const handleProvinciaChange = (e) => {
     const id = e.target.value;
@@ -208,6 +235,11 @@ export default function Checkout() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleCedulaChange = (e) => {
+    let rawValue = e.target.value.replace(/\D/g, '');
+    setFormData({ ...formData, cedula: rawValue });
+  };
+
   const handlePhoneChange = (e) => {
     let rawValue = e.target.value;
     let numbersOnly = rawValue.replace(/\D/g, '');
@@ -223,10 +255,9 @@ export default function Checkout() {
   const handleProcessOrder = async (e) => {
     e.preventDefault();
     
-    // Si ya sabemos que hay productos agotados, no hacemos nada extra.
     if (outOfStockItems.length > 0) return;
 
-    if (!formData.nombre || !formData.telefono || !formData.correo) {
+    if (!formData.cedula || !formData.nombre || !formData.telefono || !formData.correo) {
       return toast.warning("Por favor llena todos tus datos de contacto.");
     }
     
@@ -246,13 +277,11 @@ export default function Checkout() {
     setLoadingPay(true);
 
     try {
-      // 🛡️ MANTENEMOS LA DOBLE VERIFICACIÓN (Justo antes de cobrar por si alguien la compró en este preciso segundo)
       for (const item of cart) {
         const res = await fetch(`${API_BASE}/api/products/${item._id || item.id}`);
         if (!res.ok) throw new Error("Error al consultar el producto");
         
         const dbProduct = await res.json();
-        
         const cleanSize = item.selectedSize.trim().toLowerCase();
         const claveReal = Object.keys(dbProduct.stock || {}).find(k => k.trim().toLowerCase() === cleanSize);
         const stockDisponible = claveReal ? Number(dbProduct.stock[claveReal]) : 0;
@@ -260,7 +289,6 @@ export default function Checkout() {
         if (stockDisponible < item.quantity) {
           toast.error(`¡Ups! Alguien acaba de comprar la última unidad de "${item.name}" en talla ${item.selectedSize}.`);
           setLoadingPay(false);
-          // Actualizamos la lista roja para bloquear la pantalla
           setOutOfStockItems(prev => [...prev, `"${item.name}" (Talla: ${item.selectedSize})`]);
           return; 
         }
@@ -282,6 +310,7 @@ export default function Checkout() {
       if (metodoPago === 'sinpe') {
           let mensaje = `*NUEVO PEDIDO - FUTSTORE*\n`;
           mensaje += `────────────────\n`;
+          mensaje += `Cédula: ${formData.cedula}\n`;
           mensaje += `Cliente: ${formData.nombre}\n`;
           mensaje += `Tel: ${formData.telefono}\n`;
           mensaje += `Correo: ${formData.correo}\n`;
@@ -316,9 +345,11 @@ export default function Checkout() {
           return;
       }
 
+      /* ⛔ TEMPORALMENTE DESHABILITADO POR MANTENIMIENTO DE PASARELA
       if (metodoPago === 'tarjeta') {
           const orderData = {
             cliente: {
+              cedula: formData.cedula,
               nombre: formData.nombre,
               telefono: formData.telefono,
               correo: formData.correo,
@@ -347,16 +378,11 @@ export default function Checkout() {
           });
 
           const data = await res.json();
-
           if (!res.ok) throw new Error(data.message || "Error al crear pago");
-
-          if (data.url) {
-            window.location.href = data.url; 
-          } else {
-            toast.error("No se recibió el link de pago.");
-            setLoadingPay(false);
-          }
+          if (data.url) window.location.href = data.url; 
+          else { toast.error("No se recibió el link de pago."); setLoadingPay(false); }
       }
+      */
 
     } catch (error) {
       console.error("DETALLE DEL ERROR:", error);
@@ -401,7 +427,6 @@ export default function Checkout() {
           
           <h2 className="text-2xl font-black italic uppercase mb-6">Finalizar Compra</h2>
 
-          {/* 🏆 BANNER ROJO DE ALERTA PROACTIVA */}
           {outOfStockItems.length > 0 && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
               <div className="flex items-center gap-2 font-bold mb-2">
@@ -417,10 +442,41 @@ export default function Checkout() {
           
           <form onSubmit={handleProcessOrder} className="space-y-5">
             <div className="grid grid-cols-1 gap-4">
+              
+              {/* 🏆 CAMPO CÉDULA INTELIGENTE */}
+              <div>
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center justify-between">
+                  <span>Cédula (Autocompleta nombre)</span>
+                  {loadingCedula && <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1 animate-pulse"><FaSpinner className="animate-spin"/> Buscando TSE...</span>}
+                </label>
+                <div className="relative mt-1">
+                  <input 
+                    type="text" 
+                    name="cedula" 
+                    value={formData.cedula}
+                    onChange={handleCedulaChange} 
+                    className="w-full border p-2 pl-9 rounded focus:ring-2 ring-black outline-none font-mono text-sm" 
+                    placeholder="Ej: 101110111" 
+                    maxLength="9"
+                    required 
+                  />
+                  <FaIdCard className="absolute left-3 top-3 text-gray-400" />
+                </div>
+              </div>
+
               <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Nombre Completo</label>
-                  <input type="text" name="nombre" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="Tu nombre" required />
+                  <input 
+                    type="text" 
+                    name="nombre" 
+                    value={formData.nombre}
+                    onChange={handleChange} 
+                    className="w-full border p-2 rounded focus:ring-2 ring-black outline-none font-bold" 
+                    placeholder={loadingCedula ? "Autocompletando..." : "Tu nombre completo"} 
+                    required 
+                  />
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Teléfono</label>
@@ -429,14 +485,14 @@ export default function Checkout() {
                       name="telefono" 
                       value={formData.telefono}
                       onChange={handlePhoneChange} 
-                      className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" 
+                      className="w-full border p-2 rounded focus:ring-2 ring-black outline-none font-mono" 
                       placeholder="88888888" 
                       required 
                     />
                   </div>
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Correo</label>
-                    <input type="email" name="correo" onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="juan@email.com" required />
+                    <input type="email" name="correo" value={formData.correo} onChange={handleChange} className="w-full border p-2 rounded focus:ring-2 ring-black outline-none" placeholder="juan@email.com" required />
                   </div>
               </div>
             </div>
@@ -474,7 +530,7 @@ export default function Checkout() {
                       {Object.entries(distritos).map(([id, nom]) => <option key={id} value={id}>{nom}</option>)}
                     </select>
                   </div>
-                  <textarea name="direccionExacta" onChange={handleChange} rows="2" className="w-full border p-2 rounded text-sm focus:ring-2 ring-black outline-none" placeholder="Señas exactas..." required></textarea>
+                  <textarea name="direccionExacta" value={formData.direccionExacta} onChange={handleChange} rows="2" className="w-full border p-2 rounded text-sm focus:ring-2 ring-black outline-none" placeholder="Señas exactas..." required></textarea>
                 </div>
             )}
 
@@ -500,7 +556,6 @@ export default function Checkout() {
 
             <div className="border-t pt-4">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2">💳 Método de Pago</p>
-                {/* 🏆 CAMBIO: Reducimos a 1 columna y comentamos la Tarjeta */}
                 <div className="grid grid-cols-1 gap-4">
                     {/* ⛔ TEMPORALMENTE DESHABILITADO POR MANTENIMIENTO DE PASARELA
                     <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
@@ -517,15 +572,15 @@ export default function Checkout() {
                 </div>
             </div>
             
-            {/* 🏆 BOTÓN BLOQUEADO SI ESTÁ VERIFICANDO O SI HAY ERRORES */}
             <button 
               type="submit" 
-              disabled={loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0} 
+              disabled={loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0 || loadingCedula} 
               className={`w-full py-4 rounded-xl font-bold text-lg text-white transition shadow-lg mt-6 
-                ${(loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0) ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}
+                ${(loadingPay || verifyingCartOnLoad || outOfStockItems.length > 0 || loadingCedula) ? 'bg-gray-400 cursor-not-allowed' : 'bg-black hover:bg-gray-800'}`}
             >
               {verifyingCartOnLoad ? "Revisando disponibilidad..." 
                   : loadingPay ? "Procesando..." 
+                  : loadingCedula ? "Buscando cliente..."
                   : outOfStockItems.length > 0 ? "QUITA LOS AGOTADOS"
                   : metodoPago === 'sinpe' ? "ENVIAR PEDIDO POR WHATSAPP" 
                   : "PAGAR CON TARJETA"}
@@ -538,7 +593,6 @@ export default function Checkout() {
           <h3 className="font-bold text-lg mb-4 border-b pb-2">Resumen</h3>
           <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
             {cart.map((item, index) => {
-              // Resaltamos en rojo los ítems en el resumen si están agotados
               const isExhausted = outOfStockItems.some(errText => errText.includes(item.name) && errText.includes(item.selectedSize));
 
               return (

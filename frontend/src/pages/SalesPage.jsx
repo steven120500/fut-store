@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -22,7 +23,7 @@ export default function SalesPage({ user, onLogout }) {
 
   // Estados de Modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false); // 👈 Modal de confirmación de cierre de mes
+  const [showResetModal, setShowResetModal] = useState(false);
   const [loadingCedula, setLoadingCedula] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -35,21 +36,23 @@ export default function SalesPage({ user, onLogout }) {
     return found || 'Steven Corrales';
   };
 
+  // 🛍️ ESTADO MULTIPRODUCTO: Ahora manejamos una lista de chemas en el pedido
   const [quickForm, setQuickForm] = useState({
-    productoNombre: '',
     cedula: '',
     nombre: '',
     numero: '',
-    tallaVendida: 'L',
-    cantidadVendida: 1,
-    totalPago: 15000,
     costoEnvio: 0,
-    vendedorAsignado: getInitialVendedor()
+    vendedorAsignado: getInitialVendedor(),
+    productos: [
+      { nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }
+    ]
   });
 
-  const subTotalChemaCalc = Number(quickForm.totalPago) || 0;
+  // Cálculos dinámicos
+  const subTotalChemasCalc = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.precioTotal) || 0), 0);
+  const totalCantidadChemas = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.cantidad) || 0), 0);
   const costoEnvioCalc = Number(quickForm.costoEnvio) || 0;
-  const granTotalConEnvio = subTotalChemaCalc + costoEnvioCalc;
+  const granTotalConEnvio = subTotalChemasCalc + costoEnvioCalc;
 
   const totalChemasVendidas = ranking.reduce((acc, curr) => acc + (curr.totalPrendas || 0), 0);
   const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0);
@@ -99,7 +102,6 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
-  // 🔄 EJECUTAR CIERRE DE MES DESDE EL NUEVO MODAL
   const confirmResetMonthlySales = async () => {
     setResetting(true);
     try {
@@ -122,24 +124,58 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
+  // 🛍️ FUNCIONES PARA AGREGAR / EDITAR / ELIMINAR PRENDAS DEL PEDIDO
+  const handleAddProducto = () => {
+    setQuickForm(prev => ({
+      ...prev,
+      productos: [...prev.productos, { nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }]
+    }));
+  };
+
+  const handleRemoveProducto = (index) => {
+    if (quickForm.productos.length === 1) return toast.warning("Debe haber al menos una chema en la venta.");
+    setQuickForm(prev => ({
+      ...prev,
+      productos: prev.productos.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleProductoChange = (index, field, value) => {
+    const updated = [...quickForm.productos];
+    updated[index][field] = value;
+    setQuickForm(prev => ({ ...prev, productos: updated }));
+  };
+
   const handleQuickSaleSubmit = async (e) => {
     e.preventDefault();
-    if (!quickForm.productoNombre || !quickForm.cedula || !quickForm.nombre || !quickForm.numero) {
-      return toast.warning("Por favor completa todos los campos obligatorios.");
+    if (!quickForm.cedula || !quickForm.nombre || !quickForm.numero) {
+      return toast.warning("Por favor completa los datos del cliente.");
+    }
+
+    // Validar que todas las chemas tengan nombre
+    const hasEmptyChema = quickForm.productos.some(p => !p.nombre || p.nombre.trim() === '');
+    if (hasEmptyChema) {
+      return toast.warning("Por favor escribe el nombre/modelo de todas las chemas agregadas.");
     }
 
     setSubmitting(true);
     try {
+      // Generar nombre descriptivo combinado si son varias
+      const resumenChemas = quickForm.productos
+        .map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`)
+        .join(' + ');
+
       const salePayload = {
         cedula: quickForm.cedula,
         nombre: quickForm.nombre,
         numero: quickForm.numero,
-        totalPago: subTotalChemaCalc,
+        totalPago: subTotalChemasCalc,
         costoEnvio: costoEnvioCalc,
         montoTotal: granTotalConEnvio,
-        tallaVendida: quickForm.tallaVendida,
-        cantidad: Number(quickForm.cantidadVendida) || 1,
-        productoNombre: quickForm.productoNombre,
+        tallaVendida: quickForm.productos[0]?.talla || 'L',
+        cantidad: totalCantidadChemas,
+        productoNombre: resumenChemas,
+        productos: quickForm.productos,
         vendedor: quickForm.vendedorAsignado,
         fecha: new Date().toISOString()
       };
@@ -151,18 +187,15 @@ export default function SalesPage({ user, onLogout }) {
       });
 
       if (res.ok) {
-        toast.success(`💰 Venta rápida registrada a nombre de ${quickForm.vendedorAsignado}`);
+        toast.success(`💰 Venta registrada a nombre de ${quickForm.vendedorAsignado} (${totalCantidadChemas} chemas)`);
         setShowQuickSaleModal(false);
         setQuickForm({
-          productoNombre: '',
           cedula: '',
           nombre: '',
           numero: '',
-          tallaVendida: 'L',
-          cantidadVendida: 1,
-          totalPago: 15000,
           costoEnvio: 0,
-          vendedorAsignado: getInitialVendedor()
+          vendedorAsignado: getInitialVendedor(),
+          productos: [{ nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }]
         });
         fetchRankingData(); 
       } else {
@@ -177,7 +210,7 @@ export default function SalesPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      
+      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
@@ -204,7 +237,7 @@ export default function SalesPage({ user, onLogout }) {
               onClick={() => setShowQuickSaleModal(true)}
               className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
             >
-              <FaPlus size={14} /> Agregar Venta Rápida 
+              <FaPlus size={14} /> Agregar Venta Rápida 🚀
             </button>
           </div>
         </div>
@@ -279,7 +312,7 @@ export default function SalesPage({ user, onLogout }) {
                         <span className="font-bold text-white">{emp.totalVentas}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas Vendidas:</span>
+                        <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
                         <span className="font-black text-[#D4AF37] text-sm">{emp.totalPrendas} unds</span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -301,7 +334,7 @@ export default function SalesPage({ user, onLogout }) {
 
       </div>
 
-      {/* ⚠️ MODAL DE CONFIRMACIÓN DE CIERRE DE MES (DISEÑO LIMPIO) */}
+      {/* ⚠️ MODAL DE CONFIRMACIÓN DE CIERRE DE MES */}
       {showResetModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
@@ -328,22 +361,22 @@ export default function SalesPage({ user, onLogout }) {
                 onClick={confirmResetMonthlySales} 
                 className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
               >
-                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR '}
+                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* 🚀 MODAL DE VENTA RÁPIDA */}
+      {/* 🚀 MODAL DE VENTA RÁPIDA MULTIPRODUCTO */}
       {showQuickSaleModal && (
         <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-md w-full relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             
             <button 
               type="button"
               onClick={() => setShowQuickSaleModal(false)}
-              className="absolute bg-black text-white top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center transition font-bold"
+              className="absolute bg-gray-100 text-black top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition font-bold"
             >
               <FaTimes size={14} />
             </button>
@@ -376,117 +409,156 @@ export default function SalesPage({ user, onLogout }) {
                 </div>
               </div>
 
-              <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Nombre / Modelo de la Chema *</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={quickForm.productoNombre} 
-                  onChange={e => setQuickForm({...quickForm, productoNombre: e.target.value})} 
-                  placeholder="Ej: Real Madrid Local 2026" 
-                  className="w-full border p-2.5 rounded-xl text-xs font-bold focus:border-black outline-none" 
-                />
-              </div>
+              {/* SECCIÓN DE DATOS DEL CLIENTE (SE LLENA 1 SOLA VEZ) */}
+              <div className="bg-gray-50 p-3 rounded-xl border space-y-2.5">
+                <span className="text-[10px] font-black uppercase text-gray-600 tracking-wider block border-b pb-1">👤 Datos del Cliente</span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Cédula *</label>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        required 
+                        value={quickForm.cedula} 
+                        onChange={e => setQuickForm({...quickForm, cedula: e.target.value})} 
+                        placeholder="101110111" 
+                        className="w-full border p-2 rounded-xl text-xs font-mono focus:border-black outline-none pl-7 bg-white" 
+                      />
+                      <FaIdCard className="absolute left-2.5 top-2.5 text-gray-400 text-xs" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Teléfono *</label>
+                    <div className="relative">
+                      <input 
+                        type="tel" 
+                        required 
+                        value={quickForm.numero} 
+                        onChange={e => setQuickForm({...quickForm, numero: e.target.value})} 
+                        placeholder="88888888" 
+                        className="w-full border p-2 rounded-xl text-xs font-mono focus:border-black outline-none pl-7 bg-white" 
+                      />
+                      <FaPhone className="absolute left-2.5 top-2.5 text-gray-400 text-xs" />
+                    </div>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Cédula Cliente *</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre Completo *</label>
+                    {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">🇨🇷 Buscando en TSE...</span>}
+                  </div>
                   <div className="relative">
                     <input 
                       type="text" 
                       required 
-                      value={quickForm.cedula} 
-                      onChange={e => setQuickForm({...quickForm, cedula: e.target.value})} 
-                      placeholder="101110111" 
-                      className="w-full border p-2.5 rounded-xl text-xs font-mono focus:border-black outline-none pl-7" 
+                      value={quickForm.nombre} 
+                      onChange={e => setQuickForm({...quickForm, nombre: e.target.value})} 
+                      placeholder={loadingCedula ? "Autocompletando..." : "Nombre del cliente"} 
+                      className="w-full border p-2 rounded-xl text-xs focus:border-black outline-none pl-7 font-bold bg-white" 
                     />
-                    <FaIdCard className="absolute left-2.5 top-3 text-gray-400 text-xs" />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Teléfono *</label>
-                  <div className="relative">
-                    <input 
-                      type="tel" 
-                      required 
-                      value={quickForm.numero} 
-                      onChange={e => setQuickForm({...quickForm, numero: e.target.value})} 
-                      placeholder="88888888" 
-                      className="w-full border p-2.5 rounded-xl text-xs font-mono focus:border-black outline-none pl-7" 
-                    />
-                    <FaPhone className="absolute left-2.5 top-3 text-gray-400 text-xs" />
+                    <FaUser className="absolute left-2.5 top-2.5 text-gray-400 text-xs" />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre del Cliente *</label>
-                  {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando...</span>}
-                </div>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    required 
-                    value={quickForm.nombre} 
-                    onChange={e => setQuickForm({...quickForm, nombre: e.target.value})} 
-                    placeholder={loadingCedula ? "Autocompletando..." : "Nombre completo"} 
-                    className="w-full border p-2.5 rounded-xl text-xs focus:border-black outline-none pl-7 font-bold" 
-                  />
-                  <FaUser className="absolute left-2.5 top-3 text-gray-400 text-xs" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-12 gap-1.5 items-end pt-1">
-                <div className="col-span-3">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla *</label>
-                  <select 
-                    value={quickForm.tallaVendida} 
-                    onChange={e => setQuickForm({...quickForm, tallaVendida: e.target.value})} 
-                    className="w-full border p-2 rounded-xl text-xs font-bold focus:border-black outline-none bg-gray-50 h-9"
+              {/* 🛍️ SECCIÓN MULTIPRODUCTO: LISTA DINÁMICA DE CHEMAS */}
+              <div className="space-y-2 pt-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">👕 Chemas del Pedido ({quickForm.productos.length})</label>
+                  <button 
+                    type="button" 
+                    onClick={handleAddProducto} 
+                    className="text-[10px] font-black text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
                   >
-                    {['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28'].map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+                    <FaPlus size={9} /> Agregar Otra Chema
+                  </button>
                 </div>
-                <div className="col-span-2">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
-                  <input 
-                    type="number" 
-                    min="1" 
-                    required 
-                    value={quickForm.cantidadVendida} 
-                    onChange={e => setQuickForm({...quickForm, cantidadVendida: e.target.value})} 
-                    className="w-full border p-2 rounded-xl text-xs font-black text-center text-black focus:border-black outline-none bg-amber-50 h-9" 
-                  />
-                </div>
-                <div className="col-span-3">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Chemas (₡)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={quickForm.totalPago} 
-                    onChange={e => setQuickForm({...quickForm, totalPago: e.target.value})} 
-                    className="w-full border p-2 rounded-xl text-xs font-bold text-gray-800 focus:border-black outline-none px-1 h-9" 
-                  />
-                </div>
-                <div className="col-span-4">
-                  <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">+ Envío (₡)</label>
-                  <input 
-                    type="number" 
-                    required 
-                    value={quickForm.costoEnvio} 
-                    onChange={e => setQuickForm({...quickForm, costoEnvio: e.target.value})} 
-                    placeholder="0" 
-                    className="w-full border p-2 rounded-xl text-xs font-bold text-blue-600 focus:border-black outline-none px-1 h-9" 
-                  />
-                </div>
+
+                {quickForm.productos.map((prod, index) => (
+                  <div key={index} className="border border-gray-200 p-3 rounded-xl bg-gray-50/80 space-y-2 relative">
+                    {quickForm.productos.length > 1 && (
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveProducto(index)} 
+                        className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow"
+                        title="Quitar chema"
+                      >
+                        <FaTimes size={10} />
+                      </button>
+                    )}
+
+                    <div>
+                      <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Modelo #{index + 1} *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={prod.nombre} 
+                        onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
+                        placeholder="Ej: Real Madrid Local 2026" 
+                        className="w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white" 
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-12 gap-1.5 items-center">
+                      <div className="col-span-4">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
+                        <select 
+                          value={prod.talla} 
+                          onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
+                          className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
+                        >
+                          {['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28'].map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-3">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          required 
+                          value={prod.cantidad} 
+                          onChange={e => handleProductoChange(index, 'cantidad', e.target.value)} 
+                          className="w-full border p-1.5 rounded-lg text-xs font-black text-center focus:border-black outline-none bg-amber-50 h-8" 
+                        />
+                      </div>
+                      <div className="col-span-5">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Precio (₡)</label>
+                        <input 
+                          type="number" 
+                          required 
+                          value={prod.precioTotal} 
+                          onChange={e => handleProductoChange(index, 'precioTotal', e.target.value)} 
+                          className="w-full border p-1.5 rounded-lg text-xs font-bold text-gray-800 focus:border-black outline-none px-2 bg-white h-8" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
+              {/* ENVÍO ÚNICO POR PEDIDO */}
+              <div className="pt-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">🚚 Costo de Envío del Pedido (₡)</label>
+                <input 
+                  type="number" 
+                  required 
+                  value={quickForm.costoEnvio} 
+                  onChange={e => setQuickForm({...quickForm, costoEnvio: e.target.value})} 
+                  placeholder="0" 
+                  className="w-full border p-2.5 rounded-xl text-xs font-bold text-blue-600 focus:border-black outline-none bg-blue-50/30" 
+                />
+              </div>
+
+              {/* TOTAL GENERAL */}
               <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex justify-between items-center text-xs mt-3">
-                <span className="font-bold text-green-800 flex items-center gap-1.5">
-                  <FaMoneyBillWave /> TOTAL GENERAL:
-                </span>
-                <span className="font-black text-green-700 text-sm">
+                <div>
+                  <span className="font-bold text-green-800 flex items-center gap-1.5">
+                    <FaMoneyBillWave /> TOTAL PEDIDO:
+                  </span>
+                  <span className="text-[10px] text-green-600 font-medium">{totalCantidadChemas} chemas en total</span>
+                </div>
+                <span className="font-black text-green-700 text-base">
                   ₡{granTotalConEnvio.toLocaleString()}
                 </span>
               </div>
@@ -504,7 +576,7 @@ export default function SalesPage({ user, onLogout }) {
                   disabled={submitting || loadingCedula} 
                   className="w-2/3 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
                 >
-                  {submitting ? 'Guardando...' : 'CONFIRMAR VENTA '}
+                  {submitting ? 'Guardando...' : 'CONFIRMAR VENTA 🚀'}
                 </button>
               </div>
             </form>

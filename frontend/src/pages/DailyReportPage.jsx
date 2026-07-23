@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
+import Header from '../components/Header';
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -43,6 +42,14 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
+  // Función auxiliar para obtener el string unificado de las chemas de una venta
+  const getResumenPrendas = (sale) => {
+    if (sale.productos && sale.productos.length > 0) {
+      return sale.productos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ');
+    }
+    return `${sale.productoNombre || 'Camiseta'} (${sale.tallaVendida || 'N/A'})`;
+  };
+
   // 📄 EXPORTAR PDF DIARIO
   const exportDailyPDF = () => {
     const todayStr = new Date().toISOString().split('T')[0];
@@ -69,8 +76,7 @@ export default function DailyReportPage({ user, onLogout }) {
       sale.nombre || 'N/A',
       sale.cedula || 'N/A',
       sale.numero || 'N/A',
-      sale.productoNombre || 'Camiseta',
-      sale.tallaVendida || 'N/A',
+      getResumenPrendas(sale),
       sale.cantidad || 1,
       `CRC ${(sale.totalPago || 0).toLocaleString()}`,
       `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
@@ -79,7 +85,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Producto', 'Talla', 'Cant.', 'Chema (CRC)', 'Envio (CRC)', 'Total (CRC)']],
+      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
@@ -127,8 +133,7 @@ export default function DailyReportPage({ user, onLogout }) {
       sale.nombre || 'N/A',
       sale.cedula || 'N/A',
       sale.numero || 'N/A',
-      sale.productoNombre || 'Camiseta',
-      sale.tallaVendida || 'N/A',
+      getResumenPrendas(sale),
       sale.cantidad || 1,
       `CRC ${(sale.totalPago || 0).toLocaleString()}`,
       `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
@@ -137,7 +142,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Producto', 'Talla', 'Cant.', 'Chema (CRC)', 'Envio (CRC)', 'Total (CRC)']],
+      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
@@ -188,7 +193,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      
+      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
@@ -212,7 +217,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
             <button 
               onClick={exportDailyPDF}
-              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+              className="px-4 py-3 bg-[#D4AF37] hover:bg-[#b8972f] text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
             >
               <FaFilePdf size={14} /> PDF Diario 📄
             </button>
@@ -238,21 +243,21 @@ export default function DailyReportPage({ user, onLogout }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaCashRegister className="text-gray-400"/> Transacciones
+              <FaCashRegister className="text-gray-400"/> Ventas
             </span>
-            <span className="text-2xl font-black text-white">{sales.length} <span className="text-xs font-normal text-gray-500">ventas</span></span>
+            <span className="text-2xl font-black text-white">{sales.length} <span className="text-xs font-normal text-gray-500">pedidos</span></span>
           </div>
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaTshirt className="text-[#D4AF37]"/> Chemas Vendidas
+              <FaTshirt className="text-[#D4AF37]"/> Chemas
             </span>
             <span className="text-2xl font-black text-[#D4AF37]">{totalChemas} <span className="text-xs font-normal text-gray-500">unds</span></span>
           </div>
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaTruck className="text-blue-400"/> Cobrado en Envíos
+              <FaTruck className="text-blue-400"/> Envíos
             </span>
             <span className="text-2xl font-black text-blue-400">₡{totalDineroEnvios.toLocaleString()}</span>
           </div>
@@ -281,7 +286,7 @@ export default function DailyReportPage({ user, onLogout }) {
                   <tr>
                     <th className="p-4">Fecha / Vendedor</th>
                     <th className="p-4">Cliente / Cédula / Tel</th>
-                    <th className="p-4">Producto</th>
+                    <th className="p-4">Detalle Chemas</th>
                     <th className="p-4 text-center">Cant.</th>
                     <th className="p-4 text-right">Chemas</th>
                     <th className="p-4 text-right">Envío</th>
@@ -301,10 +306,9 @@ export default function DailyReportPage({ user, onLogout }) {
                         <span className="font-bold text-gray-200 block uppercase">{sale.nombre}</span>
                         <span className="text-[10px] text-gray-500 font-mono">ID: {sale.cedula} | Tel: {sale.numero}</span>
                       </td>
-                      <td className="p-4">
-                        <span className="font-black text-white uppercase block">{sale.productoNombre}</span>
-                        <span className="text-[10px] bg-gray-800 text-gray-300 px-1.5 py-0.5 rounded font-bold uppercase mt-1 inline-block">
-                          Talla: {sale.tallaVendida}
+                      <td className="p-4 max-w-[220px]">
+                        <span className="font-black text-white uppercase block leading-snug">
+                          {getResumenPrendas(sale)}
                         </span>
                       </td>
                       <td className="p-4 text-center font-black text-white text-sm">
