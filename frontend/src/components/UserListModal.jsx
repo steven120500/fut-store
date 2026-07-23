@@ -7,8 +7,7 @@ import {
   FaUser, 
   FaSpinner, 
   FaShieldAlt, 
-  FaExclamationTriangle,
-  FaCheckCircle
+  FaExclamationTriangle
 } from "react-icons/fa";
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -123,7 +122,6 @@ export default function UserListModal({ open, onClose, user }) {
   const renderRoleBadges = (u) => {
     if (u.isSuperUser) {
       return (
-        // ⭐ LETRA DE ADENTRO BLANCA (text-white)
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-black text-white border border-gray-700 shadow-sm">
           <FaShieldAlt size={10} className="text-amber-400" /> Superadmin
         </span>
@@ -152,53 +150,49 @@ export default function UserListModal({ open, onClose, user }) {
 
   if (!open) return null;
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    // ⭐ PT-24 / PT-28 PARA BAJAR LA VENTANA Y APARTARLA DE LA CABECERA
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 pt-24 pb-16 sm:p-8 sm:pt-28"
-      onClick={handleBackdropClick}
+      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+      onClick={onClose} // Cierra si hacen clic fuera de la tarjeta blanca
     >
-      {/* ⭐ MAX-H-[72VH] PARA QUE NO CHOQUE CON EL BOTÓN FLOTANTE INFERIOR */}
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl border border-gray-100 flex flex-col overflow-hidden max-h-[72vh] animate-fadeIn relative">
+      {/* Contenedor principal con altura máxima y scroll interno optimizado */}
+      <div 
+        className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col overflow-hidden max-h-[82vh] relative animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()} // Evita que los clics dentro cierren el modal
+      >
         
         {/* Encabezado fijo */}
-        <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/80 flex-shrink-0">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/90 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
               <FaUserShield size={18} />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">Gestión de Usuarios</h2>
-              <p className="text-xs text-gray-400 font-medium">Administra accesos y roles del sistema</p>
+              <h2 className="text-base font-black text-gray-900 tracking-tight">Gestión de Usuarios</h2>
+              <p className="text-[11px] text-gray-400 font-medium">Administra accesos y roles del sistema</p>
             </div>
           </div>
           
-          {/* ⭐ SOLO LA X QUEDA PARA CERRAR LA VENTANA */}
+          {/* Botón de cierre superior con respuesta garantizada */}
           <button 
             type="button"
             onClick={onClose} 
-            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-black flex items-center justify-center transition-colors font-bold z-10 cursor-pointer"
+            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-black hover:text-white text-gray-600 flex items-center justify-center transition-all font-bold cursor-pointer shadow-sm"
             title="Cerrar ventana"
           >
             <FaTimes size={14} />
           </button>
         </div>
 
-        {/* Lista de Usuarios */}
-        <div className="p-4 md:p-6 overflow-y-auto space-y-3 flex-1 custom-scrollbar">
+        {/* Lista de Usuarios con scroll personalizado y fluido */}
+        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1 scrollbar-thin scrollbar-thumb-gray-300">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
               <FaSpinner className="animate-spin text-black" size={28} />
               <p className="text-xs font-bold uppercase tracking-wider">Cargando usuarios...</p>
             </div>
           ) : users.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-2 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-gray-400">
               <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-300">
                 <FaUser size={24} />
               </div>
@@ -280,9 +274,16 @@ export default function UserListModal({ open, onClose, user }) {
           )}
         </div>
 
-        {/* ⭐ Pie de página limpio (SIN EL BOTÓN DE CERRAR) */}
-        <div className="px-6 py-3.5 border-t border-gray-100 bg-gray-50/80 flex justify-end items-center text-xs text-gray-400 font-medium flex-shrink-0">
+        {/* Pie de página con contador e indicador de salida */}
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/90 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
           <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="text-xs font-bold text-black hover:underline cursor-pointer"
+          >
+            Cerrar ventana
+          </button>
         </div>
 
       </div>

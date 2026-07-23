@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaSearch, FaCheckCircle, FaBoxOpen } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -21,10 +20,8 @@ export default function SalesPage({ user, onLogout }) {
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 📦 CATÁLOGO DE PRODUCTOS PARA AUTOCOMPLETADO
   const [catalogo, setCatalogo] = useState([]);
 
-  // Estados de Modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [loadingCedula, setLoadingCedula] = useState(false);
@@ -39,7 +36,6 @@ export default function SalesPage({ user, onLogout }) {
     return found || 'Steven Corrales';
   };
 
-  // 🛍️ ESTADO MULTIPRODUCTO (Soporta productoId y stock disponible visual)
   const [quickForm, setQuickForm] = useState({
     cedula: '',
     nombre: '',
@@ -47,11 +43,10 @@ export default function SalesPage({ user, onLogout }) {
     costoEnvio: 0,
     vendedorAsignado: getInitialVendedor(),
     productos: [
-      { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }
+      { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }
     ]
   });
 
-  // Cálculos dinámicos
   const subTotalChemasCalc = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.precioTotal) || 0), 0);
   const totalCantidadChemas = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.cantidad) || 0), 0);
   const costoEnvioCalc = Number(quickForm.costoEnvio) || 0;
@@ -67,16 +62,24 @@ export default function SalesPage({ user, onLogout }) {
     fetchCatalogoProductos();
   }, []);
 
-  // Cargar catálogo silenciosamente para las sugerencias del buscador
   const fetchCatalogoProductos = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/products`);
+      const res = await fetch(`${API_BASE}/api/products/all-pos`); // 👈 Apuntamos a la nueva ruta sin límites
       if (res.ok) {
         const data = await res.json();
-        setCatalogo(Array.isArray(data) ? data : (data.products || []));
+        let listaProductos = Array.isArray(data) ? data : (data.items || data.products || []);
+        
+        listaProductos.sort((a, b) => {
+          const fechaA = new Date(a.createdAt || 0);
+          const fechaB = new Date(b.createdAt || 0);
+          if (fechaB - fechaA !== 0) return fechaB - fechaA;
+          return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
+        });
+
+        setCatalogo(listaProductos);
       }
     } catch (error) {
-      console.error("No se pudo cargar el catálogo para autocompletar:", error);
+      console.error("No se pudo conectar con el catálogo:", error);
     }
   };
 
@@ -141,11 +144,10 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
-  // 🛍️ FUNCIONES PARA PRENDAS
   const handleAddProducto = () => {
     setQuickForm(prev => ({
       ...prev,
-      productos: [...prev.productos, { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }]
+      productos: [...prev.productos, { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
     }));
   };
 
@@ -161,13 +163,13 @@ export default function SalesPage({ user, onLogout }) {
     const updated = [...quickForm.productos];
     updated[index][field] = value;
     
-    // Si editan el texto manualmente, borramos el ID vinculado para tratarlo como venta libre
     if (field === 'nombre' && updated[index].productoId) {
       updated[index].productoId = null;
       updated[index].stockDisponible = null;
+      updated[index].imageSrc = '';
+      updated[index].type = '';
     }
 
-    // Si cambian la talla y es un producto vinculado al catálogo, actualizamos el stock que se muestra
     if (field === 'talla' && updated[index].productoId) {
       const prodInCat = catalogo.find(p => (p.id || p._id) === updated[index].productoId);
       if (prodInCat && prodInCat.stock) {
@@ -178,20 +180,16 @@ export default function SalesPage({ user, onLogout }) {
     setQuickForm(prev => ({ ...prev, productos: updated }));
   };
 
-  // ⚡ SELECCIÓN DESDE EL BUSCADOR DE SUGERENCIAS
   const handleSelectFromCatalogo = (index, itemCat) => {
     const updated = [...quickForm.productos];
     const itemId = itemCat.id || itemCat._id;
     
-    // Precio: damos prioridad al precio con descuento si tiene uno activo
     const precioFinal = itemCat.discountPrice ? itemCat.discountPrice : (itemCat.price || 15000);
     
-    // Talla inteligente: tomamos la talla actual, o buscamos la primera que tenga stock > 0
-    let tallaAUsar = updated[index].talla || 'L';
-    if (itemCat.stock && Number(itemCat.stock[tallaAUsar]) <= 0) {
-      const tallaConStock = Object.keys(itemCat.stock).find(key => Number(itemCat.stock[key]) > 0);
-      if (tallaConStock) tallaAUsar = tallaConStock;
-    }
+    let tallasDisponibles = itemCat.stock ? Object.keys(itemCat.stock).filter(k => Number(itemCat.stock[k]) > 0) : [];
+    let tallaAUsar = tallasDisponibles.length > 0 ? tallasDisponibles[0] : (updated[index].talla || 'L');
+
+    const stockActualTalla = itemCat.stock ? (Number(itemCat.stock[tallaAUsar]) || 0) : null;
 
     updated[index] = {
       ...updated[index],
@@ -199,17 +197,27 @@ export default function SalesPage({ user, onLogout }) {
       nombre: itemCat.name,
       precioTotal: precioFinal * (Number(updated[index].cantidad) || 1),
       talla: tallaAUsar,
-      stockDisponible: itemCat.stock ? (Number(itemCat.stock[tallaAUsar]) || 0) : null
+      stockDisponible: stockActualTalla,
+      imageSrc: itemCat.imageSrc || (itemCat.images?.[0]?.url || ''),
+      type: itemCat.type || 'Camiseta'
     };
 
     setQuickForm(prev => ({ ...prev, productos: updated }));
-    toast.info(`Prenda vinculada al inventario: ${itemCat.name}`, { autoClose: 1500 });
   };
 
   const handleQuickSaleSubmit = async (e) => {
     e.preventDefault();
     if (!quickForm.cedula || !quickForm.nombre || !quickForm.numero) {
       return toast.warning("Por favor completa los datos del cliente.");
+    }
+
+    for (const p of quickForm.productos) {
+      if (p.productoId && p.stockDisponible !== null) {
+        const cantVendida = Number(p.cantidad) || 1;
+        if (cantVendida > p.stockDisponible) {
+          return toast.error(`Stock insuficiente para "${p.nombre}" en talla ${p.talla}. Disponibles: ${p.stockDisponible} unds.`);
+        }
+      }
     }
 
     const hasEmptyChema = quickForm.productos.some(p => !p.nombre || p.nombre.trim() === '');
@@ -220,7 +228,7 @@ export default function SalesPage({ user, onLogout }) {
     setSubmitting(true);
     try {
       const resumenChemas = quickForm.productos
-        .map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`)
+        .map(p => `${p.cantidad}x ${p.nombre} (${p.talla})${p.type ? ` [${p.type}]` : ''}`)
         .join(' + ');
 
       const salePayload = {
@@ -245,7 +253,7 @@ export default function SalesPage({ user, onLogout }) {
       });
 
       if (res.ok) {
-        toast.success(`💰 Venta registrada con éxito. ¡Inventario actualizado!`);
+        toast.success(`💰 Venta registrada con éxito. ¡Inventario descontado!`);
         setShowQuickSaleModal(false);
         setQuickForm({
           cedula: '',
@@ -253,10 +261,10 @@ export default function SalesPage({ user, onLogout }) {
           numero: '',
           costoEnvio: 0,
           vendedorAsignado: getInitialVendedor(),
-          productos: [{ productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }]
+          productos: [{ productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
         });
         fetchRankingData(); 
-        fetchCatalogoProductos(); // Recargamos inventario para tener los datos frescos
+        fetchCatalogoProductos(); 
       } else {
         throw new Error("Error al guardar");
       }
@@ -276,7 +284,7 @@ export default function SalesPage({ user, onLogout }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase"
+            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -285,7 +293,7 @@ export default function SalesPage({ user, onLogout }) {
             {isSuperUser && (
               <button 
                 onClick={() => setShowResetModal(true)}
-                className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
+                className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
               >
                 <FaRedo size={12} /> Resetear Ventas (Fin de Mes)
               </button>
@@ -293,7 +301,7 @@ export default function SalesPage({ user, onLogout }) {
 
             <button 
               onClick={() => setShowQuickSaleModal(true)}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
             >
               <FaPlus size={14} /> Agregar Venta Rápida 🚀
             </button>
@@ -409,7 +417,7 @@ export default function SalesPage({ user, onLogout }) {
               <button 
                 type="button" 
                 onClick={() => setShowResetModal(false)} 
-                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition"
+                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition cursor-pointer"
               >
                 Cancelar
               </button>
@@ -417,7 +425,7 @@ export default function SalesPage({ user, onLogout }) {
                 type="button" 
                 disabled={resetting}
                 onClick={confirmResetMonthlySales} 
-                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
+                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
               >
                 {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
               </button>
@@ -426,15 +434,15 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
-      {/* 🚀 MODAL DE VENTA RÁPIDA MULTIPRODUCTO CON BUSCADOR DE INVENTARIO */}
+      {/* 🚀 MODAL DE VENTA RÁPIDA */}
       {showQuickSaleModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto pb-24">
             
             <button 
               type="button"
               onClick={() => setShowQuickSaleModal(false)}
-              className="absolute bg-gray-100 text-black top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition font-bold"
+              className="absolute bg-gray-100 text-black top-5 right-5 w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-200 transition font-bold z-10 cursor-pointer"
             >
               <FaTimes size={14} />
             </button>
@@ -520,24 +528,39 @@ export default function SalesPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* 🛍️ MULTIPRODUCTO CON AUTOCOMPLETADO Y DESCUENTO AUTOMÁTICO */}
+              {/* 🛍️ MULTIPRODUCTO */}
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">👕 Chemas del Pedido ({quickForm.productos.length})</label>
                   <button 
                     type="button" 
                     onClick={handleAddProducto} 
-                    className="text-[10px] font-black text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1"
+                    className="text-[10px] font-black text-green-700 bg-green-100 hover:bg-green-200 px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
                   >
                     <FaPlus size={9} /> Agregar Otra Chema
                   </button>
                 </div>
 
                 {quickForm.productos.map((prod, index) => {
-                  // Filtramos sugerencias si están escribiendo
-                  const sugerencias = prod.nombre.trim().length >= 2
-                    ? catalogo.filter(cat => cat.name && cat.name.toLowerCase().includes(prod.nombre.toLowerCase())).slice(0, 5)
-                    : [];
+                  const queryText = (prod.nombre || "").trim().toLowerCase();
+
+
+                  const sugerencias = queryText.length === 0
+                    ? catalogo 
+                    : catalogo.filter(cat => {
+                        const nombreMatch = cat.name && cat.name.toLowerCase().includes(queryText);
+                        const tipoMatch = cat.type && cat.type.toLowerCase().includes(queryText);
+                        return nombreMatch || tipoMatch;
+                      });
+                  
+
+
+
+                
+                  const productoVinculado = prod.productoId ? catalogo.find(p => (p.id || p._id) === prod.productoId) : null;
+                  const tallasDisponibles = productoVinculado && productoVinculado.stock 
+                    ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
+                    : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'];
 
                   return (
                     <div key={index} className="border border-gray-200 p-3 rounded-xl bg-gray-50/80 space-y-2 relative">
@@ -545,81 +568,92 @@ export default function SalesPage({ user, onLogout }) {
                         <button 
                           type="button" 
                           onClick={() => handleRemoveProducto(index)} 
-                          className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow"
+                          className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow cursor-pointer"
                           title="Quitar chema"
                         >
                           <FaTimes size={10} />
                         </button>
                       )}
 
-                      {/* CAMPO DE BUSCADOR / MODELO */}
-                      <div className="relative">
-                        <div className="flex justify-between items-center mb-1">
-                          <label className="text-[9px] font-bold text-gray-500 uppercase flex items-center gap-1">
-                            Modelo #{index + 1} *
-                            {prod.productoId ? (
-                              <span className="text-green-600 font-black flex items-center gap-0.5 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
-                                <FaCheckCircle size={8} /> Vinculada al stock
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 font-normal italic">(Escribe o busca en catálogo)</span>
-                            )}
-                          </label>
-
-                          {/* MOSTRAR STOCK EN TIEMPO REAL */}
-                          {prod.productoId && prod.stockDisponible !== null && (
-                            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${
-                              prod.stockDisponible > 0 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                            }`}>
-                              <FaBoxOpen size={9} /> Stock talla {prod.talla}: {prod.stockDisponible} unds
+                      {/* VISTA MINIMALISTA SI ESTÁ VINCULADO */}
+                      {prod.productoId && (
+                        <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs">
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
+                              {prod.type || 'Camiseta'}
                             </span>
-                          )}
+                            <span className="font-bold text-gray-800 truncate">{prod.nombre}</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full whitespace-nowrap">
+                            Stock: {prod.stockDisponible ?? 0} unds
+                          </span>
                         </div>
+                      )}
 
+                      {/* CAMPO DE BUSCADOR */}
+                      <div className="relative">
                         <div className="relative">
                           <input 
                             type="text" 
                             required 
                             value={prod.nombre} 
                             onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
-                            placeholder="Ej: Real Madrid Local 2026 (o venta libre)" 
+                            placeholder="Toca para ver todo el catálogo o escribe..." 
                             className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
-                              prod.productoId ? 'bg-green-50/50 border-green-400 text-green-900' : 'bg-white'
+                              prod.productoId ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
                             }`}
                           />
                           <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
                         </div>
 
-                        {/* 📋 LISTA DESPLEGABLE DE SUGERENCIAS */}
-                        {!prod.productoId && sugerencias.length > 0 && (
-                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-gray-100">
-                            <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-black text-gray-500 uppercase tracking-wider flex justify-between">
-                              <span>Coincidencias en Inventario</span>
-                              <span>Clic para vincular</span>
-                            </div>
-                            {sugerencias.map(cat => {
-                              const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
-                              const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+                        {/* 📋 LISTA DESPLEGABLE CON SCROLL AMPLIO Y SIN CABECERAS MOLESTAS */}
+                        {!prod.productoId && (
+                          <div className="absolute left-0 right-0 top-full mt-1 z-[99999] bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto divide-y divide-gray-100">
+                            {sugerencias.length === 0 ? (
+                              <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
+                                No se encontraron resultados (quedará como venta libre).
+                              </div>
+                            ) : (
+                              sugerencias.map(cat => {
+                                const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                                const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+                                const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
+                                const tipoCat = cat.type || 'Camiseta';
 
-                              return (
-                                <button
-                                  key={cat.id || cat._id}
-                                  type="button"
-                                  onClick={() => handleSelectFromCatalogo(index, cat)}
-                                  className="w-full text-left p-2.5 hover:bg-black hover:text-white transition flex justify-between items-center group text-xs font-bold"
-                                >
-                                  <div className="truncate pr-2">
-                                    <span className="block truncate uppercase">{cat.name}</span>
-                                    <span className="text-[10px] text-gray-400 group-hover:text-gray-300 font-normal">
-                                      Bodega: <strong className={totalEnBodega > 0 ? 'text-green-500 group-hover:text-green-400' : 'text-red-500'}>{totalEnBodega} unds</strong> total
+                                return (
+                                  <button
+                                    key={cat.id || cat._id}
+                                    type="button"
+                                    onClick={() => handleSelectFromCatalogo(index, cat)}
+                                    className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
+                                  >
+                                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                      {imgCat ? (
+                                        <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                      ) : (
+                                        <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                          <FaTshirt size={12} />
+                                        </div>
+                                      )}
+                                      <div className="truncate">
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-[8px] uppercase font-black px-1.5 py-0.2 bg-gray-200 text-gray-800 rounded">
+                                            {tipoCat}
+                                          </span>
+                                        </div>
+                                        <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
+                                        <span className="text-[10px] text-gray-500 font-medium">
+                                          Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                      ₡{precioCat.toLocaleString()}
                                     </span>
-                                  </div>
-                                  <span className="font-black text-[#D4AF37] whitespace-nowrap text-xs">
-                                    ₡{precioCat.toLocaleString()}
-                                  </span>
-                                </button>
-                              );
-                            })}
+                                  </button>
+                                );
+                              })
+                            )}
                           </div>
                         )}
                       </div>
@@ -633,7 +667,11 @@ export default function SalesPage({ user, onLogout }) {
                             onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
                             className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
                           >
-                            {['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'].map(t => <option key={t} value={t}>{t}</option>)}
+                            {tallasDisponibles.length === 0 ? (
+                              <option value="">Agotado</option>
+                            ) : (
+                              tallasDisponibles.map(t => <option key={t} value={t}>{t}</option>)
+                            )}
                           </select>
                         </div>
                         <div className="col-span-3">
@@ -641,12 +679,12 @@ export default function SalesPage({ user, onLogout }) {
                           <input 
                             type="number" 
                             min="1" 
+                            max={prod.stockDisponible !== null ? prod.stockDisponible : 99}
                             required 
                             value={prod.cantidad} 
                             onChange={e => {
                               const val = e.target.value;
                               handleProductoChange(index, 'cantidad', val);
-                              // Actualizar precio total si está vinculada al catálogo
                               if (prod.productoId) {
                                 const prodCat = catalogo.find(p => (p.id || p._id) === prod.productoId);
                                 if (prodCat) {
@@ -675,43 +713,42 @@ export default function SalesPage({ user, onLogout }) {
               </div>
 
               {/* ENVÍO */}
-              <div className="pt-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">🚚 Costo de Envío del Pedido (₡)</label>
+              <div className="pt-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">🚚 Costo de Envío (₡)</label>
                 <input 
                   type="number" 
                   required 
                   value={quickForm.costoEnvio} 
                   onChange={e => setQuickForm({...quickForm, costoEnvio: e.target.value})} 
                   placeholder="0" 
-                  className="w-full border p-2.5 rounded-xl text-xs font-bold text-blue-600 focus:border-black outline-none bg-blue-50/30" 
+                  className="w-full border p-2 rounded-xl text-xs font-bold text-blue-600 focus:border-black outline-none bg-blue-50/30" 
                 />
               </div>
 
               {/* TOTAL GENERAL */}
-              <div className="bg-green-50 border border-green-200 p-3 rounded-xl flex justify-between items-center text-xs mt-3">
+              <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2">
                 <div>
-                  <span className="font-bold text-green-800 flex items-center gap-1.5">
-                    <FaMoneyBillWave /> TOTAL PEDIDO:
-                  </span>
-                  <span className="text-[10px] text-green-600 font-medium">{totalCantidadChemas} chemas en total</span>
+                  <span className="font-bold text-green-800">TOTAL PEDIDO:</span>
+                  <span className="text-[10px] text-green-600 block">{totalCantidadChemas} chemas en total</span>
                 </div>
                 <span className="font-black text-green-700 text-base">
                   ₡{granTotalConEnvio.toLocaleString()}
                 </span>
               </div>
 
-              <div className="flex gap-2 pt-3 border-t mt-4">
+              {/* BOTONES FINALES STICKY */}
+              <div className="flex gap-2 pt-3 border-t mt-4 bg-white sticky bottom-0 pb-2">
                 <button 
                   type="button" 
                   onClick={() => setShowQuickSaleModal(false)} 
-                  className="w-1/3 py-3 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-50 transition"
+                  className="w-1/3 py-3 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-50 transition cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit" 
                   disabled={submitting || loadingCedula} 
-                  className="w-2/3 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
+                  className="w-2/3 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
                 >
                   {submitting ? 'Guardando...' : 'CONFIRMAR VENTA 🚀'}
                 </button>

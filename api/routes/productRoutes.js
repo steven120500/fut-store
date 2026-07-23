@@ -47,7 +47,6 @@ function diffProduct(prev, next) {
   if (prev.discountPrice !== next.discountPrice) ch.push(`precio oferta: ${prev.discountPrice} -> ${next.discountPrice}`);
   if (prev.type !== next.type) ch.push(`tipo: "${prev.type}" -> "${next.type}"`);
   if (prev.isNew !== next.isNew) ch.push(`nuevo: ${prev.isNew} -> ${next.isNew}`);
-  // 🏆 HISTORIAL: Guardar si se cambió el estado de asignación del Mundial
   if (prev.isMundial !== next.isMundial) ch.push(`mundial: ${prev.isMundial} -> ${next.isMundial}`);
   ch.push(...diffInv('stock', prev.stock, next.stock));
   ch.push(...diffInv('bodega', prev.bodega, next.bodega));
@@ -76,7 +75,7 @@ function sanitizeInv(obj) {
 
 /* ================= Rutas ================= */
 
-/** Health check (Lo muevo arriba para evitar conflictos con :id) */
+/** Health check */
 router.get('/health', async (_req, res) => {
   try {
     const count = await Product.countDocuments();
@@ -86,7 +85,26 @@ router.get('/health', async (_req, res) => {
   }
 });
 
-/** 1. Listado paginado */
+/** 🚀 NUEVA RUTA EXCLUSIVA PARA EL POS: Devuelve TODO el catálogo sin paginación truncada */
+router.get('/all-pos', async (req, res) => {
+  try {
+    console.log('📡 GET /api/products/all-pos - Solicitando catálogo completo para POS...');
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
+    
+    // Traemos absolutamente todos los productos ordenados del más reciente al más viejo
+    const items = await Product.find({}).select(projection).sort({ createdAt: -1 }).lean();
+    
+    res.json({
+      items: items || [],
+      total: items.length
+    });
+  } catch (err) {
+    console.error('❌ Error en GET /api/products/all-pos:', err);
+    res.status(500).json({ error: 'Error al obtener el catálogo completo' });
+  }
+});
+
+/** 1. Listado paginado estándar para la tienda principal */
 router.get('/', async (req, res) => {
   try {
     console.log('📡 GET /api/products - Iniciando consulta...');
@@ -111,7 +129,6 @@ router.get('/', async (req, res) => {
       find.type = type;
     }
 
-    // 🔒 Añadido lockedBy a la proyección
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
 
     const [items, total] = await Promise.all([
@@ -135,7 +152,6 @@ router.get('/', async (req, res) => {
 
 /* ==================== RUTAS DE BLOQUEO (CANDADO) ================== */
 
-// 🔒 PONER CANDADO
 router.post('/:id/lock', async (req, res) => {
   try {
       const product = await Product.findById(req.params.id);
@@ -144,7 +160,6 @@ router.post('/:id/lock', async (req, res) => {
       const user = whoDidIt(req);
       const now = new Date();
 
-      // Si ya está bloqueado por OTRA persona, y el bloqueo tiene menos de 10 minutos (600000 ms)
       if (product.lockedBy && product.lockedBy !== user) {
           const lockAge = now - product.lockedAt;
           if (lockAge < 600000) { 
@@ -155,7 +170,6 @@ router.post('/:id/lock', async (req, res) => {
           }
       }
 
-      // Si no está bloqueado, o el bloqueo expiró, se lo asignamos a este usuario
       product.lockedBy = user;
       product.lockedAt = now;
       await product.save();
@@ -166,13 +180,11 @@ router.post('/:id/lock', async (req, res) => {
   }
 });
 
-// 🔓 QUITAR CANDADO
 router.post('/:id/unlock', async (req, res) => {
   try {
       const product = await Product.findById(req.params.id);
       const user = whoDidIt(req);
 
-      // Solo el usuario que lo bloqueó puede desbloquearlo
       if (product && product.lockedBy === user) {
           product.lockedBy = null;
           product.lockedAt = null;
@@ -233,8 +245,6 @@ router.post('/', upload.any(), async (req, res) => {
     const cleanBodega = sanitizeInv(bodega);
 
     const isNew = req.body.isNew === 'true' || req.body.isNew === true || req.body.isNew === 'on';
-    
-    // 🏆 ASIGNAR MUNDIAL: Parseamos el valor booleano desde el formulario
     const isMundial = req.body.isMundial === 'true' || req.body.isMundial === true || req.body.isMundial === 'on';
 
     const product = await Product.create({
@@ -247,7 +257,7 @@ router.post('/', upload.any(), async (req, res) => {
       imageSrc,
       images,
       isNew,
-      isMundial, // 👈 Almacenamos el campo en el documento
+      isMundial,
     });
 
     await History.create({
@@ -271,7 +281,6 @@ router.put('/:id', async (req, res) => {
     const prev = await Product.findById(req.params.id).lean();
     if (!prev) return res.status(404).json({ error: 'Producto no encontrado' });
 
-    // 🛡️ Seguridad extra: verificar que nadie más tenga el candado al momento de guardar
     const user = whoDidIt(req);
     if (prev.lockedBy && prev.lockedBy !== user) {
       const lockAge = new Date() - prev.lockedAt;
@@ -297,7 +306,6 @@ router.put('/:id', async (req, res) => {
       discountPrice: (req.body.discountPrice !== undefined && req.body.discountPrice !== '') ? Number(req.body.discountPrice) : prev.discountPrice,
       stock: nextStock,
       bodega: nextBodega,
-      // ⭐ Aseguramos que el candado se limpie al guardar exitosamente
       lockedBy: null,
       lockedAt: null
     };
@@ -306,7 +314,6 @@ router.put('/:id', async (req, res) => {
       update.isNew = req.body.isNew === 'true' || req.body.isNew === true || req.body.isNew === 'on';
     }
 
-    // 🏆 ACTUALIZAR MUNDIAL: Verificamos y actualizamos el estado
     if (req.body.isMundial !== undefined) {
       update.isMundial = req.body.isMundial === 'true' || req.body.isMundial === true || req.body.isMundial === 'on';
     }
