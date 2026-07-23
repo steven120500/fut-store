@@ -210,7 +210,7 @@ export default function SalesPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
+      
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         

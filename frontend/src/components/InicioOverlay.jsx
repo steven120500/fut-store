@@ -92,7 +92,7 @@ export default function InicioOverlay({ onComplete }) {
           transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
           className="mt-4 text-gray-400 font-bold tracking-[0.25em] text-xs sm:text-base select-none"
         >
-          MODO MUNDIAL <span className="text-white border-b-[3px] border-amber-500 pb-1">ACTIVADO</span>
+          SIEMPRE LA MEJOR <span className="text-white border-b-[3px] border-amber-500 pb-1">CALIDAD</span>
         </motion.p>
       </div>
 

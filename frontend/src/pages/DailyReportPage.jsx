@@ -193,7 +193,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <Header user={user} onLogout={onLogout} isSuperUser={isSuperUser} />
+      
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
@@ -217,7 +217,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
             <button 
               onClick={exportDailyPDF}
-              className="px-4 py-3 bg-[#D4AF37] hover:bg-[#b8972f] text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
             >
               <FaFilePdf size={14} /> PDF Diario 📄
             </button>
