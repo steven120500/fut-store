@@ -1,5 +1,6 @@
 import express from 'express';
 import Sale from '../models/Sale.js';
+import Product from '../models/Product.js'; // 👈 IMPORTAMOS EL CATÁLOGO PARA DESCONTAR
 
 const router = express.Router();
 
@@ -23,16 +24,47 @@ const normalizarVendedor = (inputName) => {
     .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
 };
 
-// 📥 POST: Guardar venta (Soporta múltiples productos o producto único)
+// 📥 POST: Guardar venta con DESCUENTO AUTOMÁTICO DE INVENTARIO
 router.post('/', async (req, res) => {
   try {
     const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
     const vendedorEstandarizado = normalizarVendedor(rawVendedor);
 
+    const productosVendidos = req.body.productos || [];
+
+    // 🛡️ MAGIA DE INVENTARIO: Descontar stock en la base de datos si la chema tiene ID del catálogo
+    if (productosVendidos.length > 0) {
+      for (const prod of productosVendidos) {
+        if (prod.productoId) {
+          try {
+            const dbProduct = await Product.findById(prod.productoId);
+            if (dbProduct && dbProduct.stock) {
+              const talla = String(prod.talla);
+              const cantidadVendida = Number(prod.cantidad) || 1;
+              
+              // Verificamos cuánto stock hay actualmente en esa talla
+              const stockActual = Number(dbProduct.stock[talla]) || 0;
+              
+              // Restamos asegurando que no quede en números negativos
+              const nuevoStock = Math.max(0, stockActual - cantidadVendida);
+              
+              // Modificamos el objeto stock y guardamos
+              dbProduct.stock[talla] = nuevoStock;
+              dbProduct.markModified('stock'); // Le avisamos a Mongoose que el objeto mixto cambió
+              await dbProduct.save();
+            }
+          } catch (err) {
+            console.error(`Advertencia: No se pudo descontar stock del producto ${prod.productoId}:`, err.message);
+            // No detenemos la venta si una chema falla, pero lo dejamos registrado
+          }
+        }
+      }
+    }
+
     // Calcular cantidad total de chemas en el pedido
     let cantidadTotal = 0;
-    if (req.body.productos && req.body.productos.length > 0) {
-      cantidadTotal = req.body.productos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
+    if (productosVendidos.length > 0) {
+      cantidadTotal = productosVendidos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
     } else {
       cantidadTotal = Number(req.body.cantidad) || 1;
     }
@@ -45,11 +77,10 @@ router.post('/', async (req, res) => {
       costoEnvio: Number(req.body.costoEnvio) || 0,
       montoTotal: Number(req.body.montoTotal) || 0,
       
-      // Datos guardados
-      tallaVendida: req.body.tallaVendida || (req.body.productos?.[0]?.talla || 'N/A'),
+      tallaVendida: req.body.tallaVendida || (productosVendidos[0]?.talla || 'N/A'),
       cantidad: cantidadTotal,
-      productoNombre: req.body.productoNombre || (req.body.productos?.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta'),
-      productos: req.body.productos || [],
+      productoNombre: req.body.productoNombre || (productosVendidos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta'),
+      productos: productosVendidos,
 
       vendedor: vendedorEstandarizado,
       fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaSearch, FaCheckCircle, FaBoxOpen } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import Header from '../components/Header';
+
 import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
@@ -21,6 +21,9 @@ export default function SalesPage({ user, onLogout }) {
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 📦 CATÁLOGO DE PRODUCTOS PARA AUTOCOMPLETADO
+  const [catalogo, setCatalogo] = useState([]);
+
   // Estados de Modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
@@ -36,7 +39,7 @@ export default function SalesPage({ user, onLogout }) {
     return found || 'Steven Corrales';
   };
 
-  // 🛍️ ESTADO MULTIPRODUCTO: Ahora manejamos una lista de chemas en el pedido
+  // 🛍️ ESTADO MULTIPRODUCTO (Soporta productoId y stock disponible visual)
   const [quickForm, setQuickForm] = useState({
     cedula: '',
     nombre: '',
@@ -44,7 +47,7 @@ export default function SalesPage({ user, onLogout }) {
     costoEnvio: 0,
     vendedorAsignado: getInitialVendedor(),
     productos: [
-      { nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }
+      { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }
     ]
   });
 
@@ -61,7 +64,21 @@ export default function SalesPage({ user, onLogout }) {
 
   useEffect(() => {
     fetchRankingData();
+    fetchCatalogoProductos();
   }, []);
+
+  // Cargar catálogo silenciosamente para las sugerencias del buscador
+  const fetchCatalogoProductos = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/products`);
+      if (res.ok) {
+        const data = await res.json();
+        setCatalogo(Array.isArray(data) ? data : (data.products || []));
+      }
+    } catch (error) {
+      console.error("No se pudo cargar el catálogo para autocompletar:", error);
+    }
+  };
 
   useEffect(() => {
     const checkCedulaTSE = async () => {
@@ -124,11 +141,11 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
-  // 🛍️ FUNCIONES PARA AGREGAR / EDITAR / ELIMINAR PRENDAS DEL PEDIDO
+  // 🛍️ FUNCIONES PARA PRENDAS
   const handleAddProducto = () => {
     setQuickForm(prev => ({
       ...prev,
-      productos: [...prev.productos, { nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }]
+      productos: [...prev.productos, { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }]
     }));
   };
 
@@ -143,7 +160,50 @@ export default function SalesPage({ user, onLogout }) {
   const handleProductoChange = (index, field, value) => {
     const updated = [...quickForm.productos];
     updated[index][field] = value;
+    
+    // Si editan el texto manualmente, borramos el ID vinculado para tratarlo como venta libre
+    if (field === 'nombre' && updated[index].productoId) {
+      updated[index].productoId = null;
+      updated[index].stockDisponible = null;
+    }
+
+    // Si cambian la talla y es un producto vinculado al catálogo, actualizamos el stock que se muestra
+    if (field === 'talla' && updated[index].productoId) {
+      const prodInCat = catalogo.find(p => (p.id || p._id) === updated[index].productoId);
+      if (prodInCat && prodInCat.stock) {
+        updated[index].stockDisponible = Number(prodInCat.stock[value]) || 0;
+      }
+    }
+
     setQuickForm(prev => ({ ...prev, productos: updated }));
+  };
+
+  // ⚡ SELECCIÓN DESDE EL BUSCADOR DE SUGERENCIAS
+  const handleSelectFromCatalogo = (index, itemCat) => {
+    const updated = [...quickForm.productos];
+    const itemId = itemCat.id || itemCat._id;
+    
+    // Precio: damos prioridad al precio con descuento si tiene uno activo
+    const precioFinal = itemCat.discountPrice ? itemCat.discountPrice : (itemCat.price || 15000);
+    
+    // Talla inteligente: tomamos la talla actual, o buscamos la primera que tenga stock > 0
+    let tallaAUsar = updated[index].talla || 'L';
+    if (itemCat.stock && Number(itemCat.stock[tallaAUsar]) <= 0) {
+      const tallaConStock = Object.keys(itemCat.stock).find(key => Number(itemCat.stock[key]) > 0);
+      if (tallaConStock) tallaAUsar = tallaConStock;
+    }
+
+    updated[index] = {
+      ...updated[index],
+      productoId: itemId,
+      nombre: itemCat.name,
+      precioTotal: precioFinal * (Number(updated[index].cantidad) || 1),
+      talla: tallaAUsar,
+      stockDisponible: itemCat.stock ? (Number(itemCat.stock[tallaAUsar]) || 0) : null
+    };
+
+    setQuickForm(prev => ({ ...prev, productos: updated }));
+    toast.info(`Prenda vinculada al inventario: ${itemCat.name}`, { autoClose: 1500 });
   };
 
   const handleQuickSaleSubmit = async (e) => {
@@ -152,7 +212,6 @@ export default function SalesPage({ user, onLogout }) {
       return toast.warning("Por favor completa los datos del cliente.");
     }
 
-    // Validar que todas las chemas tengan nombre
     const hasEmptyChema = quickForm.productos.some(p => !p.nombre || p.nombre.trim() === '');
     if (hasEmptyChema) {
       return toast.warning("Por favor escribe el nombre/modelo de todas las chemas agregadas.");
@@ -160,7 +219,6 @@ export default function SalesPage({ user, onLogout }) {
 
     setSubmitting(true);
     try {
-      // Generar nombre descriptivo combinado si son varias
       const resumenChemas = quickForm.productos
         .map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`)
         .join(' + ');
@@ -187,7 +245,7 @@ export default function SalesPage({ user, onLogout }) {
       });
 
       if (res.ok) {
-        toast.success(`💰 Venta registrada a nombre de ${quickForm.vendedorAsignado} (${totalCantidadChemas} chemas)`);
+        toast.success(`💰 Venta registrada con éxito. ¡Inventario actualizado!`);
         setShowQuickSaleModal(false);
         setQuickForm({
           cedula: '',
@@ -195,9 +253,10 @@ export default function SalesPage({ user, onLogout }) {
           numero: '',
           costoEnvio: 0,
           vendedorAsignado: getInitialVendedor(),
-          productos: [{ nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000 }]
+          productos: [{ productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null }]
         });
         fetchRankingData(); 
+        fetchCatalogoProductos(); // Recargamos inventario para tener los datos frescos
       } else {
         throw new Error("Error al guardar");
       }
@@ -211,10 +270,9 @@ export default function SalesPage({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       
-
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
-        {/* NAVEGACIÓN Y BOTONES SUPERIORES */}
+        {/* NAVEGACIÓN Y BOTONES */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
@@ -242,7 +300,7 @@ export default function SalesPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* ENCABEZADO Y TARJETAS DE RESUMEN */}
+        {/* ENCABEZADO */}
         <div className="border-b border-gray-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
@@ -263,7 +321,7 @@ export default function SalesPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* CONTENIDO: RANKING */}
+        {/* RANKING */}
         {loading ? (
           <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
             Calculando el ranking del equipo...
@@ -334,7 +392,7 @@ export default function SalesPage({ user, onLogout }) {
 
       </div>
 
-      {/* ⚠️ MODAL DE CONFIRMACIÓN DE CIERRE DE MES */}
+      {/* ⚠️ MODAL DE RESETEO */}
       {showResetModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
@@ -368,9 +426,9 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
-      {/* 🚀 MODAL DE VENTA RÁPIDA MULTIPRODUCTO */}
+      {/* 🚀 MODAL DE VENTA RÁPIDA MULTIPRODUCTO CON BUSCADOR DE INVENTARIO */}
       {showQuickSaleModal && (
-        <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
             
             <button 
@@ -409,7 +467,7 @@ export default function SalesPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* SECCIÓN DE DATOS DEL CLIENTE (SE LLENA 1 SOLA VEZ) */}
+              {/* DATOS DEL CLIENTE */}
               <div className="bg-gray-50 p-3 rounded-xl border space-y-2.5">
                 <span className="text-[10px] font-black uppercase text-gray-600 tracking-wider block border-b pb-1">👤 Datos del Cliente</span>
                 <div className="grid grid-cols-2 gap-2">
@@ -462,7 +520,7 @@ export default function SalesPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* 🛍️ SECCIÓN MULTIPRODUCTO: LISTA DINÁMICA DE CHEMAS */}
+              {/* 🛍️ MULTIPRODUCTO CON AUTOCOMPLETADO Y DESCUENTO AUTOMÁTICO */}
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">👕 Chemas del Pedido ({quickForm.productos.length})</label>
@@ -475,69 +533,148 @@ export default function SalesPage({ user, onLogout }) {
                   </button>
                 </div>
 
-                {quickForm.productos.map((prod, index) => (
-                  <div key={index} className="border border-gray-200 p-3 rounded-xl bg-gray-50/80 space-y-2 relative">
-                    {quickForm.productos.length > 1 && (
-                      <button 
-                        type="button" 
-                        onClick={() => handleRemoveProducto(index)} 
-                        className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow"
-                        title="Quitar chema"
-                      >
-                        <FaTimes size={10} />
-                      </button>
-                    )}
+                {quickForm.productos.map((prod, index) => {
+                  // Filtramos sugerencias si están escribiendo
+                  const sugerencias = prod.nombre.trim().length >= 2
+                    ? catalogo.filter(cat => cat.name && cat.name.toLowerCase().includes(prod.nombre.toLowerCase())).slice(0, 5)
+                    : [];
 
-                    <div>
-                      <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Modelo #{index + 1} *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={prod.nombre} 
-                        onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
-                        placeholder="Ej: Real Madrid Local 2026" 
-                        className="w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white" 
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-12 gap-1.5 items-center">
-                      <div className="col-span-4">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
-                        <select 
-                          value={prod.talla} 
-                          onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
-                          className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
+                  return (
+                    <div key={index} className="border border-gray-200 p-3 rounded-xl bg-gray-50/80 space-y-2 relative">
+                      {quickForm.productos.length > 1 && (
+                        <button 
+                          type="button" 
+                          onClick={() => handleRemoveProducto(index)} 
+                          className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-5 h-5 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow"
+                          title="Quitar chema"
                         >
-                          {['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28'].map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
+                          <FaTimes size={10} />
+                        </button>
+                      )}
+
+                      {/* CAMPO DE BUSCADOR / MODELO */}
+                      <div className="relative">
+                        <div className="flex justify-between items-center mb-1">
+                          <label className="text-[9px] font-bold text-gray-500 uppercase flex items-center gap-1">
+                            Modelo #{index + 1} *
+                            {prod.productoId ? (
+                              <span className="text-green-600 font-black flex items-center gap-0.5 bg-green-50 px-1.5 py-0.5 rounded border border-green-200">
+                                <FaCheckCircle size={8} /> Vinculada al stock
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 font-normal italic">(Escribe o busca en catálogo)</span>
+                            )}
+                          </label>
+
+                          {/* MOSTRAR STOCK EN TIEMPO REAL */}
+                          {prod.productoId && prod.stockDisponible !== null && (
+                            <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded flex items-center gap-1 ${
+                              prod.stockDisponible > 0 ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
+                            }`}>
+                              <FaBoxOpen size={9} /> Stock talla {prod.talla}: {prod.stockDisponible} unds
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="relative">
+                          <input 
+                            type="text" 
+                            required 
+                            value={prod.nombre} 
+                            onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
+                            placeholder="Ej: Real Madrid Local 2026 (o venta libre)" 
+                            className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
+                              prod.productoId ? 'bg-green-50/50 border-green-400 text-green-900' : 'bg-white'
+                            }`}
+                          />
+                          <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
+                        </div>
+
+                        {/* 📋 LISTA DESPLEGABLE DE SUGERENCIAS */}
+                        {!prod.productoId && sugerencias.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto divide-y divide-gray-100">
+                            <div className="bg-gray-100 px-3 py-1.5 text-[9px] font-black text-gray-500 uppercase tracking-wider flex justify-between">
+                              <span>Coincidencias en Inventario</span>
+                              <span>Clic para vincular</span>
+                            </div>
+                            {sugerencias.map(cat => {
+                              const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                              const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+
+                              return (
+                                <button
+                                  key={cat.id || cat._id}
+                                  type="button"
+                                  onClick={() => handleSelectFromCatalogo(index, cat)}
+                                  className="w-full text-left p-2.5 hover:bg-black hover:text-white transition flex justify-between items-center group text-xs font-bold"
+                                >
+                                  <div className="truncate pr-2">
+                                    <span className="block truncate uppercase">{cat.name}</span>
+                                    <span className="text-[10px] text-gray-400 group-hover:text-gray-300 font-normal">
+                                      Bodega: <strong className={totalEnBodega > 0 ? 'text-green-500 group-hover:text-green-400' : 'text-red-500'}>{totalEnBodega} unds</strong> total
+                                    </span>
+                                  </div>
+                                  <span className="font-black text-[#D4AF37] whitespace-nowrap text-xs">
+                                    ₡{precioCat.toLocaleString()}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
-                      <div className="col-span-3">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
-                        <input 
-                          type="number" 
-                          min="1" 
-                          required 
-                          value={prod.cantidad} 
-                          onChange={e => handleProductoChange(index, 'cantidad', e.target.value)} 
-                          className="w-full border p-1.5 rounded-lg text-xs font-black text-center focus:border-black outline-none bg-amber-50 h-8" 
-                        />
-                      </div>
-                      <div className="col-span-5">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Precio (₡)</label>
-                        <input 
-                          type="number" 
-                          required 
-                          value={prod.precioTotal} 
-                          onChange={e => handleProductoChange(index, 'precioTotal', e.target.value)} 
-                          className="w-full border p-1.5 rounded-lg text-xs font-bold text-gray-800 focus:border-black outline-none px-2 bg-white h-8" 
-                        />
+
+                      {/* TALLA / CANTIDAD / PRECIO */}
+                      <div className="grid grid-cols-12 gap-1.5 items-center">
+                        <div className="col-span-4">
+                          <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
+                          <select 
+                            value={prod.talla} 
+                            onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
+                            className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
+                          >
+                            {['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'].map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div className="col-span-3">
+                          <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
+                          <input 
+                            type="number" 
+                            min="1" 
+                            required 
+                            value={prod.cantidad} 
+                            onChange={e => {
+                              const val = e.target.value;
+                              handleProductoChange(index, 'cantidad', val);
+                              // Actualizar precio total si está vinculada al catálogo
+                              if (prod.productoId) {
+                                const prodCat = catalogo.find(p => (p.id || p._id) === prod.productoId);
+                                if (prodCat) {
+                                  const pr = prodCat.discountPrice ? prodCat.discountPrice : (prodCat.price || 15000);
+                                  handleProductoChange(index, 'precioTotal', pr * (Number(val) || 1));
+                                }
+                              }
+                            }} 
+                            className="w-full border p-1.5 rounded-lg text-xs font-black text-center focus:border-black outline-none bg-amber-50 h-8" 
+                          />
+                        </div>
+                        <div className="col-span-5">
+                          <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Precio Total (₡)</label>
+                          <input 
+                            type="number" 
+                            required 
+                            value={prod.precioTotal} 
+                            onChange={e => handleProductoChange(index, 'precioTotal', e.target.value)} 
+                            className="w-full border p-1.5 rounded-lg text-xs font-bold text-gray-800 focus:border-black outline-none px-2 bg-white h-8" 
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              {/* ENVÍO ÚNICO POR PEDIDO */}
+              {/* ENVÍO */}
               <div className="pt-2">
                 <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">🚚 Costo de Envío del Pedido (₡)</label>
                 <input 
