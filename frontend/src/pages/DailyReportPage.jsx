@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -16,6 +16,9 @@ export default function DailyReportPage({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
+  
+  // Estado para confirmar la eliminación de una venta específica
+  const [deletingId, setDeletingId] = useState(null);
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
   const displayName = user?.firstName || user?.username || 'Admin';
@@ -39,6 +42,27 @@ export default function DailyReportPage({ user, onLogout }) {
       toast.error("No se pudo cargar el historial de ventas.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 🗑️ ELIMINAR UNA VENTA INDIVIDUAL
+  const handleDeleteSale = async (saleId) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/sales/${saleId}`, {
+        method: 'DELETE',
+        headers: { 'x-user': displayName }
+      });
+
+      if (res.ok) {
+        toast.success("🗑️ Venta eliminada correctamente");
+        setSales(prev => prev.filter(s => s._id !== saleId));
+        setDeletingId(null);
+      } else {
+        throw new Error("No se pudo eliminar la venta");
+      }
+    } catch (error) {
+      console.error("Error al eliminar venta:", error);
+      toast.error("Error al conectar con el servidor para eliminar la venta.");
     }
   };
 
@@ -200,7 +224,7 @@ export default function DailyReportPage({ user, onLogout }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase"
+            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -209,7 +233,7 @@ export default function DailyReportPage({ user, onLogout }) {
             {isSuperUser && (
               <button 
                 onClick={() => setShowResetModal(true)}
-                className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95"
+                className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
               >
                 <FaRedo size={12} /> Resetear Ventas (Mes)
               </button>
@@ -217,14 +241,14 @@ export default function DailyReportPage({ user, onLogout }) {
 
             <button 
               onClick={exportDailyPDF}
-              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
             >
               <FaFilePdf size={14} /> PDF Diario 📄
             </button>
 
             <button 
               onClick={exportMonthlyPDF}
-              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest"
+              className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
             >
               <FaFilePdf size={14} /> PDF Mensual 📊
             </button>
@@ -291,6 +315,7 @@ export default function DailyReportPage({ user, onLogout }) {
                     <th className="p-4 text-right">Chemas</th>
                     <th className="p-4 text-right">Envío</th>
                     <th className="p-4 text-right">Total</th>
+                    <th className="p-4 text-center">Acción</th> {/* 👈 Columna de eliminar */}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/60 font-medium">
@@ -323,6 +348,35 @@ export default function DailyReportPage({ user, onLogout }) {
                       <td className="p-4 text-right font-black text-green-500 text-sm">
                         ₡{sale.montoTotal?.toLocaleString()}
                       </td>
+                      
+                      {/* 🗑️ BOTÓN DE ELIMINAR O CONFIRMACIÓN EN LÍNEA */}
+                      <td className="p-4 text-center">
+                        {deletingId === sale._id ? (
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleDeleteSale(sale._id)}
+                              className="px-2 py-1 bg-red-600 text-white font-bold rounded text-[10px] hover:bg-red-700 cursor-pointer"
+                            >
+                              Sí
+                            </button>
+                            <button
+                              onClick={() => setDeletingId(null)}
+                              className="px-2 py-1 bg-gray-700 text-white font-bold rounded text-[10px] hover:bg-gray-600 cursor-pointer"
+                            >
+                              No
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setDeletingId(sale._id)}
+                            className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition cursor-pointer"
+                            title="Eliminar venta"
+                          >
+                            <FaTrash size={12} />
+                          </button>
+                        )}
+                      </td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -349,7 +403,7 @@ export default function DailyReportPage({ user, onLogout }) {
               <button 
                 type="button" 
                 onClick={() => setShowResetModal(false)} 
-                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition"
+                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition cursor-pointer"
               >
                 Cancelar
               </button>
@@ -357,7 +411,7 @@ export default function DailyReportPage({ user, onLogout }) {
                 type="button" 
                 disabled={resetting}
                 onClick={confirmResetMonthlySales} 
-                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
+                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
               >
                 {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
               </button>

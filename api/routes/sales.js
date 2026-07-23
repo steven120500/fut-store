@@ -1,6 +1,6 @@
 import express from 'express';
 import Sale from '../models/Sale.js';
-import Product from '../models/Product.js'; // 👈 IMPORTAMOS EL CATÁLOGO PARA DESCONTAR
+import Product from '../models/Product.js'; // 👈 IMPORTAMOS EL CATÁLOGO PARA DESCONTAR Y DEVOLVER STOCK
 
 const router = express.Router();
 
@@ -55,7 +55,6 @@ router.post('/', async (req, res) => {
             }
           } catch (err) {
             console.error(`Advertencia: No se pudo descontar stock del producto ${prod.productoId}:`, err.message);
-            // No detenemos la venta si una chema falla, pero lo dejamos registrado
           }
         }
       }
@@ -151,12 +150,41 @@ router.delete('/reset/all', async (req, res) => {
   }
 });
 
-// 🗑️ DELETE: Eliminar venta por ID
+// 🗑️ DELETE: Eliminar venta por ID y DEVOLVER STOCK AL INVENTARIO
 router.delete('/:id', async (req, res) => {
   try {
+    const saleToDelete = await Sale.findById(req.params.id);
+    if (!saleToDelete) {
+      return res.status(404).json({ error: "Venta no encontrada" });
+    }
+
+    // 🔄 REVERTIR STOCK: Si la venta tenía productos vinculados, devolvemos las unidades a la bodega
+    if (saleToDelete.productos && saleToDelete.productos.length > 0) {
+      for (const prod of saleToDelete.productos) {
+        if (prod.productoId) {
+          try {
+            const dbProduct = await Product.findById(prod.productoId);
+            if (dbProduct && dbProduct.stock) {
+              const talla = String(prod.talla);
+              const cantidadDevuelta = Number(prod.cantidad) || 1;
+              
+              const stockActual = Number(dbProduct.stock[talla]) || 0;
+              dbProduct.stock[talla] = stockActual + cantidadDevuelta; // Devolvemos el stock
+              
+              dbProduct.markModified('stock');
+              await dbProduct.save();
+            }
+          } catch (err) {
+            console.error(`Advertencia: No se pudo restaurar stock del producto ${prod.productoId}:`, err.message);
+          }
+        }
+      }
+    }
+
     await Sale.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "Venta eliminada" });
+    res.json({ success: true, message: "Venta eliminada y stock restaurado en bodega" });
   } catch (error) {
+    console.error("Error al eliminar la venta:", error);
     res.status(500).json({ error: "Error al eliminar la venta" });
   }
 });

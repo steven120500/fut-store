@@ -43,7 +43,7 @@ export default function SalesPage({ user, onLogout }) {
     costoEnvio: 0,
     vendedorAsignado: getInitialVendedor(),
     productos: [
-      { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }
+      { tipoVenta: 'stock', productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }
     ]
   });
 
@@ -64,7 +64,7 @@ export default function SalesPage({ user, onLogout }) {
 
   const fetchCatalogoProductos = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/products/all-pos`); // 👈 Apuntamos a la nueva ruta sin límites
+      const res = await fetch(`${API_BASE}/api/products/all-pos`);
       if (res.ok) {
         const data = await res.json();
         let listaProductos = Array.isArray(data) ? data : (data.items || data.products || []);
@@ -147,7 +147,7 @@ export default function SalesPage({ user, onLogout }) {
   const handleAddProducto = () => {
     setQuickForm(prev => ({
       ...prev,
-      productos: [...prev.productos, { productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
+      productos: [...prev.productos, { tipoVenta: 'stock', productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
     }));
   };
 
@@ -163,6 +163,15 @@ export default function SalesPage({ user, onLogout }) {
     const updated = [...quickForm.productos];
     updated[index][field] = value;
     
+    if (field === 'tipoVenta') {
+      // Si cambia entre Stock y Pedido Especial, limpiamos los datos anteriores
+      updated[index].productoId = null;
+      updated[index].nombre = '';
+      updated[index].stockDisponible = null;
+      updated[index].imageSrc = '';
+      updated[index].type = '';
+    }
+
     if (field === 'nombre' && updated[index].productoId) {
       updated[index].productoId = null;
       updated[index].stockDisponible = null;
@@ -212,7 +221,7 @@ export default function SalesPage({ user, onLogout }) {
     }
 
     for (const p of quickForm.productos) {
-      if (p.productoId && p.stockDisponible !== null) {
+      if (p.tipoVenta === 'stock' && p.productoId && p.stockDisponible !== null) {
         const cantVendida = Number(p.cantidad) || 1;
         if (cantVendida > p.stockDisponible) {
           return toast.error(`Stock insuficiente para "${p.nombre}" en talla ${p.talla}. Disponibles: ${p.stockDisponible} unds.`);
@@ -253,7 +262,7 @@ export default function SalesPage({ user, onLogout }) {
       });
 
       if (res.ok) {
-        toast.success(`💰 Venta registrada con éxito. ¡Inventario descontado!`);
+        toast.success(`💰 Venta registrada con éxito. ¡Inventario actualizado!`);
         setShowQuickSaleModal(false);
         setQuickForm({
           cedula: '',
@@ -261,7 +270,7 @@ export default function SalesPage({ user, onLogout }) {
           numero: '',
           costoEnvio: 0,
           vendedorAsignado: getInitialVendedor(),
-          productos: [{ productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
+          productos: [{ tipoVenta: 'stock', productoId: null, nombre: '', talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
         });
         fetchRankingData(); 
         fetchCatalogoProductos(); 
@@ -417,7 +426,7 @@ export default function SalesPage({ user, onLogout }) {
               <button 
                 type="button" 
                 onClick={() => setShowResetModal(false)} 
-                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition"
               >
                 Cancelar
               </button>
@@ -425,7 +434,7 @@ export default function SalesPage({ user, onLogout }) {
                 type="button" 
                 disabled={resetting}
                 onClick={confirmResetMonthlySales} 
-                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
+                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
               >
                 {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
               </button>
@@ -434,10 +443,10 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
-      {/* 🚀 MODAL DE VENTA RÁPIDA */}
+      {/* 🚀 MODAL DE VENTA RÁPIDA (SIN ESPACIO EXCESIVO, PB-6) */}
       {showQuickSaleModal && (
-        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto pb-24">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-lg w-full relative animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto pb-6">
             
             <button 
               type="button"
@@ -544,7 +553,6 @@ export default function SalesPage({ user, onLogout }) {
                 {quickForm.productos.map((prod, index) => {
                   const queryText = (prod.nombre || "").trim().toLowerCase();
 
-
                   const sugerencias = queryText.length === 0
                     ? catalogo 
                     : catalogo.filter(cat => {
@@ -553,10 +561,6 @@ export default function SalesPage({ user, onLogout }) {
                         return nombreMatch || tipoMatch;
                       });
                   
-
-
-
-                
                   const productoVinculado = prod.productoId ? catalogo.find(p => (p.id || p._id) === prod.productoId) : null;
                   const tallasDisponibles = productoVinculado && productoVinculado.stock 
                     ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
@@ -575,8 +579,32 @@ export default function SalesPage({ user, onLogout }) {
                         </button>
                       )}
 
-                      {/* VISTA MINIMALISTA SI ESTÁ VINCULADO */}
-                      {prod.productoId && (
+                      {/* 🔘 SELECTOR DE PUNTOS: STOCK VS PEDIDO ESPECIAL */}
+                      <div className="flex items-center gap-4 bg-white p-2 rounded-lg border text-xs font-bold">
+                        <label className="flex items-center gap-1.5 cursor-pointer text-gray-800">
+                          <input 
+                            type="radio" 
+                            name={`tipoVenta-${index}`} 
+                            checked={prod.tipoVenta === 'stock'} 
+                            onChange={() => handleProductoChange(index, 'tipoVenta', 'stock')}
+                            className="accent-black cursor-pointer"
+                          />
+                          Stock
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer text-gray-700">
+                          <input 
+                            type="radio" 
+                            name={`tipoVenta-${index}`} 
+                            checked={prod.tipoVenta === 'pedido'} 
+                            onChange={() => handleProductoChange(index, 'tipoVenta', 'pedido')}
+                            className="accent-gray-700 cursor-pointer"
+                          />
+                          Pedido
+                        </label>
+                      </div>
+
+                      {/* VISTA MINIMALISTA SI ESTÁ VINCULADO (MODO STOCK) */}
+                      {prod.tipoVenta === 'stock' && prod.productoId && (
                         <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs">
                           <div className="flex items-center gap-2 truncate">
                             <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
@@ -590,102 +618,126 @@ export default function SalesPage({ user, onLogout }) {
                         </div>
                       )}
 
-                      {/* CAMPO DE BUSCADOR */}
-                      <div className="relative">
+                      {/* CAMPO DE BUSCADOR (SI ES STOCK) O INPUT LIBRE (SI ES PEDIDO ESPECIAL) */}
+                      {prod.tipoVenta === 'stock' ? (
                         <div className="relative">
+                          <div className="relative">
+                            <input 
+                              type="text" 
+                              required 
+                              value={prod.nombre} 
+                              onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
+                              placeholder="Toca para ver todo el catálogo o busca..." 
+                              className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
+                                prod.productoId ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
+                              }`}
+                            />
+                            <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
+                          </div>
+
+                          {/* 📋 LISTA DESPLEGABLE */}
+                          {!prod.productoId && (
+                            <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto divide-y divide-gray-100">
+                              {sugerencias.length === 0 ? (
+                                <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
+                                  No se encontraron resultados en stock.
+                                </div>
+                              ) : (
+                                sugerencias.map(cat => {
+                                  const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                                  const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+                                  const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
+                                  const tipoCat = cat.type || 'Camiseta';
+
+                                  return (
+                                    <button
+                                      key={cat.id || cat._id}
+                                      type="button"
+                                      onClick={() => handleSelectFromCatalogo(index, cat)}
+                                      className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                        {imgCat ? (
+                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                        ) : (
+                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                            <FaTshirt size={12} />
+                                          </div>
+                                        )}
+                                        <div className="truncate">
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[8px] uppercase font-black px-1.5 py-0.2 bg-gray-200 text-gray-800 rounded">
+                                              {tipoCat}
+                                            </span>
+                                          </div>
+                                          <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
+                                          <span className="text-[10px] text-gray-500 font-medium">
+                                            Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                        ₡{precioCat.toLocaleString()}
+                                      </span>
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        /* MODO PEDIDO ESPECIAL (TEXTO LIBRE) */
+                        <div>
                           <input 
                             type="text" 
                             required 
                             value={prod.nombre} 
                             onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
-                            placeholder="Toca para ver todo el catálogo o escribe..." 
-                            className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
-                              prod.productoId ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
-                            }`}
+                            placeholder="Escribe el nombre del encargo o pedido especial..." 
+                            className="w-full border p-2 rounded-lg text-xs font-bold bg-blue-50/40 border-blue-300 text-blue-900 outline-none focus:border-blue-500"
                           />
-                          <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
                         </div>
-
-                        {/* 📋 LISTA DESPLEGABLE CON SCROLL AMPLIO Y SIN CABECERAS MOLESTAS */}
-                        {!prod.productoId && (
-                          <div className="absolute left-0 right-0 top-full mt-1 z-[99999] bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto divide-y divide-gray-100">
-                            {sugerencias.length === 0 ? (
-                              <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
-                                No se encontraron resultados (quedará como venta libre).
-                              </div>
-                            ) : (
-                              sugerencias.map(cat => {
-                                const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
-                                const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
-                                const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
-                                const tipoCat = cat.type || 'Camiseta';
-
-                                return (
-                                  <button
-                                    key={cat.id || cat._id}
-                                    type="button"
-                                    onClick={() => handleSelectFromCatalogo(index, cat)}
-                                    className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
-                                  >
-                                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                      {imgCat ? (
-                                        <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
-                                      ) : (
-                                        <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
-                                          <FaTshirt size={12} />
-                                        </div>
-                                      )}
-                                      <div className="truncate">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[8px] uppercase font-black px-1.5 py-0.2 bg-gray-200 text-gray-800 rounded">
-                                            {tipoCat}
-                                          </span>
-                                        </div>
-                                        <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
-                                        <span className="text-[10px] text-gray-500 font-medium">
-                                          Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
-                                        </span>
-                                      </div>
-                                    </div>
-                                    <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
-                                      ₡{precioCat.toLocaleString()}
-                                    </span>
-                                  </button>
-                                );
-                              })
-                            )}
-                          </div>
-                        )}
-                      </div>
+                      )}
 
                       {/* TALLA / CANTIDAD / PRECIO */}
                       <div className="grid grid-cols-12 gap-1.5 items-center">
                         <div className="col-span-4">
                           <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
-                          <select 
-                            value={prod.talla} 
-                            onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
-                            className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
-                          >
-                            {tallasDisponibles.length === 0 ? (
-                              <option value="">Agotado</option>
-                            ) : (
-                              tallasDisponibles.map(t => <option key={t} value={t}>{t}</option>)
-                            )}
-                          </select>
+                          {prod.tipoVenta === 'stock' ? (
+                            <select 
+                              value={prod.talla} 
+                              onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
+                              className="w-full border p-1.5 rounded-lg text-xs font-bold focus:border-black outline-none bg-white h-8"
+                            >
+                              {tallasDisponibles.length === 0 ? (
+                                <option value="">Agotado</option>
+                              ) : (
+                                tallasDisponibles.map(t => <option key={t} value={t}>{t}</option>)
+                              )}
+                            </select>
+                          ) : (
+                            <input 
+                              type="text" 
+                              value={prod.talla} 
+                              onChange={e => handleProductoChange(index, 'talla', e.target.value)} 
+                              placeholder="Ej: L" 
+                              className="w-full border p-1.5 rounded-lg text-xs font-bold bg-white h-8 text-center"
+                            />
+                          )}
                         </div>
                         <div className="col-span-3">
                           <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
                           <input 
                             type="number" 
                             min="1" 
-                            max={prod.stockDisponible !== null ? prod.stockDisponible : 99}
+                            max={prod.tipoVenta === 'stock' && prod.stockDisponible !== null ? prod.stockDisponible : 99}
                             required 
                             value={prod.cantidad} 
                             onChange={e => {
                               const val = e.target.value;
                               handleProductoChange(index, 'cantidad', val);
-                              if (prod.productoId) {
+                              if (prod.tipoVenta === 'stock' && prod.productoId) {
                                 const prodCat = catalogo.find(p => (p.id || p._id) === prod.productoId);
                                 if (prodCat) {
                                   const pr = prodCat.discountPrice ? prodCat.discountPrice : (prodCat.price || 15000);
