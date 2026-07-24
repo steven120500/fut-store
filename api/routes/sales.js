@@ -1,7 +1,7 @@
 import express from 'express';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
-import History from '../models/History.js'; // 👈 IMPORTANTE: Importamos el modelo de historial
+import History from '../models/History.js';
 
 const router = express.Router();
 
@@ -9,14 +9,20 @@ const VENDEDORES_OFICIALES = [
   'LaR Delflow',
   'Justin Lobo',
   'Carlos Lobo',
-  'Alonso Lobo',
+  'Bety',
   'Dylan Gomez',
   'Steven Corrales'
 ];
 
 const normalizarVendedor = (inputName) => {
   if (!inputName) return 'Steven Corrales';
-  const cleanInput = inputName.trim().toLowerCase();
+  let cleanInput = inputName.trim().toLowerCase();
+  
+  // 🛡️ Unificar Alonso Lobo con Bety automáticamente
+  if (cleanInput.includes('alonso') || cleanInput.includes('alonso lobo')) {
+    return 'Bety';
+  }
+
   const match = VENDEDORES_OFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
   if (match) return match;
   return inputName
@@ -122,9 +128,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 GET /ranking: Obtener métricas de rendimiento por empleado
+// 🔄 RUTA DE MIGRACIÓN AUTOMÁTICA: Une las ventas anteriores de Alonso Lobo a Bety al cargar el ranking
 router.get('/ranking', async (req, res) => {
   try {
+    // Actualiza de forma masiva en la BD cualquier registro viejo de Alonso Lobo para pasarlo a Bety
+    await Sale.updateMany(
+      { vendedor: { $regex: /alonso/i } },
+      { $set: { vendedor: "Bety" } }
+    );
+
     const ranking = await Sale.aggregate([
       {
         $group: {
