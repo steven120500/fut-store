@@ -78,17 +78,22 @@ export default function RegisterUserModal({ onClose }) {
   }
 
   return (
-    // 1. Quitamos pt-28 para centrarlo bien y evitar cortes en pantallas pequeñas
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-center items-center p-4">
       
-      {/* 2. Agregamos max-h-[90vh] y overflow-y-auto para el SCROLL */}
-      <div className="elative bg-white pt-15 p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      {/* ⚠️ CORREGIDO: Se agregó 'relative' para que el botón absolute respete los márgenes del cuadro blanco */}
+      <div className="relative bg-white pt-8 p-6 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
         
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-black transition z-10">
-          <FaTimes size={20} />
+        {/* ❌ Botón de la X corregido, visible y con posición fija arriba a la derecha */}
+        <button 
+          type="button"
+          onClick={onClose} 
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 hover:bg-black hover:text-white text-gray-600 flex items-center justify-center transition-all cursor-pointer shadow-sm z-20"
+          title="Cerrar"
+        >
+          <FaTimes size={16} />
         </button>
 
-        <h2 className="text-2xl font-black uppercase text-center mb-6 tracking-wide sticky top-0 bg-white z-0 pb-2">
+        <h2 className="text-2xl font-black uppercase text-center mb-6 tracking-wide sticky top-0 bg-white z-10 pb-2">
           CREAR CUENTA
         </h2>
 
@@ -104,7 +109,7 @@ export default function RegisterUserModal({ onClose }) {
                    name="firstName" 
                    type="text" 
                    placeholder="Nombre" 
-                   className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition"
+                   className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition text-xs font-bold"
                    onChange={handleChange}
                    required
                  />
@@ -116,7 +121,7 @@ export default function RegisterUserModal({ onClose }) {
                  name="lastName" 
                  type="text" 
                  placeholder="Apellido" 
-                 className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:ring-1 ring-black outline-none transition"
+                 className="w-full border border-gray-200 bg-gray-50 p-3 rounded-xl focus:ring-1 ring-black outline-none transition text-xs font-bold"
                  onChange={handleChange}
                />
             </div>
@@ -132,7 +137,7 @@ export default function RegisterUserModal({ onClose }) {
                  type="tel" 
                  placeholder="88888888" 
                  maxLength={8}
-                 className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition"
+                 className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition text-xs font-mono"
                  onChange={handleChange}
               />
             </div>
@@ -147,7 +152,7 @@ export default function RegisterUserModal({ onClose }) {
                  name="email" 
                  type="email" 
                  placeholder="tu@correo.com" 
-                 className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition"
+                 className="w-full border border-gray-200 bg-gray-50 pl-9 p-3 rounded-xl focus:ring-1 ring-black outline-none transition text-xs font-medium"
                  onChange={handleChange}
                  required
               />
@@ -163,12 +168,11 @@ export default function RegisterUserModal({ onClose }) {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="********"
-                className="w-full border border-gray-200 bg-gray-50 pl-9 pr-10 p-3 rounded-xl focus:ring-1 ring-black outline-none transition"
+                className="w-full border border-gray-200 bg-gray-50 pl-9 pr-10 p-3 rounded-xl focus:ring-1 ring-black outline-none transition text-xs"
                 onChange={handleChange}
                 required
               />
-              {/* Ajusté la posición del ojo para que quede centrado verticalmente */}
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute bg-transparent right-3 top-0 -translate-y-1/2 text-gray-400 hover:text-black">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute bg-transparent right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black cursor-pointer">
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
@@ -198,7 +202,7 @@ export default function RegisterUserModal({ onClose }) {
                     type="checkbox"
                     checked={roles[key]}
                     onChange={() => setRoles((prev) => ({ ...prev, [key]: !prev[key] }))}
-                    className="accent-black w-4 h-4"
+                    className="accent-black w-4 h-4 cursor-pointer"
                   />
                   <span className="text-xs font-medium text-gray-600">{label}</span>
                 </label>
@@ -209,7 +213,7 @@ export default function RegisterUserModal({ onClose }) {
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-4 fondo-plateado text-black rounded-xl font-bold uppercase tracking-wider hover:bg-gray-800 hover:text-white transition shadow-lg mt-4 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`w-full py-4 fondo-plateado text-black rounded-xl font-bold uppercase tracking-wider hover:bg-gray-800 hover:text-white transition shadow-lg mt-4 cursor-pointer ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {loading ? "Creando..." : "Crear Cuenta"}
           </button>

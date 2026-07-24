@@ -486,7 +486,7 @@ export default function SalesPage({ user, onLogout }) {
 
               {/* DATOS DEL CLIENTE */}
               <div className="bg-gray-50 p-3 rounded-xl border space-y-2.5">
-                <span className="text-[10px] font-black uppercase text-gray-600 tracking-wider block border-b pb-1">👤 Datos del Cliente</span>
+                <span className="text-[10px] font-black uppercase text-gray-600 tracking-wider block border-b pb-1">Datos del Cliente</span>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Cédula *</label>
@@ -521,7 +521,7 @@ export default function SalesPage({ user, onLogout }) {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre Completo *</label>
-                    {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">🇨🇷 Buscando en TSE...</span>}
+                    {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando ...</span>}
                   </div>
                   <div className="relative">
                     <input 
@@ -540,7 +540,7 @@ export default function SalesPage({ user, onLogout }) {
               {/* 🛍️ MULTIPRODUCTO */}
               <div className="space-y-2 pt-1">
                 <div className="flex justify-between items-center">
-                  <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">👕 Chemas del Pedido ({quickForm.productos.length})</label>
+                  <label className="text-[10px] font-black text-gray-700 uppercase tracking-wider">Chemas del Pedido ({quickForm.productos.length})</label>
                   <button 
                     type="button" 
                     onClick={handleAddProducto} 

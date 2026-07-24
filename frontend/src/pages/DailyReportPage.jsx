@@ -74,63 +74,71 @@ export default function DailyReportPage({ user, onLogout }) {
     return `${sale.productoNombre || 'Camiseta'} (${sale.tallaVendida || 'N/A'})`;
   };
 
-  // 📄 EXPORTAR PDF DIARIO
-  const exportDailyPDF = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const dailySales = sales.filter(sale => sale.fecha && sale.fecha.startsWith(todayStr));
+// 📄 EXPORTAR PDF DIARIO CORREGIDO CON FECHA LOCAL
+// 📄 EXPORTAR PDF DIARIO FILTRADO ESTRICTAMENTE POR HORA LOCAL DE COSTA RICA
+const exportDailyPDF = () => {
+  // Obtenemos la fecha actual de Costa Rica en formato YYYY-MM-DD
+  const hoyCR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
 
-    if (dailySales.length === 0) {
-      return toast.warning("No hay ventas registradas el día de hoy para exportar.");
-    }
+  // Filtramos solo las ventas cuya fecha local en Costa Rica coincida exactamente con hoy
+  const dailySales = sales.filter(sale => {
+    if (!sale.fecha) return false;
+    const fechaVentaCR = new Date(sale.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+    return fechaVentaCR === hoyCR;
+  });
 
-    const doc = new jsPDF('landscape');
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(33, 33, 33);
-    doc.text(`FUTSTORE CR - CORTE DE CAJA DIARIO (${todayStr})`, 14, 20);
+  if (dailySales.length === 0) {
+    return toast.warning(`No hay ventas registradas hoy (${hoyCR}) para exportar.`);
+  }
 
-    doc.setFontSize(11);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generado por: ${displayName}`, 14, 28);
+  const doc = new jsPDF('landscape');
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(33, 33, 33);
+  doc.text(`FUTSTORE CR - CORTE DE CAJA DIARIO (${hoyCR})`, 14, 20);
 
-    const tableData = dailySales.map((sale, index) => [
-      index + 1,
-      sale.fecha ? new Date(sale.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A',
-      sale.vendedor || 'General',
-      sale.nombre || 'N/A',
-      sale.cedula || 'N/A',
-      sale.numero || 'N/A',
-      getResumenPrendas(sale),
-      sale.cantidad || 1,
-      `CRC ${(sale.totalPago || 0).toLocaleString()}`,
-      `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
-      `CRC ${(sale.montoTotal || 0).toLocaleString()}`
-    ]);
+  doc.setFontSize(11);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Generado por: ${displayName}`, 14, 28);
 
-    autoTable(doc, {
-      startY: 35,
-      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
-      body: tableData,
-      theme: 'grid',
-      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { horizontal: 14 }
-    });
+  const tableData = dailySales.map((sale, index) => [
+    index + 1,
+    sale.fecha ? new Date(sale.fecha).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit' }) : 'N/A',
+    sale.vendedor || 'General',
+    sale.nombre || 'N/A',
+    sale.cedula || 'N/A',
+    sale.numero || 'N/A',
+    getResumenPrendas(sale),
+    sale.cantidad || 1,
+    `CRC ${(sale.totalPago || 0).toLocaleString()}`,
+    `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
+    `CRC ${(sale.montoTotal || 0).toLocaleString()}`
+  ]);
 
-    const finalY = doc.lastAutoTable.finalY + 10;
-    const totalChemas = dailySales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
-    const granTotal = dailySales.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+  autoTable(doc, {
+    startY: 35,
+    head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
+    body: tableData,
+    theme: 'grid',
+    headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
+    bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    margin: { horizontal: 14 }
+  });
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total Chemas Vendidas Hoy: ${totalChemas} unds`, 14, finalY);
-    doc.text(`Gran Total Caja del Dia: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
+  const finalY = doc.lastAutoTable.finalY + 10;
+  const totalChemas = dailySales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
+  const granTotal = dailySales.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
 
-    doc.save(`Corte_Diario_${todayStr}.pdf`);
-    toast.success("📄 PDF Diario exportado correctamente");
-  };
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Total Chemas Vendidas Hoy: ${totalChemas} unds`, 14, finalY);
+  doc.text(`Gran Total Caja del Dia: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
+
+  doc.save(`Corte_Diario_${hoyCR}.pdf`);
+  toast.success("📄 PDF Diario exportado correctamente");
+};
 
   // 📄 EXPORTAR PDF MENSUAL
   const exportMonthlyPDF = () => {

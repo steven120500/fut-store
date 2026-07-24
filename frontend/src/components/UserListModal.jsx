@@ -150,19 +150,24 @@ export default function UserListModal({ open, onClose, user }) {
 
   if (!open) return null;
 
+  // Función segura de cierre
+  const handleCerrar = () => {
+    if (typeof onClose === 'function') {
+      onClose();
+    }
+  };
+
   return (
-    <div 
-      className="fixed inset-0 z-[999] flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
-      onClick={onClose} // Cierra si hacen clic fuera de la tarjeta blanca
-    >
-      {/* Contenedor principal con altura máxima y scroll interno optimizado */}
-      <div 
-        className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col overflow-hidden max-h-[82vh] relative animate-in zoom-in-95 duration-200"
-        onClick={(e) => e.stopPropagation()} // Evita que los clics dentro cierren el modal
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+      
+      {/* Fondo transparente clickeable para cerrar */}
+      <div className="absolute inset-0" onClick={handleCerrar} />
+
+      {/* Contenedor principal con z-50 */}
+      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col overflow-hidden max-h-[82vh] relative z-10">
         
         {/* Encabezado fijo */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/90 flex-shrink-0">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
               <FaUserShield size={18} />
@@ -173,19 +178,19 @@ export default function UserListModal({ open, onClose, user }) {
             </div>
           </div>
           
-          {/* Botón de cierre superior con respuesta garantizada */}
+          {/* Botón X con evento directo y garantizado */}
           <button 
             type="button"
-            onClick={onClose} 
-            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-black hover:text-white text-gray-600 flex items-center justify-center transition-all font-bold cursor-pointer shadow-sm"
+            onClick={handleCerrar} 
+            className="w-10 h-10 rounded-full bg-gray-200 hover:bg-black hover:text-white text-black flex items-center justify-center transition-all cursor-pointer shadow-md"
             title="Cerrar ventana"
           >
-            <FaTimes size={14} />
+            <FaTimes size={16} />
           </button>
         </div>
 
-        {/* Lista de Usuarios con scroll personalizado y fluido */}
-        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1 scrollbar-thin scrollbar-thumb-gray-300">
+        {/* Lista de Usuarios */}
+        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
               <FaSpinner className="animate-spin text-black" size={28} />
@@ -210,7 +215,7 @@ export default function UserListModal({ open, onClose, user }) {
 
               if (isConfirmingThis) {
                 return (
-                  <div key={u._id} className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 animate-fadeIn gap-3 shadow-inner">
+                  <div key={u._id} className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 gap-3 shadow-inner">
                     <div className="flex items-center gap-2 text-red-800 text-xs font-bold min-w-0">
                       <FaExclamationTriangle className="text-red-500 flex-shrink-0" size={16} />
                       <span className="truncate">¿Eliminar a <strong className="underline">{displayName}</strong>?</span>
@@ -274,13 +279,13 @@ export default function UserListModal({ open, onClose, user }) {
           )}
         </div>
 
-        {/* Pie de página con contador e indicador de salida */}
-        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/90 flex justify-between items-center text-xs text-gray-400 font-medium flex-shrink-0">
-          <span>Total: <strong className="text-gray-700">{users.length}</strong> usuarios</span>
+        {/* Pie de página con botón de cierre garantizado */}
+        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500 font-medium flex-shrink-0">
+          <span>Total: <strong className="text-gray-900">{users.length}</strong> usuarios</span>
           <button 
             type="button"
-            onClick={onClose}
-            className="text-xs font-bold text-black hover:underline cursor-pointer"
+            onClick={handleCerrar}
+            className="text-xs font-bold bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition cursor-pointer"
           >
             Cerrar ventana
           </button>

@@ -33,8 +33,8 @@ import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
 import OrdersPage from "./pages/OrdersPage.jsx"; 
 import HistoryPage from "./pages/HistoryPage.jsx"; 
-import SalesPage from "./pages/SalesPage.jsx"; // 👈 Nueva página de Ventas
-import DailyReportPage from "./pages/DailyReportPage.jsx"; // 👈 Nueva página de Reportes
+import SalesPage from "./pages/SalesPage.jsx"; 
+import DailyReportPage from "./pages/DailyReportPage.jsx"; 
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -296,7 +296,6 @@ export default function App() {
             <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
             <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
             
-            {/* 🏆 NUEVAS RUTAS CONECTADAS PARA VENTAS Y REPORTES */}
             <Route path="/ventas" element={<SalesPage user={user} onLogout={handleLogout} />} />
             <Route path="/reportes" element={<DailyReportPage user={user} onLogout={handleLogout} />} />
             
@@ -318,7 +317,10 @@ export default function App() {
                     {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
 
                     {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-                    {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowRegisterUserModal(false)} />}
+                    
+                    {/* ✅ CORREGIDO: Ahora cierra correctamente el modal de lista de usuarios */}
+                    {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
+                    
                     {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
                     {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
                     {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
