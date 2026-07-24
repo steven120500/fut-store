@@ -222,4 +222,4 @@ export default function RegisterUserModal({ onClose }) {
       </div>
     </div>
   );
-}
+} 
