@@ -311,7 +311,7 @@ export default function SalesPage({ user, onLogout }) {
               onClick={() => setShowQuickSaleModal(true)}
               className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
             >
-              <FaPlus size={14} /> Agregar Venta Rápida 🚀
+              <FaPlus size={14} /> Agregar Venta Rápida 
             </button>
           </div>
         </div>
@@ -435,7 +435,7 @@ export default function SalesPage({ user, onLogout }) {
                 onClick={confirmResetMonthlySales} 
                 className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider"
               >
-                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
+                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR '}
               </button>
             </div>
           </div>
@@ -770,7 +770,7 @@ export default function SalesPage({ user, onLogout }) {
 
                 {/* ENVÍO */}
                 <div className="pt-1">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">🚚 Costo de Envío (₡)</label>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Costo de Envío (₡)</label>
                   <input 
                     type="number" 
                     required 
@@ -810,7 +810,7 @@ export default function SalesPage({ user, onLogout }) {
                 disabled={submitting || loadingCedula} 
                 className="w-2/3 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
               >
-                {submitting ? 'Guardando...' : 'CONFIRMAR VENTA 🚀'}
+                {submitting ? 'Guardando...' : 'CONFIRMAR VENTA '}
               </button>
             </div>
 

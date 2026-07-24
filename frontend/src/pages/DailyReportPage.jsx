@@ -251,14 +251,14 @@ const exportDailyPDF = () => {
               onClick={exportDailyPDF}
               className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
             >
-              <FaFilePdf size={14} /> PDF Diario 📄
+              <FaFilePdf size={14} /> PDF Diario 
             </button>
 
             <button 
               onClick={exportMonthlyPDF}
               className="px-4 py-3 bg-white hover:bg-gray-200 text-black font-black rounded-xl transition shadow-lg flex items-center gap-2 text-xs uppercase tracking-widest cursor-pointer"
             >
-              <FaFilePdf size={14} /> PDF Mensual 📊
+              <FaFilePdf size={14} /> PDF Mensual 
             </button>
           </div>
         </div>
@@ -421,7 +421,7 @@ const exportDailyPDF = () => {
                 onClick={confirmResetMonthlySales} 
                 className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
               >
-                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR ⚠️'}
+                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR '}
               </button>
             </div>
           </div>
