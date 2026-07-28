@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaArrowLeft, FaChartLine, FaPlus, FaTimes, FaTrash, 
-  FaCalendarAlt, FaFilePdf, FaMoneyBillWave, FaTshirt, FaFileInvoiceDollar
+  FaCalendarAlt, FaFilePdf, FaMoneyBillWave, FaTshirt, FaFileInvoiceDollar, FaExclamationTriangle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
@@ -29,6 +29,10 @@ export default function BalancePage({ user }) {
     descripcion: '',
     monto: ''
   });
+
+  // Estado del modal de confirmación de eliminación
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState(null);
 
   const displayName = user?.firstName || user?.username || 'Admin';
 
@@ -143,19 +147,28 @@ export default function BalancePage({ user }) {
     }
   };
 
-  // 🗑️ BORRAR GASTO MANUAL EN CASO DE FALLO O ERROR
-  const handleDeleteExpense = async (id) => {
-    if (!window.confirm("¿Seguro que deseas eliminar este gasto? El balance se recalculará automáticamente.")) return;
+  // 🗑️ ABRE EL MODAL DE CONFIRMACIÓN
+  const confirmDeleteExpense = (id) => {
+    setExpenseToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // 🗑️ BORRAR GASTO MANUAL CONFIRMADO
+  const executeDeleteExpense = async () => {
+    if (!expenseToDelete) return;
     try {
-      const res = await fetch(`${API_BASE}/api/expenses/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${API_BASE}/api/expenses/${expenseToDelete}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success("Gasto eliminado correctamente");
-        setExpenses(prev => prev.filter(e => e._id !== id && e.id !== id));
+        setExpenses(prev => prev.filter(e => e._id !== expenseToDelete && e.id !== expenseToDelete));
       } else {
         throw new Error("Error en el servidor");
       }
     } catch (error) {
       toast.error("No se pudo eliminar el gasto");
+    } finally {
+      setShowDeleteModal(false);
+      setExpenseToDelete(null);
     }
   };
 
@@ -440,9 +453,9 @@ export default function BalancePage({ user }) {
                               -₡{Number(exp.monto).toLocaleString()}
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {/* 🗑️ BOTÓN ELIMINAR ACTIVO Y FUNCIONAL */}
+                              {/* 🗑️ BOTÓN ABRE EL NUEVO MODAL DE CONFIRMACIÓN */}
                               <button 
-                                onClick={() => handleDeleteExpense(id)}
+                                onClick={() => confirmDeleteExpense(id)}
                                 className="text-gray-600 hover:text-red-500 transition p-1 cursor-pointer"
                                 title="Eliminar gasto"
                               >
@@ -461,6 +474,44 @@ export default function BalancePage({ user }) {
         )}
 
       </div>
+
+      {/* ⚠️ MODAL ELEGANTE PARA ELIMINAR GASTO */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 overflow-hidden text-center">
+            
+            <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <FaExclamationTriangle size={20} />
+            </div>
+
+            <h3 className="font-black uppercase text-base tracking-tight mb-1 text-gray-900">
+              ¿Eliminar este gasto?
+            </h3>
+            
+            <p className="text-xs text-gray-500 font-medium mb-6 leading-relaxed">
+              Esta acción no se puede deshacer. El balance del mes se recalculará automáticamente.
+            </p>
+
+            <div className="flex gap-3">
+              <button 
+                type="button" 
+                onClick={() => { setShowDeleteModal(false); setExpenseToDelete(null); }}
+                className="w-1/2 py-3 border border-gray-200 rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                onClick={executeDeleteExpense}
+                className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
+              >
+                Sí, Eliminar
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* 🚀 MODAL PARA AÑADIR GASTO MANUAL (SOLO 3 OPCIONES EN EL SELECTOR) */}
       {showAddModal && (
