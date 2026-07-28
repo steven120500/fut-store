@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaSearch, FaCheckCircle, FaBoxOpen } from 'react-icons/fa';
@@ -22,12 +23,20 @@ export default function SalesPage({ user, onLogout }) {
 
   const [catalogo, setCatalogo] = useState([]);
 
+  // Estados de modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showComisionModal, setShowComisionModal] = useState(false);
+  
+  // Estado para saber a cuál vendedor se le está sacando la comisión individual
+  const [vendedorComision, setVendedorComision] = useState(null);
+  
   const [loadingCedula, setLoadingCedula] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [resetting, setResetting] = useState(false);
-  
+  const [submittingComision, setSubmittingComision] = useState(false);
+  const [comisionPorChema, setComisionPorChema] = useState(600);
+
   const displayName = user?.firstName || user?.username || user?.email || 'Steven Corrales';
 
   const getInitialVendedor = () => {
@@ -141,6 +150,43 @@ export default function SalesPage({ user, onLogout }) {
       toast.error("Error al conectar con el servidor para el reseteo.");
     } finally {
       setResetting(false);
+    }
+  };
+
+  // 💸 REGISTRAR COMISIÓN INDIVIDUAL POR VENDEDOR EN EL BALANCE
+  const handleRegistrarComision = async () => {
+    const prendasAUsar = vendedorComision?.prendas || 0;
+    const nombreVendedor = vendedorComision?.nombre || 'Vendedor';
+    const montoTotalComision = prendasAUsar * (Number(comisionPorChema) || 0);
+    
+    if (montoTotalComision <= 0) {
+      return toast.warning("El monto calculado de comisión debe ser mayor a 0.");
+    }
+
+    setSubmittingComision(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/expenses`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
+        body: JSON.stringify({
+          categoria: 'Salarios',
+          descripcion: `Comisión de ${nombreVendedor} (${prendasAUsar} chemas x ₡${comisionPorChema})`,
+          monto: montoTotalComision,
+          fecha: new Date().toISOString()
+        })
+      });
+
+      if (res.ok) {
+        toast.success(`💸 Comisión de ₡${montoTotalComision.toLocaleString()} registrada para ${nombreVendedor}.`);
+        setShowComisionModal(false);
+        setVendedorComision(null);
+      } else {
+        throw new Error("No se pudo registrar la comisión");
+      }
+    } catch (error) {
+      toast.error("Error al conectar con el servidor para registrar el gasto.");
+    } finally {
+      setSubmittingComision(false);
     }
   };
 
@@ -288,7 +334,7 @@ export default function SalesPage({ user, onLogout }) {
       
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
-        {/* NAVEGACIÓN Y BOTONES */}
+        {/* NAVEGACIÓN Y BOTONES SUPERIORES */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
@@ -297,13 +343,13 @@ export default function SalesPage({ user, onLogout }) {
             <FaArrowLeft /> Volver
           </button>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap">
             {isSuperUser && (
               <button 
                 onClick={() => setShowResetModal(true)}
                 className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
               >
-                <FaRedo size={12} /> Resetear Ventas (Fin de Mes)
+                <FaRedo size={12} /> Resetear Ventas
               </button>
             )}
 
@@ -396,9 +442,25 @@ export default function SalesPage({ user, onLogout }) {
                     </div>
                   </div>
 
-                  <div className="bg-black/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center mt-2">
-                    <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Aporte Total</span>
-                    <span className="text-lg font-black text-green-500">₡{emp.montoTotal?.toLocaleString() || 0}</span>
+                  <div>
+                    <div className="bg-black/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center mt-2">
+                      <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Aporte Total</span>
+                      <span className="text-lg font-black text-green-500">₡{emp.montoTotal?.toLocaleString() || 0}</span>
+                    </div>
+
+                    {/* 💸 BOTÓN DE COMISIÓN INDIVIDUAL DENTRO DEL CUADRO */}
+                    {isSuperUser && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVendedorComision({ nombre: emp._id, prendas: emp.totalPrendas });
+                          setShowComisionModal(true);
+                        }}
+                        className="w-full mt-3 py-2.5 bg-amber-600/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 hover:border-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      >
+                         Sacar Comisión 
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -407,6 +469,63 @@ export default function SalesPage({ user, onLogout }) {
         )}
 
       </div>
+
+      {/* 💸 MODAL DE REGISTRO DE COMISIÓN INDIVIDUAL */}
+      {showComisionModal && (
+        <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
+            <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-inner">
+              <FaMoneyBillWave size={24} />
+            </div>
+
+            <h3 className="font-black uppercase text-base tracking-tight mb-1">
+              Comisión para: <span className="text-amber-600">{vendedorComision?.nombre || 'Vendedor'}</span>
+            </h3>
+            <p className="text-xs text-gray-600 font-medium mb-4 px-2">
+              Se multiplicarán las <strong className="text-black font-black">{vendedorComision?.prendas || 0} chemas</strong> vendidas por este vendedor por el monto unitario definido abajo.
+            </p>
+
+            <div className="bg-gray-50 p-3 rounded-xl border text-left mb-6 space-y-2">
+              <label className="text-[10px] font-bold text-gray-500 uppercase block">Comisión por chema vendida (₡)</label>
+              <input 
+                type="number" 
+                min="0"
+                value={comisionPorChema} 
+                onChange={e => setComisionPorChema(e.target.value)}
+                placeholder="600"
+                className="w-full border p-2 rounded-xl text-sm font-black text-green-700 bg-white focus:border-black outline-none font-mono"
+              />
+              <div className="flex justify-between items-center text-xs pt-1 border-t border-gray-200 font-black">
+                <span className="text-gray-600 uppercase text-[10px]">Total a registrar:</span>
+                <span className="text-green-600 text-base">
+                  ₡{((vendedorComision?.prendas || 0) * (Number(comisionPorChema) || 0)).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                type="button" 
+                onClick={() => {
+                  setShowComisionModal(false);
+                  setVendedorComision(null);
+                }} 
+                className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-50 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button" 
+                disabled={submittingComision || (vendedorComision?.prendas || 0) === 0}
+                onClick={handleRegistrarComision} 
+                className="w-1/2 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer disabled:opacity-50"
+              >
+                {submittingComision ? 'Guardando...' : 'REGISTRAR GASTO '}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ⚠️ MODAL DE RESETEO */}
       {showResetModal && (
@@ -442,8 +561,8 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
- {/* 🚀 MODAL DE VENTA RÁPIDA CON SCROLL NATURAL Y COMPLETO */}
- {showQuickSaleModal && (
+      {/* 🚀 MODAL DE VENTA RÁPIDA CON SCROLL NATURAL Y COMPLETO */}
+      {showQuickSaleModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-lg flex flex-col my-auto relative animate-in zoom-in-95 duration-200">
             

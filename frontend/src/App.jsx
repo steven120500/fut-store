@@ -35,6 +35,7 @@ import OrdersPage from "./pages/OrdersPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx"; 
 import SalesPage from "./pages/SalesPage.jsx"; 
 import DailyReportPage from "./pages/DailyReportPage.jsx"; 
+import BalancePage from "./pages/BalancePage.jsx"; // 👈 NUEVO: Importación de Balance y Gastos
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -299,6 +300,9 @@ export default function App() {
             <Route path="/ventas" element={<SalesPage user={user} onLogout={handleLogout} />} />
             <Route path="/reportes" element={<DailyReportPage user={user} onLogout={handleLogout} />} />
             
+            {/* ⚖️ NUEVA RUTA DE BALANCE Y RENDIMIENTO FINANCIERO */}
+            <Route path="/balance" element={<BalancePage user={user} onLogout={handleLogout} />} />
+            
             <Route path="/" element={
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -346,7 +350,7 @@ export default function App() {
                     <FilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} filterType={filterType} setFilterType={setFilterType} filterSizes={filterSizes} setFilterSizes={setFilterSizes} />
 
                     {canAdd && (
-                      <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50" onClick={() => setShowAddModal(true)}>
+                      <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50 cursor-pointer" onClick={() => setShowAddModal(true)}>
                         <FaPlus />
                       </button>
                     )}
@@ -368,11 +372,11 @@ export default function App() {
                     {pages > 1 && (
                       <div className="mt-8 flex flex-col items-center gap-3">
                         <nav className="flex items-center justify-center gap-2">
-                          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronLeft /></button>
+                          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
                           {buildPages(page, pages).map(n => (
-                            <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                            <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
                           ))}
-                          <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50"><FaChevronRight /></button>
+                          <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
                         </nav>
                       </div>
                     )}

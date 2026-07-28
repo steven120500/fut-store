@@ -1,5 +1,5 @@
 import logo from "../assets/logo.png";
-import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory, FaCashRegister, FaChartLine } from "react-icons/fa"; 
+import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory, FaCashRegister, FaChartLine, FaBalanceScale } from "react-icons/fa"; 
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState } from "react";
@@ -58,7 +58,7 @@ export default function Header({
               if (onLogoClick) onLogoClick();
             }}
             title="Volver al inicio"
-            className="focus:outline-none bg-transparent hover:scale-105 transition-transform"
+            className="focus:outline-none bg-transparent hover:scale-105 transition-transform cursor-pointer"
           >
             <img src={logo} alt="FutStore Logo" className="h-14 sm:h-24 object-contain" />
           </button>
@@ -66,7 +66,7 @@ export default function Header({
           <div className="flex gap-2">
             <button 
               onClick={onMedidasClick} 
-              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all"
+              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all cursor-pointer"
             >
               <LiaRulerSolid size={18} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Guía de Tallas</span>
@@ -74,7 +74,7 @@ export default function Header({
 
             <button 
               onClick={() => setShowContacto(true)} 
-              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all"
+              className="text-white text-[10px] sm:text-sm bg-black border border-zinc-700 font-bold px-3 py-2 rounded-xl flex items-center gap-2 hover:bg-zinc-800 transition-all cursor-pointer"
             >
               <FiPhoneCall size={16} /> 
               <span className="hidden md:inline uppercase tracking-tighter">Contacto</span>
@@ -86,7 +86,7 @@ export default function Header({
         <div className="flex items-center gap-3 sm:gap-5">
           <button 
             onClick={handleCartClick} 
-            className="relative bg-black text-white p-3 rounded-full shadow-xl border border-zinc-700 hover:bg-zinc-800 transition-all active:scale-95"
+            className="relative bg-black text-white p-3 rounded-full shadow-xl border border-zinc-700 hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer"
           >
             <FaShoppingCart size={20} />
             {cartCount > 0 && (
@@ -98,7 +98,7 @@ export default function Header({
 
           <button
             onClick={() => setSidebarOpen(true)}
-            className="rounded-full bg-black p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-white transition-all border border-zinc-700 overflow-hidden"
+            className="rounded-full bg-black p-1 w-11 h-11 flex items-center justify-center shadow-xl hover:border-white text-white transition-all border border-zinc-700 overflow-hidden cursor-pointer"
           >
             {user ? (
               <div className="from-gray-700 to-black w-full h-full flex items-center justify-center">
@@ -123,13 +123,13 @@ export default function Header({
             <div className="relative fondo-plateado h-full flex flex-col p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.2)]">
               <button 
                 onClick={() => setSidebarOpen(false)} 
-                className="absolute text-black top-5 right-5 rounded-full w-10 h-10 grid place-items-center hover:bg-black/10 transition"
+                className="absolute text-black top-5 right-5 rounded-full w-10 h-10 grid place-items-center hover:bg-black/10 transition cursor-pointer"
               >
                 <FaTimes size={24} />
               </button>
 
               {user ? (
-                <div className="mt-10 flex-grow">
+                <div className="mt-10 flex-grow overflow-y-auto">
                   <div className="mb-8 border-b border-black/10 pb-6">
                     <p className="text-black/60 text-xs uppercase font-black tracking-widest mb-1">Sesión Iniciada</p>
                     <p className="text-black font-black text-3xl truncate">
@@ -140,10 +140,10 @@ export default function Header({
                   <nav className="space-y-2">
                     {isSuperUser && (
                       <>
-                        <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3">
+                        <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Agregar Usuario
                         </button>
-                        <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3">
+                        <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Lista de Usuarios
                         </button>
                       </>
@@ -153,7 +153,7 @@ export default function Header({
                     {canSeeHistory && (
                       <button 
                         onClick={() => { navigate('/historial'); setSidebarOpen(false); }} 
-                        className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3"
+                        className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer"
                       >
                         <FaHistory size={14}/> Historial de Cambios
                       </button>
@@ -163,32 +163,44 @@ export default function Header({
                       <>
                         <button 
                           onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} 
-                          className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4"
+                          className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer"
                         >
                           <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
                         </button>
 
-                        {/* 🏆 APARTADO DE VENTAS Y REPORTES */}
+                        {/* 🏆 APARTADO DE VENTAS */}
                         <button 
                           onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} 
-                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2"
+                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer"
                         >
                           <FaCashRegister size={16} /> Registro de Ventas
                         </button>
 
-                        <button 
-                          onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} 
-                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10"
-                        >
-                          <FaChartLine size={16} /> Reporte Diario
-                        </button>
+                        {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE Y REPORTES DIARIOS */}
+                        {isSuperUser && (
+                          <>
+                            <button 
+                              onClick={() => { navigate('/balance'); setSidebarOpen(false); }} 
+                              className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 cursor-pointer"
+                            >
+                              <FaBalanceScale size={16} /> Balance y Gastos
+                            </button>
+
+                            <button 
+                              onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} 
+                              className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 cursor-pointer"
+                            >
+                              <FaChartLine size={16} /> Reporte Diario
+                            </button>
+                          </>
+                        )}
                       </>
                     )}
                   </nav>
 
                   <button 
                     onClick={() => { onLogout(); setSidebarOpen(false); }} 
-                    className="w-full text-center mt-12 px-4 py-4 rounded-xl font-black text-red-600 hover:bg-red-600/10 border border-red-600/20 transition uppercase text-xs tracking-widest"
+                    className="w-full text-center mt-12 px-4 py-4 rounded-xl font-black text-red-600 hover:bg-red-600/10 border border-red-600/20 transition uppercase text-xs tracking-widest cursor-pointer"
                   >
                     Cerrar sesión
                   </button>
@@ -203,7 +215,7 @@ export default function Header({
                   
                   <button 
                     onClick={() => { onLoginClick(); setSidebarOpen(false); }} 
-                    className="w-full bg-black text-white px-4 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-800 transition shadow-xl"
+                    className="w-full bg-black text-white px-4 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-800 transition shadow-xl cursor-pointer"
                   >
                     Iniciar sesión
                   </button>
@@ -224,7 +236,7 @@ export default function Header({
           <div className="bg-white p-8 rounded-2xl shadow-2xl relative w-full max-w-md animate-in zoom-in-95 duration-200">
             <button 
               onClick={() => setShowContacto(false)} 
-              className="absolute top-4 right-4 text-zinc-400 hover:text-black transition"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-black transition cursor-pointer"
             >
               <FaTimes size={24} />
             </button>
