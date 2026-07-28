@@ -1,4 +1,4 @@
-import mongoose from 'express';
+import mongoose from 'mongoose'; // <--- Cambiado de 'express' a 'mongoose'
 
 const expenseSchema = new mongoose.Schema({
   categoria: { 
