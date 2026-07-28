@@ -625,6 +625,18 @@ export default function ProductDetail({
                     </div>
                   )}
 
+                  {/* 🌸 NUEVO: AVISO PARA VERSIÓN MUJER */}
+                  {product.type === "Mujer" && (
+                    <div className="mb-4 flex items-center gap-3 bg-pink-50 border border-pink-200 p-3 rounded-lg text-pink-900 shadow-sm">
+                      <FaExclamationTriangle className="flex-shrink-0 text-pink-400" />
+                      <p className="text-xs font-bold leading-relaxed">
+                        VERSIÓN MUJER (Corte Estilizado): Diseño sileteado con cintura definida. pedir una talla más si prefieres un ajuste holgado.
+                      </p>
+                    </div>
+                  )}
+
+              
+
                   <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
                   <div className="flex flex-wrap gap-2">
                     {tallasVisibles.map(size => {
