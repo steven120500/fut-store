@@ -413,7 +413,7 @@ export default function ApartadosPage({ user }) {
       doc.setTextColor(0);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("MACHOTE PEDIDOS", pageWidth / 2, 21, { align: "center" });
+      doc.text("PEDIDOS", pageWidth / 2, 21, { align: "center" });
 
       const rows = productosAplanados.map(p => [
         '', // Columna vacía para la celda de la imagen
@@ -513,7 +513,7 @@ export default function ApartadosPage({ user }) {
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
               <FaBoxOpen /> Tablero de Apartados
             </h1>
-            <p className="text-gray-400 text-sm mt-2">Gestiona los pedidos y entregas estilo Trello.</p>
+            
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
