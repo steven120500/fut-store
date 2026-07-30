@@ -40,7 +40,7 @@ export default function ApartadosPage({ user }) {
   const employeeDropdownRef = useRef(null);
   const listaEmpleados = [
     "LaR Delfiow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
-    "Dylan Gomez", "Steven Corrales"
+    "Dylan Gomez", "Steven Corrales", "Keylor Gómez"
   ];
 
   const currentUser = user?.firstName || user?.username || 'Steven Corrales';
@@ -51,8 +51,6 @@ export default function ApartadosPage({ user }) {
     cedula: '',
     telefono: '',
     abono: '',
-    imagen1: null, // 👈 Foto 1
-    imagen2: null, // 👈 Foto 2
     productos: [
       {
         id: Date.now(),
@@ -67,13 +65,15 @@ export default function ApartadosPage({ user }) {
         talla: 'L',
         cantidad: 1,
         precioItem: '',
-        type: '' 
+        type: '',
+        imagen1: null,      // 👈 Foto 1 específica por producto
+        imagen2: null,      // 👈 Foto 2 específica por producto
+        previewImg1: null,
+        previewImg2: null 
       }
     ]
   });
   
-  const [previewImg1, setPreviewImg1] = useState(null); // 👈 Preview Foto 1
-  const [previewImg2, setPreviewImg2] = useState(null); // 👈 Preview Foto 2
   const [buscandoCedula, setBuscandoCedula] = useState(false); 
 
   // 📡 CARGAR APARTADOS DESDE MONGODB
@@ -163,7 +163,12 @@ export default function ApartadosPage({ user }) {
   const agregarOtraChema = () => {
     setForm({
       ...form,
-      productos: [...form.productos, { id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '' }]
+      productos: [...form.productos, { 
+        id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, 
+        descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', 
+        parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '', 
+        imagen1: null, imagen2: null, previewImg1: null, previewImg2: null 
+      }]
     });
   };
 
@@ -201,6 +206,17 @@ export default function ApartadosPage({ user }) {
     setActiveDropdownIndex(null);
   };
 
+  // 📸 MANEJAR SUBIDA DE FOTOS POR PRODUCTO ESPECÍFICO
+  const handleImageChange = (e, index, imgNumber) => {
+    const file = e.target.files[0];
+    if (file) {
+      const nuevos = [...form.productos];
+      nuevos[index][`imagen${imgNumber}`] = file;
+      nuevos[index][`previewImg${imgNumber}`] = URL.createObjectURL(file);
+      setForm({ ...form, productos: nuevos });
+    }
+  };
+
   // 🚀 CREAR APARTADO EN EL BACKEND
   const handleCrearApartado = async (e) => {
     e.preventDefault();
@@ -208,32 +224,42 @@ export default function ApartadosPage({ user }) {
     if (Number(form.abono) > totalCalculado) return toast.warning("El abono no puede ser mayor al precio total");
 
     try {
-      let imgBase64_1 = null;
-      let imgBase64_2 = null;
+      // Procesar imágenes de TODOS los productos a Base64
+      const productosProcesados = await Promise.all(form.productos.map(async (prod) => {
+        let b64_1 = null;
+        let b64_2 = null;
 
-      // Foto 1 (o imagen del catálogo por defecto)
-      if (form.imagen1) {
-        imgBase64_1 = await getBase64(form.imagen1);
-      } else {
-        imgBase64_1 = form.productos[0]?.productoObj?.images?.[0]?.url || form.productos[0]?.productoObj?.imageSrc || null;
-      }
+        if (prod.tipoPedido === 'nuevo') {
+          if (prod.imagen1) b64_1 = await getBase64(prod.imagen1);
+          if (prod.imagen2) b64_2 = await getBase64(prod.imagen2);
+        } else {
+          b64_1 = prod.productoObj?.images?.[0]?.url || prod.productoObj?.imageSrc || null;
+        }
 
-      // Foto 2
-      if (form.imagen2) {
-        imgBase64_2 = await getBase64(form.imagen2);
-      }
+        return {
+          ...prod,
+          imagen1: b64_1,
+          imagen2: b64_2,
+          previewImg1: null, // Limpiamos preview antes de mandar al backend
+          previewImg2: null
+        };
+      }));
+
+      // Extraemos la foto del primer producto para mostrarla en la portada de la tarjeta (retrocompatibilidad)
+      const portada1 = productosProcesados[0]?.imagen1 || null;
+      const portada2 = productosProcesados[0]?.imagen2 || null;
 
       const payload = {
         vendedor: form.vendedor,
         cliente: form.cliente,
         cedula: form.cedula,
         telefono: form.telefono,
-        productos: form.productos,
+        productos: productosProcesados,
         precioTotal: totalCalculado,
         abono: Number(form.abono),
         faltante: faltanteCalculado,
-        imagen: imgBase64_1,
-        imagen2: imgBase64_2 // 👈 Enviamos la segunda foto al backend
+        imagen: portada1,
+        imagen2: portada2 
       };
 
       const res = await fetch(`${API_BASE}/api/apartados`, {
@@ -249,11 +275,14 @@ export default function ApartadosPage({ user }) {
         toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado.`);
         
         setForm({ 
-          vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen1: null, imagen2: null, 
-          productos: [{ id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '' }] 
+          vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '',
+          productos: [{ 
+            id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, 
+            descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', 
+            parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '',
+            imagen1: null, imagen2: null, previewImg1: null, previewImg2: null 
+          }] 
         });
-        setPreviewImg1(null);
-        setPreviewImg2(null);
       } else {
         toast.error("Error al guardar en el servidor.");
       }
@@ -329,46 +358,40 @@ export default function ApartadosPage({ user }) {
     }
   };
 
-  // 📸 MANEJAR SUBIDA DE DOS FOTOS
-  const handleImageChange = (e, index) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (index === 1) {
-        setForm({ ...form, imagen1: file });
-        setPreviewImg1(URL.createObjectURL(file));
-      } else {
-        setForm({ ...form, imagen2: file });
-        setPreviewImg2(URL.createObjectURL(file));
-      }
-    }
-  };
-
+  // 📄 EXPORTAR PDF
   const generarPDFPedidos = async () => {
     if (pendientes.length === 0) {
       return toast.warning("No hay pedidos pendientes para exportar.");
     }
+    
+    // Primero, filtramos todo el arreglo para ver si de verdad hay "pedidos especiales" pendientes
+    const hayPedidosEspeciales = pendientes.some(ap => ap.productos.some(prod => prod.tipoPedido === 'nuevo'));
+    if (!hayPedidosEspeciales) {
+      return toast.warning("No hay 'Pedidos Especiales' en estado pendiente. (Las de stock no se exportan)");
+    }
+
     setIsExporting(true);
     toast.info("Generando PDF, por favor espera...", { autoClose: 2000 });
 
     try {
       const productosAplanados = [];
       for (const ap of pendientes) {
-        let imgBase64 = null;
-        if (ap.imagen) {
-          try { imgBase64 = await getBase64(ap.imagen); } catch (e) { console.warn("Error cargando imagen", e); }
-        }
-        
         for (const prod of ap.productos) {
+          
+          // 👈 AQUÍ FILTRAMOS: Si es stock, lo ignoramos completamente
+          if (prod.tipoPedido === 'stock') continue; 
+
           let genero = "Men";
           const versionLower = prod.version?.toLowerCase() || '';
           if (versionLower.includes("mujer")) genero = "Women";
           if (versionLower.includes("niño") || versionLower.includes("kid")) genero = "Kids";
 
           productosAplanados.push({
-            imagenBase64: imgBase64,
-            nombre: prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual,
+            imagen1: prod.imagen1 || ap.imagen, // Fallback por si es un apartado viejo
+            imagen2: prod.imagen2 || ap.imagen2,
+            nombre: prod.descripcionManual,
             genero: genero,
-            version: prod.tipoPedido === 'stock' ? 'Fan' : (prod.version || 'Fan'),
+            version: prod.version || 'Fan',
             talla: prod.talla,
             dorsalNombre: prod.nombreCamiseta || '',
             dorsalNumero: prod.numeroCamiseta ? `#${prod.numeroCamiseta}` : '',
@@ -390,10 +413,10 @@ export default function ApartadosPage({ user }) {
       doc.setTextColor(0);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("MACHOTE PEDIDOS MAYORISTAS", pageWidth / 2, 21, { align: "center" });
+      doc.text("MACHOTE PEDIDOS", pageWidth / 2, 21, { align: "center" });
 
       const rows = productosAplanados.map(p => [
-        '', 
+        '', // Columna vacía para la celda de la imagen
         p.nombre,
         p.genero,
         p.version,
@@ -406,7 +429,7 @@ export default function ApartadosPage({ user }) {
 
       autoTable(doc, {
         startY: 24,
-        head: [['Foto Producto', 'Nombre Producto', 'Genero', 'Versión', 'Talla', 'Dorsal Nombre', 'Dorsal Numero', 'Parche', 'Unidades']],
+        head: [['Fotos', 'Nombre Producto', 'Genero', 'Versión', 'Talla', 'Dorsal Nombre', 'Dorsal Numero', 'Parche', 'Unidades']],
         body: rows,
         theme: 'grid',
         headStyles: { 
@@ -416,29 +439,38 @@ export default function ApartadosPage({ user }) {
         bodyStyles: { 
           textColor: 0, halign: 'center', valign: 'middle', lineColor: [0, 0, 0], lineWidth: 0.2 
         },
-        columnStyles: { 0: { cellWidth: 35, minCellHeight: 35 }, 1: { cellWidth: 50 } }, 
+        columnStyles: { 0: { cellWidth: 50, minCellHeight: 35 }, 1: { cellWidth: 40 } }, // Columna 0 más ancha para 2 fotos
         alternateRowStyles: { fillColor: [173, 216, 230] }, 
         styles: { fillColor: [224, 255, 255] }, 
         
         didDrawCell: function (data) {
           if (data.column.index === 0 && data.cell.section === 'body') {
             const rowIndex = data.row.index;
-            const imgData = productosAplanados[rowIndex].imagenBase64;
-            if (imgData) {
-              const padding = 2;
-              const x = data.cell.x + padding;
-              const y = data.cell.y + padding;
+            const { imagen1, imagen2 } = productosAplanados[rowIndex];
+            const padding = 2;
+            const x = data.cell.x;
+            const y = data.cell.y;
+
+            if (imagen1 && imagen2) {
+              // Dibujar 2 fotos dividiendo el ancho a la mitad
+              const w = (data.cell.width - padding * 3) / 2;
+              const h = data.cell.height - (padding * 2);
+              try {
+                const format1 = imagen1.includes('png') ? 'PNG' : 'JPEG';
+                doc.addImage(imagen1, format1, x + padding, y + padding, w, h);
+                const format2 = imagen2.includes('png') ? 'PNG' : 'JPEG';
+                doc.addImage(imagen2, format2, x + (padding * 2) + w, y + padding, w, h);
+              } catch(e) { doc.text("Error Img", x + 5, y + 15); }
+            } else if (imagen1) {
+              // Dibujar 1 foto ocupando el centro
               const w = data.cell.width - (padding * 2);
               const h = data.cell.height - (padding * 2);
-              
               try {
-                const format = imgData.includes('png') ? 'PNG' : 'JPEG';
-                doc.addImage(imgData, format, x, y, w, h);
-              } catch(e) {
-                doc.text("Sin foto", data.cell.x + 10, data.cell.y + 15);
-              }
+                const format = imagen1.includes('png') ? 'PNG' : 'JPEG';
+                doc.addImage(imagen1, format, x + padding, y + padding, w, h);
+              } catch(e) { doc.text("Error Img", x + 5, y + 15); }
             } else {
-              doc.text("Sin foto", data.cell.x + 10, data.cell.y + 15);
+              doc.text("Sin foto", x + 15, y + 15);
             }
           }
         }
@@ -573,12 +605,11 @@ export default function ApartadosPage({ user }) {
               
               <div className="p-4 sm:p-6 space-y-5 bg-white">
                 
-                {/* 👈 SOLUCIÓN DEL Z-INDEX PARA QUE SE MUESTRE BIEN EL DROPDOWN */}
                 <div className="relative z-50" ref={employeeDropdownRef}>
                   <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Asignar venta a empleado *</label>
                   <div 
                     onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
-                    className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold bg-white cursor-pointer flex justify-between items-center"
+                    className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold bg-white cursor-pointer flex justify-between items-center relative"
                   >
                     <div className="flex items-center gap-2 text-gray-700">
                       <FaUserTie className="text-gray-400" size={14}/>
@@ -603,7 +634,7 @@ export default function ApartadosPage({ user }) {
                   )}
                 </div>
 
-                <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50">
+                <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50 relative z-0">
                   <h4 className="text-[11px] font-black uppercase text-gray-700 mb-3 border-b pb-2">Datos del Cliente</h4>
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
@@ -796,10 +827,28 @@ export default function ApartadosPage({ user }) {
                                   />
                                 </div>
                               </div>
+
+                              {/* 👈 SISTEMA DE DOBLE FOTO PARA ESTE PRODUCTO */}
+                              <div className="border border-gray-200 rounded-xl p-3 bg-gray-50 mt-3">
+                                <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center gap-1"><FaImage /> Referencias Visuales</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Principal</span>
+                                    <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, index, 1)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
+                                    {prod.previewImg1 && <img src={prod.previewImg1} alt="Referencia 1" className="mt-2 w-full h-12 object-cover rounded border" />}
+                                  </div>
+                                  <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
+                                    <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Secundaria</span>
+                                    <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, index, 2)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
+                                    {prod.previewImg2 && <img src={prod.previewImg2} alt="Referencia 2" className="mt-2 w-full h-12 object-cover rounded border" />}
+                                  </div>
+                                </div>
+                              </div>
+
                             </div>
                           )}
 
-                          <div className="grid grid-cols-12 gap-1.5 items-center">
+                          <div className="grid grid-cols-12 gap-1.5 items-center mt-2">
                             <div className="col-span-4">
                               <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
                               {prod.tipoPedido === 'stock' ? (
@@ -848,28 +897,6 @@ export default function ApartadosPage({ user }) {
                     })}
                   </div>
                 </div>
-
-                {/* 👈 SISTEMA DE DOBLE FOTO PARA PEDIDOS ESPECIALES */}
-                {form.productos.some(prod => prod.tipoPedido === 'nuevo') && (
-                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center gap-1"><FaImage /> Referencias Visuales del Pedido</label>
-                    <div className="grid grid-cols-2 gap-3">
-                      
-                      <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
-                        <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Principal</span>
-                        <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 1)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
-                        {previewImg1 && <img src={previewImg1} alt="Referencia 1" className="mt-2 w-full h-16 object-cover rounded border" />}
-                      </div>
-
-                      <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
-                        <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Secundaria</span>
-                        <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 2)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
-                        {previewImg2 && <img src={previewImg2} alt="Referencia 2" className="mt-2 w-full h-16 object-cover rounded border" />}
-                      </div>
-
-                    </div>
-                  </div>
-                )}
 
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
                   <div className="flex justify-between items-center mb-3">
@@ -976,7 +1003,7 @@ export default function ApartadosPage({ user }) {
 function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // 👈 MOSTRAR FOTO 1
+  // 👈 MOSTRAR FOTO 1 (De la raíz, para apartados viejos o como portada principal)
   let imgSrc1 = null;
   if (data.imagen && typeof data.imagen !== 'string') {
     imgSrc1 = URL.createObjectURL(data.imagen);
