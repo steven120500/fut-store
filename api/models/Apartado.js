@@ -14,7 +14,8 @@ const apartadoSchema = new mongoose.Schema({
     enum: ['PENDIENTE', 'EN_CAMINO', 'PARA_ENTREGAR', 'ENTREGADO'],
     default: 'PENDIENTE' 
   },
-  imagen: { type: String }, // URL de la imagen si la subes a Cloudinary/S3, o base64
+  imagen: { type: String }, // Foto principal (base64 o URL)
+  imagen2: { type: String }, // 👈 NUEVO: Espacio para la foto secundaria
   fechaCreacion: { type: Date, default: Date.now }
 });
 

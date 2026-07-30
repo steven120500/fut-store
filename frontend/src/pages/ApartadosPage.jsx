@@ -26,9 +26,9 @@ export default function ApartadosPage({ user }) {
   const [apartados, setApartados] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeliverModal, setShowDeliverModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // 👈 NUEVO ESTADO
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [apartadoSeleccionado, setApartadoSeleccionado] = useState(null);
-  const [apartadoToDelete, setApartadoToDelete] = useState(null); // 👈 NUEVO ESTADO
+  const [apartadoToDelete, setApartadoToDelete] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
@@ -40,7 +40,7 @@ export default function ApartadosPage({ user }) {
   const employeeDropdownRef = useRef(null);
   const listaEmpleados = [
     "LaR Delfiow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
-    "Dylan Gomez", "Steven Corrales", "Keylor Gómez"
+    "Dylan Gomez", "Steven Corrales"
   ];
 
   const currentUser = user?.firstName || user?.username || 'Steven Corrales';
@@ -51,7 +51,8 @@ export default function ApartadosPage({ user }) {
     cedula: '',
     telefono: '',
     abono: '',
-    imagen: null, 
+    imagen1: null, // 👈 Foto 1
+    imagen2: null, // 👈 Foto 2
     productos: [
       {
         id: Date.now(),
@@ -70,7 +71,9 @@ export default function ApartadosPage({ user }) {
       }
     ]
   });
-  const [previewImg, setPreviewImg] = useState(null);
+  
+  const [previewImg1, setPreviewImg1] = useState(null); // 👈 Preview Foto 1
+  const [previewImg2, setPreviewImg2] = useState(null); // 👈 Preview Foto 2
   const [buscandoCedula, setBuscandoCedula] = useState(false); 
 
   // 📡 CARGAR APARTADOS DESDE MONGODB
@@ -205,11 +208,19 @@ export default function ApartadosPage({ user }) {
     if (Number(form.abono) > totalCalculado) return toast.warning("El abono no puede ser mayor al precio total");
 
     try {
-      let imgBase64 = null;
-      if (form.imagen) {
-        imgBase64 = await getBase64(form.imagen);
+      let imgBase64_1 = null;
+      let imgBase64_2 = null;
+
+      // Foto 1 (o imagen del catálogo por defecto)
+      if (form.imagen1) {
+        imgBase64_1 = await getBase64(form.imagen1);
       } else {
-        imgBase64 = form.productos[0]?.productoObj?.images?.[0]?.url || form.productos[0]?.productoObj?.imageSrc || null;
+        imgBase64_1 = form.productos[0]?.productoObj?.images?.[0]?.url || form.productos[0]?.productoObj?.imageSrc || null;
+      }
+
+      // Foto 2
+      if (form.imagen2) {
+        imgBase64_2 = await getBase64(form.imagen2);
       }
 
       const payload = {
@@ -221,7 +232,8 @@ export default function ApartadosPage({ user }) {
         precioTotal: totalCalculado,
         abono: Number(form.abono),
         faltante: faltanteCalculado,
-        imagen: imgBase64
+        imagen: imgBase64_1,
+        imagen2: imgBase64_2 // 👈 Enviamos la segunda foto al backend
       };
 
       const res = await fetch(`${API_BASE}/api/apartados`, {
@@ -234,13 +246,14 @@ export default function ApartadosPage({ user }) {
         const data = await res.json();
         setApartados([...apartados, data.apartado]);
         setShowAddModal(false);
-        toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado en Ingresos.`);
+        toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado.`);
         
         setForm({ 
-          vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen: null, 
+          vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen1: null, imagen2: null, 
           productos: [{ id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '' }] 
         });
-        setPreviewImg(null);
+        setPreviewImg1(null);
+        setPreviewImg2(null);
       } else {
         toast.error("Error al guardar en el servidor.");
       }
@@ -316,11 +329,17 @@ export default function ApartadosPage({ user }) {
     }
   };
 
-  const handleImageChange = (e) => {
+  // 📸 MANEJAR SUBIDA DE DOS FOTOS
+  const handleImageChange = (e, index) => {
     const file = e.target.files[0];
     if (file) {
-      setForm({ ...form, imagen: file });
-      setPreviewImg(URL.createObjectURL(file));
+      if (index === 1) {
+        setForm({ ...form, imagen1: file });
+        setPreviewImg1(URL.createObjectURL(file));
+      } else {
+        setForm({ ...form, imagen2: file });
+        setPreviewImg2(URL.createObjectURL(file));
+      }
     }
   };
 
@@ -537,7 +556,7 @@ export default function ApartadosPage({ user }) {
 
       {/* 🚀 MODAL: NUEVO APARTADO */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
           
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col my-auto relative animate-in zoom-in-95 duration-200">
             
@@ -554,7 +573,8 @@ export default function ApartadosPage({ user }) {
               
               <div className="p-4 sm:p-6 space-y-5 bg-white">
                 
-                <div className="relative" ref={employeeDropdownRef}>
+                {/* 👈 SOLUCIÓN DEL Z-INDEX PARA QUE SE MUESTRE BIEN EL DROPDOWN */}
+                <div className="relative z-50" ref={employeeDropdownRef}>
                   <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Asignar venta a empleado *</label>
                   <div 
                     onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
@@ -568,7 +588,7 @@ export default function ApartadosPage({ user }) {
                   </div>
                   
                   {showEmployeeDropdown && (
-                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden z-[110]">
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-y-auto max-h-48 z-[200]">
                       {listaEmpleados.map(emp => (
                         <div 
                           key={emp}
@@ -829,10 +849,25 @@ export default function ApartadosPage({ user }) {
                   </div>
                 </div>
 
+                {/* 👈 SISTEMA DE DOBLE FOTO PARA PEDIDOS ESPECIALES */}
                 {form.productos.some(prod => prod.tipoPedido === 'nuevo') && (
-                  <div className="border border-gray-200 rounded-xl p-3 bg-gray-50">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaImage /> Adjuntar comprobante / Referencia Visual</label>
-                    <input type="file" accept="image/*" onChange={handleImageChange} className="text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-gray-200 file:text-black cursor-pointer w-full" />
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex items-center gap-1"><FaImage /> Referencias Visuales del Pedido</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      
+                      <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
+                        <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Principal</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 1)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
+                        {previewImg1 && <img src={previewImg1} alt="Referencia 1" className="mt-2 w-full h-16 object-cover rounded border" />}
+                      </div>
+
+                      <div className="border border-gray-200 rounded-lg p-2 bg-white text-center">
+                        <span className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Foto Secundaria</span>
+                        <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, 2)} className="text-[9px] w-full cursor-pointer file:rounded file:border-0 file:bg-gray-200 text-gray-500" />
+                        {previewImg2 && <img src={previewImg2} alt="Referencia 2" className="mt-2 w-full h-16 object-cover rounded border" />}
+                      </div>
+
+                    </div>
                   </div>
                 )}
 
@@ -880,7 +915,7 @@ export default function ApartadosPage({ user }) {
 
       {/* 💸 MODAL: CONFIRMACIÓN DE ENTREGA */}
       {showDeliverModal && apartadoSeleccionado && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
             
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -913,7 +948,7 @@ export default function ApartadosPage({ user }) {
 
       {/* 🗑️ MODAL: CONFIRMACIÓN DE ELIMINACIÓN */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
             
             <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -941,11 +976,20 @@ export default function ApartadosPage({ user }) {
 function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  let imgSrc = null;
+  // 👈 MOSTRAR FOTO 1
+  let imgSrc1 = null;
   if (data.imagen && typeof data.imagen !== 'string') {
-    imgSrc = URL.createObjectURL(data.imagen);
+    imgSrc1 = URL.createObjectURL(data.imagen);
   } else if (data.imagen) {
-    imgSrc = data.imagen; 
+    imgSrc1 = data.imagen; 
+  }
+
+  // 👈 MOSTRAR FOTO 2
+  let imgSrc2 = null;
+  if (data.imagen2 && typeof data.imagen2 !== 'string') {
+    imgSrc2 = URL.createObjectURL(data.imagen2);
+  } else if (data.imagen2) {
+    imgSrc2 = data.imagen2; 
   }
 
   const primerProducto = data.productos[0];
@@ -971,15 +1015,20 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
         <span className="text-[9px] text-gray-500 font-mono">{new Date(data.fecha || data.fechaCreacion).toLocaleDateString('es-CR')}</span>
       </div>
 
-      <div className="flex gap-3 items-center mb-3">
-        <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 shrink-0 overflow-hidden flex items-center justify-center">
-          {imgSrc ? (
-             <img src={imgSrc} alt="Preview" className="w-full h-full object-cover" />
-          ) : (
-             <FaImage className="text-gray-700" size={16} />
+      <div className="flex gap-2 items-center mb-3">
+        {/* 👈 CUBITO CON LAS FOTOS */}
+        <div className="flex gap-1 shrink-0">
+          <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center">
+            {imgSrc1 ? <img src={imgSrc1} alt="Ref 1" className="w-full h-full object-cover" /> : <FaImage className="text-gray-700" size={16} />}
+          </div>
+          {imgSrc2 && (
+            <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center">
+              <img src={imgSrc2} alt="Ref 2" className="w-full h-full object-cover" />
+            </div>
           )}
         </div>
-        <div className="flex-1 min-w-0 pr-2">
+
+        <div className="flex-1 min-w-0 pr-2 pl-1">
           <p className="text-xs font-bold text-white truncate leading-tight">
             {nombrePrincipal} <span className="text-gray-400">{masChemas}</span>
           </p>

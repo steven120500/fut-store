@@ -6,8 +6,8 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -15,7 +15,7 @@ export default function BalancePage({ user }) {
   const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
-  const [apartadosActivos, setApartadosActivos] = useState([]); // 👈 ESTADO AÑADIDO PARA APARTADOS
+  const [apartadosActivos, setApartadosActivos] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Filtro de mes (Por defecto mes actual YYYY-MM)
@@ -44,7 +44,6 @@ export default function BalancePage({ user }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 👈 AÑADIDA LA PETICIÓN A APARTADOS
       const [resSales, resExpenses, resApartados] = await Promise.all([
         fetch(`${API_BASE}/api/sales`),
         fetch(`${API_BASE}/api/expenses`),
@@ -94,18 +93,15 @@ export default function BalancePage({ user }) {
     return e.fecha.startsWith(selectedMonth);
   });
 
-  // 👈 FILTRAR APARTADOS POR MES
   const apartadosFiltrados = apartadosActivos.filter(ap => {
     const fechaAComparar = ap.fecha || ap.fechaCreacion;
     if (!fechaAComparar) return false;
     return fechaAComparar.startsWith(selectedMonth);
   });
   
-  // 👈 CÁLCULO DE ABONOS DEL MES
   const totalAbonosMes = apartadosFiltrados.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
 
   // 📈 CÁLCULO DE MÉTRICAS FINANCIERAS
-  // 👈 SE SUMAN LOS ABONOS AL INGRESO BRUTO
   const ingresoBrutoTotal = salesFiltradas.reduce((sum, s) => sum + (Number(s.montoTotal) || 0), 0) + totalAbonosMes;
   const totalEnviosCobrados = salesFiltradas.reduce((sum, s) => sum + (Number(s.costoEnvio) || 0), 0);
   
@@ -188,7 +184,7 @@ export default function BalancePage({ user }) {
     }
   };
 
-  // 📄 EXPORTAR REPORTE MENSUAL EN PDF (DISEÑO FUTSTORE CR DE LUJO)
+  // 📄 EXPORTAR REPORTE MENSUAL EN PDF
   const exportarPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -266,7 +262,8 @@ export default function BalancePage({ user }) {
         `CRC ${Number(exp.monto).toLocaleString()}`
       ]);
 
-      doc.autoTable({
+      // 👈 AQUÍ ESTABA EL ERROR: autoTable(doc, {...}) es la forma correcta
+      autoTable(doc, {
         startY: 165,
         head: [['FECHA', 'CATEGORÍA', 'DESCRIPCIÓN', 'REGISTRADO POR', 'MONTO']],
         body: rows,
@@ -327,7 +324,6 @@ export default function BalancePage({ user }) {
               />
             </div>
             
-            {/* 📄 BOTÓN EXPORTAR PDF */}
             <button 
               onClick={exportarPDF}
               className="px-4 py-2.5 bg-white hover:bg-zinc-700 text-red-600 font-black rounded-xl transition shadow flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer border border-zinc-600"
@@ -469,7 +465,6 @@ export default function BalancePage({ user }) {
                               -₡{Number(exp.monto).toLocaleString()}
                             </td>
                             <td className="py-3 px-4 text-center">
-                              {/* 🗑️ BOTÓN ABRE EL NUEVO MODAL DE CONFIRMACIÓN */}
                               <button 
                                 onClick={() => confirmDeleteExpense(id)}
                                 className="text-gray-600 hover:text-red-500 transition p-1 cursor-pointer"
@@ -529,7 +524,7 @@ export default function BalancePage({ user }) {
         </div>
       )}
 
-      {/* 🚀 MODAL PARA AÑADIR GASTO MANUAL (SOLO 3 OPCIONES EN EL SELECTOR) */}
+      {/* 🚀 MODAL PARA AÑADIR GASTO MANUAL */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-200 overflow-hidden">
