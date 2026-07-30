@@ -13,7 +13,7 @@ export default function DailyReportPage({ user, onLogout }) {
   const navigate = useNavigate();
   
   const [sales, setSales] = useState([]);
-  const [apartadosActivos, setApartadosActivos] = useState([]); // 👈 ESTADO PARA LOS APARTADOS
+  const [apartadosActivos, setApartadosActivos] = useState([]); // ESTADO PARA LOS APARTADOS
   const [loading, setLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -26,7 +26,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
   useEffect(() => {
     fetchAllSales();
-    fetchApartadosActivos(); // 👈 LLAMAMOS A LOS APARTADOS
+    fetchApartadosActivos();
   }, []);
 
   const fetchAllSales = async () => {
@@ -47,7 +47,6 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 👈 FUNCIÓN PARA TRAER LOS APARTADOS
   const fetchApartadosActivos = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/apartados`);
@@ -81,115 +80,70 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // Función auxiliar para obtener el string unificado de las chemas de una venta
-  const getResumenPrendas = (sale) => {
-    if (sale.productos && sale.productos.length > 0) {
-      return sale.productos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ');
+  // 🔄 COMBINAR Y ORDENAR VENTAS Y APARTADOS POR FECHA
+  const combinedHistory = [
+    ...sales.map(s => ({ ...s, isApartado: false, sortDate: new Date(s.fecha || 0).getTime() })),
+    ...apartadosActivos.map(a => ({ ...a, isApartado: true, sortDate: new Date(a.fecha || a.fechaCreacion || 0).getTime() }))
+  ].sort((a, b) => b.sortDate - a.sortDate);
+
+  // Función auxiliar para obtener el string unificado de las chemas (Sirve para Ventas y Apartados)
+  const getResumenPrendas = (item) => {
+    if (item.productos && item.productos.length > 0) {
+      return item.productos.map(p => {
+        const nombreItem = item.isApartado 
+          ? (p.tipoPedido === 'stock' ? p.busqueda : p.descripcionManual) 
+          : p.nombre;
+        return `${p.cantidad}x ${nombreItem} (${p.talla})`;
+      }).join(' + ');
     }
-    return `${sale.productoNombre || 'Camiseta'} (${sale.tallaVendida || 'N/A'})`;
+    return `${item.productoNombre || 'Camiseta'} (${item.tallaVendida || 'N/A'})`;
   };
 
-// 📄 EXPORTAR PDF DIARIO CORREGIDO CON FECHA LOCAL
-// 📄 EXPORTAR PDF DIARIO FILTRADO ESTRICTAMENTE POR HORA LOCAL DE COSTA RICA
-const exportDailyPDF = () => {
-  // Obtenemos la fecha actual de Costa Rica en formato YYYY-MM-DD
-  const hoyCR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+  // 📄 EXPORTAR PDF DIARIO
+  const exportDailyPDF = () => {
+    const hoyCR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
 
-  // Filtramos solo las ventas cuya fecha local en Costa Rica coincida exactamente con hoy
-  const dailySales = sales.filter(sale => {
-    if (!sale.fecha) return false;
-    const fechaVentaCR = new Date(sale.fecha).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
-    return fechaVentaCR === hoyCR;
-  });
+    const dailyCombined = combinedHistory.filter(item => {
+      const dateString = item.fecha || item.fechaCreacion;
+      if (!dateString) return false;
+      const itemDateCR = new Date(dateString).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
+      return itemDateCR === hoyCR;
+    });
 
-  if (dailySales.length === 0) {
-    return toast.warning(`No hay ventas registradas hoy (${hoyCR}) para exportar.`);
-  }
-
-  const doc = new jsPDF('landscape');
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(33, 33, 33);
-  doc.text(`FUTSTORE CR - CORTE DE CAJA DIARIO (${hoyCR})`, 14, 20);
-
-  doc.setFontSize(11);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Generado por: ${displayName}`, 14, 28);
-
-  const tableData = dailySales.map((sale, index) => [
-    index + 1,
-    sale.fecha ? new Date(sale.fecha).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit' }) : 'N/A',
-    sale.vendedor || 'General',
-    sale.nombre || 'N/A',
-    sale.cedula || 'N/A',
-    sale.numero || 'N/A',
-    getResumenPrendas(sale),
-    sale.cantidad || 1,
-    `CRC ${(sale.totalPago || 0).toLocaleString()}`,
-    `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
-    `CRC ${(sale.montoTotal || 0).toLocaleString()}`
-  ]);
-
-  autoTable(doc, {
-    startY: 35,
-    head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
-    body: tableData,
-    theme: 'grid',
-    headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
-    bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
-    alternateRowStyles: { fillColor: [245, 245, 245] },
-    margin: { horizontal: 14 }
-  });
-
-  const finalY = doc.lastAutoTable.finalY + 10;
-  const totalChemas = dailySales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
-  const granTotal = dailySales.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Total Chemas Vendidas Hoy: ${totalChemas} unds`, 14, finalY);
-  doc.text(`Gran Total Caja del Dia: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
-
-  doc.save(`Corte_Diario_${hoyCR}.pdf`);
-  toast.success("📄 PDF Diario exportado correctamente");
-};
-
-  // 📄 EXPORTAR PDF MENSUAL
-  const exportMonthlyPDF = () => {
-    if (!sales || sales.length === 0) {
-      return toast.warning("No hay ventas registradas en el sistema para exportar.");
+    if (dailyCombined.length === 0) {
+      return toast.warning(`No hay transacciones registradas hoy (${hoyCR}) para exportar.`);
     }
 
     const doc = new jsPDF('landscape');
-    const currentMonthName = new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
-
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(33, 33, 33);
-    doc.text(`FUTSTORE CR - REPORTE MENSUAL DE COMISIONES (${currentMonthName})`, 14, 20);
+    doc.text(`FUTSTORE CR - CORTE DE CAJA DIARIO (${hoyCR})`, 14, 20);
 
     doc.setFontSize(11);
     doc.setTextColor(100, 100, 100);
     doc.text(`Generado por: ${displayName}`, 14, 28);
 
-    const tableData = sales.map((sale, index) => [
-      index + 1,
-      sale.fecha ? new Date(sale.fecha).toLocaleDateString() : 'N/A',
-      sale.vendedor || 'General',
-      sale.nombre || 'N/A',
-      sale.cedula || 'N/A',
-      sale.numero || 'N/A',
-      getResumenPrendas(sale),
-      sale.cantidad || 1,
-      `CRC ${(sale.totalPago || 0).toLocaleString()}`,
-      `CRC ${(sale.costoEnvio || 0).toLocaleString()}`,
-      `CRC ${(sale.montoTotal || 0).toLocaleString()}`
-    ]);
+    const tableData = dailyCombined.map((item, index) => {
+      const cantPrendas = item.isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (item.cantidad || 1);
+      return [
+        index + 1,
+        item.fecha || item.fechaCreacion ? new Date(item.fecha || item.fechaCreacion).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit' }) : 'N/A',
+        `${item.vendedor || 'General'} ${item.isApartado ? '(APARTADO)' : ''}`,
+        item.nombre || item.cliente || 'N/A',
+        item.cedula || 'N/A',
+        item.numero || item.telefono || 'N/A',
+        getResumenPrendas(item),
+        cantPrendas,
+        `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
+        item.isApartado ? 'N/A' : `CRC ${(item.costoEnvio || 0).toLocaleString()}`,
+        `CRC ${(item.isApartado ? item.abono : item.montoTotal || 0).toLocaleString()}`
+      ];
+    });
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Total (CRC)']],
+      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja / Total (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
@@ -199,16 +153,76 @@ const exportDailyPDF = () => {
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
-    const totalChemasMes = sales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
-    const granTotalMes = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+    const totalChemas = dailyCombined.reduce((sum, item) => sum + (item.isApartado ? item.productos.reduce((s, p) => s + Number(p.cantidad), 0) : (item.cantidad || 1)), 0);
+    const granTotal = dailyCombined.reduce((sum, item) => sum + (item.isApartado ? item.abono : item.montoTotal || 0), 0);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Total Chemas Acumuladas: ${totalChemasMes} unds`, 14, finalY);
-    doc.text(`Ingreso Bruto Total Mensual: CRC ${granTotalMes.toLocaleString()}`, 14, finalY + 6);
+    doc.text(`Total Chemas Movidas Hoy: ${totalChemas} unds`, 14, finalY);
+    doc.text(`Gran Total Entrado en Caja Hoy: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
 
-    doc.save(`Reporte_Mensual_${currentMonthName}.pdf`);
+    doc.save(`Corte_Diario_${hoyCR}.pdf`);
+    toast.success("📄 PDF Diario exportado correctamente");
+  };
+
+  // 📄 EXPORTAR PDF MENSUAL
+  const exportMonthlyPDF = () => {
+    if (!combinedHistory || combinedHistory.length === 0) {
+      return toast.warning("No hay transacciones registradas en el sistema para exportar.");
+    }
+
+    const doc = new jsPDF('landscape');
+    const currentMonthName = new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(33, 33, 33);
+    doc.text(`FUTSTORE CR - REPORTE MENSUAL DE CAJA (${currentMonthName})`, 14, 20);
+
+    doc.setFontSize(11);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generado por: ${displayName}`, 14, 28);
+
+    const tableData = combinedHistory.map((item, index) => {
+      const cantPrendas = item.isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (item.cantidad || 1);
+      return [
+        index + 1,
+        item.fecha || item.fechaCreacion ? new Date(item.fecha || item.fechaCreacion).toLocaleDateString() : 'N/A',
+        `${item.vendedor || 'General'} ${item.isApartado ? '(APARTADO)' : ''}`,
+        item.nombre || item.cliente || 'N/A',
+        item.cedula || 'N/A',
+        item.numero || item.telefono || 'N/A',
+        getResumenPrendas(item),
+        cantPrendas,
+        `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
+        item.isApartado ? 'N/A' : `CRC ${(item.costoEnvio || 0).toLocaleString()}`,
+        `CRC ${(item.isApartado ? item.abono : item.montoTotal || 0).toLocaleString()}`
+      ];
+    });
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja / Total (CRC)']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
+      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { horizontal: 14 }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const totalChemasMes = combinedHistory.reduce((sum, item) => sum + (item.isApartado ? item.productos.reduce((s, p) => s + Number(p.cantidad), 0) : (item.cantidad || 1)), 0);
+    const granTotalMes = combinedHistory.reduce((sum, item) => sum + (item.isApartado ? item.abono : item.montoTotal || 0), 0);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Total Chemas Movidas Acumuladas: ${totalChemasMes} unds`, 14, finalY);
+    doc.text(`Ingreso Bruto Total Mensual (Caja): CRC ${granTotalMes.toLocaleString()}`, 14, finalY + 6);
+
+    doc.save(`Reporte_Mensual_Caja_${currentMonthName}.pdf`);
     toast.success("📄 PDF Mensual exportado correctamente");
   };
 
@@ -244,7 +258,6 @@ const exportDailyPDF = () => {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       
-
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
@@ -324,7 +337,7 @@ const exportDailyPDF = () => {
           <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
             Cargando registros...
           </div>
-        ) : sales.length === 0 ? (
+        ) : combinedHistory.length === 0 ? (
           <div className="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-gray-800 text-gray-500 text-sm font-bold uppercase">
             No se encontraron ingresos registrados en el sistema.
           </div>
@@ -340,71 +353,86 @@ const exportDailyPDF = () => {
                     <th className="p-4 text-center">Cant.</th>
                     <th className="p-4 text-right">Chemas</th>
                     <th className="p-4 text-right">Envío</th>
-                    <th className="p-4 text-right">Total</th>
-                    <th className="p-4 text-center">Acción</th> {/* 👈 Columna de eliminar */}
+                    <th className="p-4 text-right">Total (Caja)</th>
+                    <th className="p-4 text-center">Acción</th> 
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800/60 font-medium">
-                  {sales.map((sale) => (
-                    <tr key={sale._id} className="hover:bg-zinc-900/40 transition">
-                      <td className="p-4">
-                        <span className="font-bold text-white block">
-                          {sale.fecha ? new Date(sale.fecha).toLocaleDateString() : 'N/A'}
-                        </span>
-                        <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{sale.vendedor}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="font-bold text-gray-200 block uppercase">{sale.nombre}</span>
-                        <span className="text-[10px] text-gray-500 font-mono">ID: {sale.cedula} | Tel: {sale.numero}</span>
-                      </td>
-                      <td className="p-4 max-w-[220px]">
-                        <span className="font-black text-white uppercase block leading-snug">
-                          {getResumenPrendas(sale)}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center font-black text-white text-sm">
-                        {sale.cantidad}
-                      </td>
-                      <td className="p-4 text-right font-bold text-gray-300">
-                        ₡{sale.totalPago?.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-right font-bold text-blue-400">
-                        ₡{sale.costoEnvio?.toLocaleString()}
-                      </td>
-                      <td className="p-4 text-right font-black text-green-500 text-sm">
-                        ₡{sale.montoTotal?.toLocaleString()}
-                      </td>
-                      
-                      {/* 🗑️ BOTÓN DE ELIMINAR O CONFIRMACIÓN EN LÍNEA */}
-                      <td className="p-4 text-center">
-                        {deletingId === sale._id ? (
-                          <div className="flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => handleDeleteSale(sale._id)}
-                              className="px-2 py-1 bg-red-600 text-white font-bold rounded text-[10px] hover:bg-red-700 cursor-pointer"
-                            >
-                              Sí
-                            </button>
-                            <button
-                              onClick={() => setDeletingId(null)}
-                              className="px-2 py-1 bg-gray-700 text-white font-bold rounded text-[10px] hover:bg-gray-600 cursor-pointer"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeletingId(sale._id)}
-                            className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition cursor-pointer"
-                            title="Eliminar venta"
-                          >
-                            <FaTrash size={12} />
-                          </button>
-                        )}
-                      </td>
+                  {combinedHistory.map((item) => {
+                    const itemId = item._id || item.id;
+                    const isApartado = item.isApartado;
+                    const dateString = item.fecha || item.fechaCreacion;
+                    const cantPrendas = isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : item.cantidad;
 
-                    </tr>
-                  ))}
+                    return (
+                      <tr key={itemId} className="hover:bg-zinc-900/40 transition">
+                        <td className="p-4">
+                          <span className="font-bold text-white block">
+                            {dateString ? new Date(dateString).toLocaleDateString() : 'N/A'}
+                          </span>
+                          <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{item.vendedor}</span>
+                          {isApartado && (
+                            <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30 mt-1 inline-block font-black uppercase tracking-wider">
+                              APARTADO
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <span className="font-bold text-gray-200 block uppercase">{item.nombre || item.cliente}</span>
+                          <span className="text-[10px] text-gray-500 font-mono">ID: {item.cedula} | Tel: {item.numero || item.telefono}</span>
+                        </td>
+                        <td className="p-4 max-w-[220px]">
+                          <span className="font-black text-white uppercase block leading-snug">
+                            {getResumenPrendas(item)}
+                          </span>
+                        </td>
+                        <td className="p-4 text-center font-black text-white text-sm">
+                          {cantPrendas}
+                        </td>
+                        <td className="p-4 text-right font-bold text-gray-300">
+                          ₡{(isApartado ? item.precioTotal : item.totalPago)?.toLocaleString()}
+                          {isApartado && <span className="block text-[9px] text-gray-500 font-normal">Valor Total</span>}
+                        </td>
+                        <td className="p-4 text-right font-bold text-blue-400">
+                          {isApartado ? 'N/A' : `₡${item.costoEnvio?.toLocaleString()}`}
+                        </td>
+                        <td className="p-4 text-right font-black text-green-500 text-sm">
+                          ₡{(isApartado ? item.abono : item.montoTotal)?.toLocaleString()}
+                          {isApartado && <span className="block text-[9px] text-green-400/70 font-black uppercase tracking-wider">Abono</span>}
+                        </td>
+                        
+                        <td className="p-4 text-center">
+                          {isApartado ? (
+                            <span className="text-[9px] text-gray-500 font-bold uppercase cursor-default block" title="Los apartados se gestionan en el Tablero de Apartados">En Tablero</span>
+                          ) : deletingId === itemId ? (
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleDeleteSale(itemId)}
+                                className="px-2 py-1 bg-red-600 text-white font-bold rounded text-[10px] hover:bg-red-700 cursor-pointer"
+                              >
+                                Sí
+                              </button>
+                              <button
+                                onClick={() => setDeletingId(null)}
+                                className="px-2 py-1 bg-gray-700 text-white font-bold rounded text-[10px] hover:bg-gray-600 cursor-pointer"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingId(itemId)}
+                              className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition cursor-pointer"
+                              title="Eliminar venta"
+                            >
+                              <FaTrash size={12} />
+                            </button>
+                          )}
+                        </td>
+
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

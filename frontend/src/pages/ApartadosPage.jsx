@@ -26,7 +26,9 @@ export default function ApartadosPage({ user }) {
   const [apartados, setApartados] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeliverModal, setShowDeliverModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false); // 👈 NUEVO ESTADO
   const [apartadoSeleccionado, setApartadoSeleccionado] = useState(null);
+  const [apartadoToDelete, setApartadoToDelete] = useState(null); // 👈 NUEVO ESTADO
   const [isExporting, setIsExporting] = useState(false);
   
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
@@ -262,16 +264,31 @@ export default function ApartadosPage({ user }) {
     }
   };
   
-  // 🗑️ BORRAR APARTADO TOTALMENTE
-  const borrarApartadoTotalmente = async (id) => {
-    if (window.confirm("⚠️ ¿Estás seguro que deseas ELIMINAR este pedido por completo? Esta acción no se puede deshacer.")) {
-      setApartados(prev => prev.filter(ap => (ap._id !== id && ap.id !== id)));
-      try {
-        await fetch(`${API_BASE}/api/apartados/${id}`, { method: 'DELETE' });
+  // 🗑️ CONFIRMAR BORRADO (ABRE MODAL)
+  const confirmarBorrado = (id) => {
+    setApartadoToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // 🗑️ EJECUTAR BORRADO DEFINITIVO
+  const ejecutarBorrado = async () => {
+    if (!apartadoToDelete) return;
+    const id = apartadoToDelete;
+    
+    setApartados(prev => prev.filter(ap => (ap._id !== id && ap.id !== id)));
+    setShowDeleteModal(false);
+    setApartadoToDelete(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/apartados/${id}`, { method: 'DELETE' });
+      if (res.ok) {
         toast.info("Apartado eliminado exitosamente.");
-      } catch (error) {
-        console.error("Error eliminando", error);
+      } else {
+        throw new Error("Error en servidor");
       }
+    } catch (error) {
+      console.error("Error eliminando", error);
+      toast.error("Hubo un problema al eliminar.");
     }
   };
 
@@ -488,7 +505,7 @@ export default function ApartadosPage({ user }) {
             
             <div className="space-y-3">
               {pendientes.length === 0 && <p className="text-xs text-white text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
-              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -500,7 +517,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
-              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900 text-white" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900 text-white" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -512,7 +529,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
-              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
             </div>
           </div>
         </div>
@@ -520,7 +537,7 @@ export default function ApartadosPage({ user }) {
 
       {/* 🚀 MODAL: NUEVO APARTADO */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
           
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col my-auto relative animate-in zoom-in-95 duration-200">
             
@@ -863,7 +880,7 @@ export default function ApartadosPage({ user }) {
 
       {/* 💸 MODAL: CONFIRMACIÓN DE ENTREGA */}
       {showDeliverModal && apartadoSeleccionado && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
             
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -894,6 +911,28 @@ export default function ApartadosPage({ user }) {
         </div>
       )}
 
+      {/* 🗑️ MODAL: CONFIRMACIÓN DE ELIMINACIÓN */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-20 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
+            
+            <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <FaTrash size={24} />
+            </div>
+
+            <h3 className="font-black uppercase text-lg tracking-tight mb-2">Eliminar Apartado</h3>
+            <p className="text-xs text-gray-500 font-medium mb-6 px-2">
+              Esta acción borrará el pedido por completo y devolverá los artículos al stock. No se puede deshacer.
+            </p>
+
+            <div className="flex gap-3">
+              <button onClick={() => { setShowDeleteModal(false); setApartadoToDelete(null); }} className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">Cancelar</button>
+              <button onClick={ejecutarBorrado} className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-[11px] shadow-md transition uppercase tracking-wider cursor-pointer">Sí, Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -918,7 +957,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
       
       <button 
         onClick={onDelete}
-        className="absolute top-3 right-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-md transition cursor-pointer z-10"
+        className="absolute top-3 right-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-md transition cursor-pointer"
         title="Borrar apartado"
       >
         <FaTrash size={12} />

@@ -51,38 +51,62 @@ export const entregarApartado = async (req, res) => {
     if (!apartado) return res.status(404).json({ error: 'Apartado no encontrado' });
     if (apartado.estado === 'ENTREGADO') return res.status(400).json({ error: 'Ya fue entregado' });
 
+    // Cambiamos temporalmente a entregado
     apartado.estado = 'ENTREGADO';
     await apartado.save();
 
-    if (apartado.faltante > 0) {
-      const nuevoIngreso = new Ingreso({
-        monto: apartado.faltante,
-        concepto: `Cobro final de ₡${apartado.faltante} - Apartado Entregado a: ${apartado.cliente}`,
-        tipo: 'Cancelación Apartado',
-        fecha: new Date(),
-        vendedor: apartado.vendedor
+    try {
+      // 1. REGISTRAR EL INGRESO FALTANTE
+      if (apartado.faltante > 0) {
+        const nuevoIngreso = new Ingreso({
+          monto: apartado.faltante,
+          concepto: `Cobro final de ₡${apartado.faltante} - Apartado Entregado a: ${apartado.cliente}`,
+          tipo: 'Cancelación Apartado',
+          fecha: new Date(),
+          vendedor: apartado.vendedor
+        });
+        await nuevoIngreso.save();
+      }
+
+      // 2. CALCULAR RESUMEN EXACTO PARA LA VENTA
+      const totalCantidad = apartado.productos.reduce((sum, p) => sum + (Number(p.cantidad) || 1), 0);
+      const resumenChemas = apartado.productos.map(p => {
+        const nombreItem = p.tipoPedido === 'stock' ? p.busqueda : p.descripcionManual;
+        return `${p.cantidad}x ${nombreItem} (${p.talla})`;
+      }).join(' + ');
+
+      // 3. REGISTRAR LA VENTA CON LOS NOMBRES EXACTOS DE SALE.JS
+      const nuevaVenta = new Venta({
+        nombre: apartado.cliente,          // Sale.js usa 'nombre'
+        cedula: apartado.cedula || 'N/A',
+        numero: apartado.telefono || 'N/A',// Sale.js usa 'numero'
+        totalPago: apartado.precioTotal,
+        costoEnvio: 0,
+        montoTotal: apartado.precioTotal,  // Sale.js usa 'montoTotal'
+        tallaVendida: apartado.productos[0]?.talla || 'L',
+        cantidad: totalCantidad,
+        productoNombre: resumenChemas,
+        productos: apartado.productos,
+        vendedor: apartado.vendedor,
+        fecha: new Date()
       });
-      await nuevoIngreso.save();
+      await nuevaVenta.save();
+
+      res.status(200).json({ mensaje: 'Entregado con éxito' });
+
+    } catch (dbError) {
+      // Si falla guardar la venta o el ingreso, revertimos el estado para que no quede pegado
+      await Apartado.findByIdAndUpdate(id, { estado: 'PARA_ENTREGAR' });
+      console.error("Error al registrar finanzas/venta:", dbError);
+      throw dbError; // Mandar al catch principal
     }
 
-    const nuevaVenta = new Venta({
-      cliente: apartado.cliente,
-      vendedor: apartado.vendedor,
-      productos: apartado.productos,
-      totalGanancia: apartado.precioTotal, 
-      metodoPago: 'Apartado',
-      fecha: new Date()
-    });
-    await nuevaVenta.save();
-
-    res.status(200).json({ mensaje: 'Entregado con éxito' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al entregar' });
   }
 };
 
-// 🚀 NUEVA FUNCIÓN: ELIMINAR TOTALMENTE
 export const eliminarApartado = async (req, res) => {
   try {
     const { id } = req.params;
@@ -97,7 +121,6 @@ export const eliminarApartado = async (req, res) => {
         if (idProducto) {
           const productoDB = await Product.findById(idProducto);
           if (productoDB && productoDB.stock && productoDB.stock[prod.talla] !== undefined) {
-            // Le sumamos la cantidad de vuelta
             productoDB.stock[prod.talla] = Number(productoDB.stock[prod.talla]) + Number(prod.cantidad);
             productoDB.markModified('stock');
             await productoDB.save();
@@ -107,17 +130,16 @@ export const eliminarApartado = async (req, res) => {
     }
 
     // 2. ELIMINAR EL INGRESO DEL ABONO
-    // Busca el ingreso que coincida con el monto y que el concepto tenga el nombre del cliente
     await Ingreso.findOneAndDelete({ 
       monto: apartado.abono,
       tipo: 'Abono Apartado',
       concepto: new RegExp(apartado.cliente, 'i') 
     });
 
-    // 3. ELIMINAR EL APARTADO DE LA BASE DE DATOS
+    // 3. ELIMINAR EL APARTADO DE LA BD
     await Apartado.findByIdAndDelete(id);
 
-    res.json({ mensaje: 'Apartado eliminado, stock devuelto e ingreso borrado exitosamente.' });
+    res.json({ mensaje: 'Apartado eliminado exitosamente.' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al eliminar el apartado' });

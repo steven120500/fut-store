@@ -13,13 +13,8 @@ const saleSchema = new Schema({
   cantidad: { type: Number, default: 1 },
   productoNombre: { type: String },
   
-  // 🛍️ NUEVO: Arreglo para soportar múltiples chemas en una sola venta
-  productos: [{
-    nombre: { type: String, required: true },
-    talla: { type: String, required: true },
-    cantidad: { type: Number, required: true, default: 1 },
-    precioTotal: { type: Number, required: true, default: 0 }
-  }],
+  // 🛍️ ARREGLO FLEXIBLE: Acepta tanto Ventas Rápidas como Apartados
+  productos: { type: Array, default: [] },
 
   vendedor: { type: String, required: true, default: 'Sistema' },
   fecha: { type: Date, default: Date.now },
