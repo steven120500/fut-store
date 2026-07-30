@@ -13,6 +13,7 @@ export default function DailyReportPage({ user, onLogout }) {
   const navigate = useNavigate();
   
   const [sales, setSales] = useState([]);
+  const [apartadosActivos, setApartadosActivos] = useState([]); // 👈 ESTADO PARA LOS APARTADOS
   const [loading, setLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -25,6 +26,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
   useEffect(() => {
     fetchAllSales();
+    fetchApartadosActivos(); // 👈 LLAMAMOS A LOS APARTADOS
   }, []);
 
   const fetchAllSales = async () => {
@@ -42,6 +44,19 @@ export default function DailyReportPage({ user, onLogout }) {
       toast.error("No se pudo cargar el historial de ventas.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 👈 FUNCIÓN PARA TRAER LOS APARTADOS
+  const fetchApartadosActivos = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/apartados`);
+      if (res.ok) {
+        const data = await res.json();
+        setApartadosActivos(data);
+      }
+    } catch (error) {
+      console.error("Error al cargar apartados:", error);
     }
   };
 
@@ -221,7 +236,10 @@ const exportDailyPDF = () => {
 
   const totalChemas = sales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
   const totalDineroEnvios = sales.reduce((sum, item) => sum + (item.costoEnvio || 0), 0);
-  const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0);
+  
+  // 👈 CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
+  const totalAbonosActivos = apartadosActivos.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
+  const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0) + totalAbonosActivos;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">

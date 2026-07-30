@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaTimes, FaIdCard, FaPhone, FaUser, FaRedo, FaExclamationTriangle, FaSearch, FaCheckCircle, FaBoxOpen } from 'react-icons/fa';
@@ -22,6 +21,7 @@ export default function SalesPage({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
 
   const [catalogo, setCatalogo] = useState([]);
+  const [apartadosActivos, setApartadosActivos] = useState([]); // 👈 ESTADO PARA LOS ABONOS
 
   // Estados de modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
@@ -62,14 +62,31 @@ export default function SalesPage({ user, onLogout }) {
   const granTotalConEnvio = subTotalChemasCalc + costoEnvioCalc;
 
   const totalChemasVendidas = ranking.reduce((acc, curr) => acc + (curr.totalPrendas || 0), 0);
-  const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0);
+  
+  // 👈 CÁLCULO SUMANDO LOS ABONOS AL TOTAL GLOBAL
+  const totalAbonosGlobal = apartadosActivos.reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
+  const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0) + totalAbonosGlobal;
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
 
   useEffect(() => {
     fetchRankingData();
     fetchCatalogoProductos();
+    fetchApartadosActivos(); // 👈 LLAMAMOS A LOS APARTADOS
   }, []);
+
+  // 👈 FUNCIÓN PARA TRAER LOS APARTADOS
+  const fetchApartadosActivos = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/apartados`);
+      if (res.ok) {
+        const data = await res.json();
+        setApartadosActivos(data);
+      }
+    } catch (error) {
+      console.error("No se pudo cargar los abonos:", error);
+    }
+  };
 
   const fetchCatalogoProductos = async () => {
     try {
@@ -399,6 +416,13 @@ export default function SalesPage({ user, onLogout }) {
               const esPlata = index === 1;
               const esBronce = index === 2;
 
+              // 👈 CÁLCULO SUMANDO LOS ABONOS INDIVIDUALES DE ESTE VENDEDOR
+              const abonosDelVendedor = apartadosActivos
+                .filter(ap => ap.vendedor === emp._id)
+                .reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
+              
+              const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;
+
               return (
                 <div 
                   key={emp._id} 
@@ -445,7 +469,7 @@ export default function SalesPage({ user, onLogout }) {
                   <div>
                     <div className="bg-black/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center mt-2">
                       <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Aporte Total</span>
-                      <span className="text-lg font-black text-green-500">₡{emp.montoTotal?.toLocaleString() || 0}</span>
+                      <span className="text-lg font-black text-green-500">₡{aporteTotalReal.toLocaleString()}</span>
                     </div>
 
                     {/* 💸 BOTÓN DE COMISIÓN INDIVIDUAL DENTRO DEL CUADRO */}

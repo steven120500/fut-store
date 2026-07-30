@@ -15,6 +15,7 @@ export default function BalancePage({ user }) {
   const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
+  const [apartadosActivos, setApartadosActivos] = useState([]); // 👈 ESTADO AÑADIDO PARA APARTADOS
   const [loading, setLoading] = useState(true);
   
   // Filtro de mes (Por defecto mes actual YYYY-MM)
@@ -43,16 +44,20 @@ export default function BalancePage({ user }) {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resSales, resExpenses] = await Promise.all([
+      // 👈 AÑADIDA LA PETICIÓN A APARTADOS
+      const [resSales, resExpenses, resApartados] = await Promise.all([
         fetch(`${API_BASE}/api/sales`),
-        fetch(`${API_BASE}/api/expenses`)
+        fetch(`${API_BASE}/api/expenses`),
+        fetch(`${API_BASE}/api/apartados`)
       ]);
 
       const dataSales = resSales.ok ? await resSales.json() : [];
       const dataExpenses = resExpenses.ok ? await resExpenses.json() : [];
+      const dataApartados = resApartados.ok ? await resApartados.json() : [];
 
       setSales(Array.isArray(dataSales) ? dataSales : []);
       setExpenses(Array.isArray(dataExpenses) ? dataExpenses : []);
+      setApartadosActivos(Array.isArray(dataApartados) ? dataApartados : []);
     } catch (error) {
       toast.error("Error al cargar los datos financieros");
     } finally {
@@ -89,8 +94,19 @@ export default function BalancePage({ user }) {
     return e.fecha.startsWith(selectedMonth);
   });
 
+  // 👈 FILTRAR APARTADOS POR MES
+  const apartadosFiltrados = apartadosActivos.filter(ap => {
+    const fechaAComparar = ap.fecha || ap.fechaCreacion;
+    if (!fechaAComparar) return false;
+    return fechaAComparar.startsWith(selectedMonth);
+  });
+  
+  // 👈 CÁLCULO DE ABONOS DEL MES
+  const totalAbonosMes = apartadosFiltrados.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
+
   // 📈 CÁLCULO DE MÉTRICAS FINANCIERAS
-  const ingresoBrutoTotal = salesFiltradas.reduce((sum, s) => sum + (Number(s.montoTotal) || 0), 0);
+  // 👈 SE SUMAN LOS ABONOS AL INGRESO BRUTO
+  const ingresoBrutoTotal = salesFiltradas.reduce((sum, s) => sum + (Number(s.montoTotal) || 0), 0) + totalAbonosMes;
   const totalEnviosCobrados = salesFiltradas.reduce((sum, s) => sum + (Number(s.costoEnvio) || 0), 0);
   
   // Costo total de mercadería vendida
