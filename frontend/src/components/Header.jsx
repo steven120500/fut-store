@@ -2,7 +2,7 @@ import logo from "../assets/logo.png";
 import { 
   FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, 
   FaHistory, FaCashRegister, FaChartLine, FaBalanceScale, 
-  FaColumns // 🆕 Agregado para el ícono del tablero
+  FaColumns 
 } from "react-icons/fa"; 
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
@@ -142,72 +142,49 @@ export default function Header({
                   </div>
 
                   <nav className="space-y-2">
-                    {isSuperUser && (
+                    
+                    {/* 🔹 VISTO POR USUARIOS CON FUNCIONES Y SUPER ADMINS */}
+                    {(isSuperUser || canSeeHistory) && (
                       <>
                         <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Agregar Usuario
                         </button>
+                        
                         <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Lista de Usuarios
                         </button>
-                      </>
-                    )}
-                    
-                    {/* 🔹 HISTORIAL DE CAMBIOS */}
-                    {canSeeHistory && (
-                      <button 
-                        onClick={() => { navigate('/historial'); setSidebarOpen(false); }} 
-                        className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer"
-                      >
-                        <FaHistory size={14}/> Historial de Cambios
-                      </button>
-                    )}
-                    
-                    {(isSuperUser || canSeeHistory) && (
-                      <>
-                        <button 
-                          onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} 
-                          className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer"
-                        >
+                        
+                        <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
+                          <FaHistory size={14}/> Historial de Cambios
+                        </button>
+                        
+                        <button onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer">
                           <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
                         </button>
 
-                        {/* 🆕 TABLERO DE APARTADOS (ESTILO TRELLO) */}
-                        <button 
-                          onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} 
-                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer"
-                        >
+                        <button onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                           <FaColumns size={16} /> Tablero de Apartados
                         </button>
 
-                        {/* 🏆 APARTADO DE VENTAS */}
-                        <button 
-                          onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} 
-                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer"
-                        >
+                        <button onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                           <FaCashRegister size={16} /> Registro de Ventas
                         </button>
-
-                        {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE Y REPORTES DIARIOS */}
-                        {isSuperUser && (
-                          <>
-                            <button 
-                              onClick={() => { navigate('/balance'); setSidebarOpen(false); }} 
-                              className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 cursor-pointer"
-                            >
-                              <FaBalanceScale size={16} /> Balance y Gastos
-                            </button>
-
-                            <button 
-                              onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} 
-                              className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 cursor-pointer"
-                            >
-                              <FaChartLine size={16} /> Reporte Diario
-                            </button>
-                          </>
-                        )}
                       </>
                     )}
+
+                    {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE Y REPORTES DIARIOS */}
+                    {isSuperUser && (
+                      <>
+                        <button onClick={() => { navigate('/balance'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                          <FaBalanceScale size={16} /> Balance y Gastos
+                        </button>
+
+                        <button onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                          <FaChartLine size={16} /> Reporte Diario
+                        </button>
+                      </>
+                    )}
+
                   </nav>
 
                   <button 
@@ -225,7 +202,7 @@ export default function Header({
                   <h3 className="text-black font-black text-2xl mb-2 tracking-tight">¡Bienvenido!</h3>
                   <p className="text-black/60 text-sm mb-8 px-4 font-medium">Inicia sesión para gestionar pedidos.</p>
                   
-                  <button 
+                  <button    
                     onClick={() => { onLoginClick(); setSidebarOpen(false); }} 
                     className="w-full bg-black text-white px-4 py-4 rounded-xl font-black uppercase tracking-widest hover:bg-zinc-800 transition shadow-xl cursor-pointer"
                   >
