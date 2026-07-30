@@ -1,0 +1,846 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  FaPlus, FaArrowRight, FaCheck, FaBoxOpen, FaTruck, FaStore, 
+  FaTimes, FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaIdCard, FaTrash, FaTags, FaChevronDown, FaChevronUp, FaFilePdf, FaSpinner
+} from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+const API_BASE = "https://fut-store.onrender.com";
+
+const getBase64 = (file) => {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    if (typeof file === 'string') return resolve(file); 
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+};
+
+export default function ApartadosPage({ user }) {
+  const [apartados, setApartados] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeliverModal, setShowDeliverModal] = useState(false);
+  const [apartadoSeleccionado, setApartadoSeleccionado] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const [filtroBusqueda, setFiltroBusqueda] = useState('');
+  
+  const [productosStock, setProductosStock] = useState([]);
+  const [activeDropdownIndex, setActiveDropdownIndex] = useState(null); 
+  const searchRef = useRef(null);
+
+  const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
+  const employeeDropdownRef = useRef(null);
+  const listaEmpleados = [
+    "LaR Delfiow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
+    "Dylan Gomez", "Steven Corrales", "Keylor Gómez"
+  ];
+
+  const currentUser = user?.firstName || user?.username || 'Steven Corrales';
+
+  const [form, setForm] = useState({
+    vendedor: currentUser, 
+    cliente: '',
+    cedula: '',
+    telefono: '',
+    abono: '',
+    imagen: null, 
+    productos: [
+      {
+        id: Date.now(),
+        tipoPedido: 'stock', 
+        busqueda: '',
+        productoObj: null, 
+        descripcionManual: '',
+        nombreCamiseta: '', 
+        numeroCamiseta: '', 
+        version: 'Player', 
+        parches: '', 
+        talla: 'L',
+        cantidad: 1,
+        precioItem: ''
+      }
+    ]
+  });
+  const [previewImg, setPreviewImg] = useState(null);
+  const [buscandoCedula, setBuscandoCedula] = useState(false); 
+
+  useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/products`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) setProductosStock(data);
+          else if (data?.products && Array.isArray(data.products)) setProductosStock(data.products);
+          else if (data?.data && Array.isArray(data.data)) setProductosStock(data.data);
+          else setProductosStock([]); 
+        }
+      } catch (error) {
+        console.error("Error al cargar stock", error);
+        setProductosStock([]);
+      }
+    };
+    fetchProductos();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setActiveDropdownIndex(null);
+      }
+      if (employeeDropdownRef.current && !employeeDropdownRef.current.contains(event.target)) {
+        setShowEmployeeDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const consultarTSE = async (cedulaABuscar) => {
+    if (cedulaABuscar.length < 9) return;
+    setBuscandoCedula(true);
+    try {
+      const response = await fetch(`https://apis.gometa.org/cedulas/${cedulaABuscar}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.nombre) {
+          setForm(prev => ({ ...prev, cliente: data.nombre }));
+          toast.success("Cliente encontrado en TSE");
+        }
+      }
+    } catch (error) {
+      console.log("No se pudo conectar al TSE o cliente no encontrado.");
+    } finally {
+      setBuscandoCedula(false);
+    }
+  };
+
+  const handleCedulaChange = (e) => {
+    const cedula = e.target.value;
+    setForm(prev => ({ ...prev, cedula }));
+    
+    if (cedula.length >= 9 && !cedula.includes("-")) {
+      consultarTSE(cedula);
+    }
+  };
+
+  const calcularTotalPedido = () => {
+    return form.productos.reduce((sum, prod) => sum + (Number(prod.precioItem) * Number(prod.cantidad || 1)), 0);
+  };
+
+  const totalCalculado = calcularTotalPedido();
+  const faltanteCalculado = totalCalculado - Number(form.abono);
+
+  const agregarOtraChema = () => {
+    setForm({
+      ...form,
+      productos: [...form.productos, { id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '' }]
+    });
+  };
+
+  const eliminarChema = (index) => {
+    const nuevos = form.productos.filter((_, i) => i !== index);
+    setForm({ ...form, productos: nuevos });
+  };
+
+  const actualizarProducto = (index, campo, valor) => {
+    const nuevos = [...form.productos];
+    nuevos[index][campo] = valor;
+    setForm({ ...form, productos: nuevos });
+  };
+
+  const seleccionarProductoDelStock = (index, prod) => {
+    const nuevos = [...form.productos];
+    nuevos[index].productoObj = prod;
+    nuevos[index].busqueda = prod.nombre;
+    nuevos[index].precioItem = prod.precio || 15000; 
+    setForm({ ...form, productos: nuevos });
+    setActiveDropdownIndex(null);
+  };
+
+  const handleCrearApartado = async (e) => {
+    e.preventDefault();
+    if (!form.vendedor) return toast.warning("Debes asignar un vendedor a la venta");
+    if (Number(form.abono) > totalCalculado) return toast.warning("El abono no puede ser mayor al precio total");
+
+    const nuevoApartado = {
+      id: Date.now().toString(),
+      vendedor: form.vendedor,
+      cliente: form.cliente,
+      cedula: form.cedula,
+      telefono: form.telefono,
+      productos: form.productos,
+      precioTotal: totalCalculado,
+      abono: Number(form.abono),
+      faltante: faltanteCalculado,
+      estado: 'PENDIENTE',
+      fecha: new Date().toISOString(),
+      imagen: form.imagen || (form.productos[0]?.productoObj?.imagenes ? form.productos[0].productoObj.imagenes[0] : null)
+    };
+
+    setApartados([...apartados, nuevoApartado]);
+    setShowAddModal(false);
+    toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono sumado.`);
+    
+    setForm({ 
+      vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen: null, 
+      productos: [{ id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '' }] 
+    });
+    setPreviewImg(null);
+  };
+
+  const moverApartado = (id, nuevoEstado) => setApartados(prev => prev.map(ap => ap.id === id ? { ...ap, estado: nuevoEstado } : ap));
+  
+  const borrarApartadoTotalmente = (id) => {
+    if (window.confirm("⚠️ ¿Estás seguro que deseas ELIMINAR este pedido por completo? Esta acción no se puede deshacer.")) {
+      setApartados(prev => prev.filter(ap => ap.id !== id));
+      toast.info("Apartado eliminado exitosamente.");
+    }
+  };
+
+  const confirmarEntrega = (apartado) => { setApartadoSeleccionado(apartado); setShowDeliverModal(true); };
+  
+  const ejecutarEntrega = async () => {
+    setApartados(prev => prev.filter(item => item.id !== apartadoSeleccionado.id));
+    setShowDeliverModal(false);
+    setApartadoSeleccionado(null);
+    toast.success(`¡Entregado exitosamente!`);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setForm({ ...form, imagen: file });
+      setPreviewImg(URL.createObjectURL(file));
+    }
+  };
+
+  const generarPDFPedidos = async () => {
+    if (pendientes.length === 0) {
+      return toast.warning("No hay pedidos pendientes para exportar.");
+    }
+    setIsExporting(true);
+    toast.info("Generando PDF, por favor espera...", { autoClose: 2000 });
+
+    try {
+      const productosAplanados = [];
+      for (const ap of pendientes) {
+        let imgBase64 = null;
+        if (ap.imagen) {
+          try { imgBase64 = await getBase64(ap.imagen); } catch (e) { console.warn("Error cargando imagen", e); }
+        }
+        
+        for (const prod of ap.productos) {
+          let genero = "Men";
+          const versionLower = prod.version?.toLowerCase() || '';
+          if (versionLower.includes("mujer")) genero = "Women";
+          if (versionLower.includes("niño") || versionLower.includes("kid")) genero = "Kids";
+
+          productosAplanados.push({
+            imagenBase64: imgBase64,
+            nombre: prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual,
+            genero: genero,
+            version: prod.version || 'Fan',
+            talla: prod.talla,
+            dorsalNombre: prod.nombreCamiseta || '',
+            dorsalNumero: prod.numeroCamiseta ? `#${prod.numeroCamiseta}` : '',
+            parches: prod.parches || '',
+            unidades: prod.cantidad
+          });
+        }
+      }
+
+      const doc = new jsPDF('landscape');
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFillColor(118, 222, 237);
+      doc.rect(14, 14, pageWidth - 28, 10, 'F');
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.2);
+      doc.rect(14, 14, pageWidth - 28, 10, 'S'); 
+      
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("MACHOTE PEDIDOS MAYORISTAS", pageWidth / 2, 21, { align: "center" });
+
+      const rows = productosAplanados.map(p => [
+        '', 
+        p.nombre,
+        p.genero,
+        p.version,
+        p.talla,
+        p.dorsalNombre,
+        p.dorsalNumero,
+        p.parches,
+        p.unidades
+      ]);
+
+      autoTable(doc, {
+        startY: 24,
+        head: [['Foto Producto', 'Nombre Producto', 'Genero', 'Versión', 'Talla', 'Dorsal Nombre', 'Dorsal Numero', 'Parche', 'Unidades']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [100, 149, 237], textColor: 0, halign: 'center', valign: 'middle', 
+          fontStyle: 'bold', lineColor: [0, 0, 0], lineWidth: 0.2 
+        },
+        bodyStyles: { 
+          textColor: 0, halign: 'center', valign: 'middle', lineColor: [0, 0, 0], lineWidth: 0.2 
+        },
+        columnStyles: { 0: { cellWidth: 35, minCellHeight: 35 }, 1: { cellWidth: 50 } }, 
+        alternateRowStyles: { fillColor: [173, 216, 230] }, 
+        styles: { fillColor: [224, 255, 255] }, 
+        
+        didDrawCell: function (data) {
+          if (data.column.index === 0 && data.cell.section === 'body') {
+            const rowIndex = data.row.index;
+            const imgData = productosAplanados[rowIndex].imagenBase64;
+            if (imgData) {
+              const padding = 2;
+              const x = data.cell.x + padding;
+              const y = data.cell.y + padding;
+              const w = data.cell.width - (padding * 2);
+              const h = data.cell.height - (padding * 2);
+              
+              try {
+                const format = imgData.includes('png') ? 'PNG' : 'JPEG';
+                doc.addImage(imgData, format, x, y, w, h);
+              } catch(e) {
+                doc.text("Sin foto", data.cell.x + 10, data.cell.y + 15);
+              }
+            } else {
+              doc.text("Sin foto", data.cell.x + 10, data.cell.y + 15);
+            }
+          }
+        }
+      });
+
+      doc.save(`Machote_Pedidos_${new Date().toLocaleDateString('es-CR').replace(/\//g, '-')}.pdf`);
+      toast.success("PDF generado exitosamente 🎉");
+    } catch (error) {
+      console.error(error);
+      toast.error("Hubo un problema al generar el PDF.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const apartadosFiltrados = apartados.filter(ap => {
+    const termino = filtroBusqueda.toLowerCase();
+    return ap.cedula.toLowerCase().includes(termino) || ap.cliente.toLowerCase().includes(termino);
+  });
+
+  const pendientes = apartadosFiltrados.filter(ap => ap.estado === 'PENDIENTE');
+  const enCamino = apartadosFiltrados.filter(ap => ap.estado === 'EN_CAMINO');
+  const paraEntregar = apartadosFiltrados.filter(ap => ap.estado === 'PARA_ENTREGAR');
+
+  return (
+    <div className="min-h-screen bg-black text-white pt-32 pb-16 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        
+        {/* ENCABEZADO Y BUSCADOR GENERAL */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-gray-800 pb-6">
+          <div>
+            <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
+              <FaBoxOpen /> Tablero de Apartados
+            </h1>
+            <p className="text-gray-400 text-sm mt-2">Gestiona los pedidos y entregas estilo Trello.</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-2 bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 w-full sm:w-auto shadow-inner">
+              <FaSearch className="text-gray-500" size={14} />
+              <input 
+                type="text" 
+                placeholder="Buscar cédula o cliente..." 
+                value={filtroBusqueda}
+                onChange={(e) => setFiltroBusqueda(e.target.value)}
+                className="bg-transparent text-sm font-bold text-white outline-none w-full sm:w-48 placeholder-gray-600"
+              />
+            </div>
+
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="w-full sm:w-auto bg-[#D4AF37] hover:bg-yellow-600 text-black px-4 py-2.5 rounded-xl font-black flex items-center justify-center gap-2 transition cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest text-xs"
+            >
+              <FaPlus /> Nuevo Apartado
+            </button>
+          </div>
+        </div>
+
+        {/* TABLERO KANBAN */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          
+          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+            <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
+              </h2>
+              <button 
+                onClick={generarPDFPedidos}
+                disabled={isExporting}
+                className={`bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
+              >
+                <FaFilePdf size={12} /> {isExporting ? 'Generando...' : 'Exportar'}
+              </button>
+            </div>
+            
+            <div className="space-y-3">
+              {pendientes.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
+              {pendientes.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => moverApartado(ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-blue-600 hover:bg-blue-700" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+            <div className="mb-4 border-b border-gray-800 pb-2">
+              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                <FaTruck className="text-amber-500" /> En Proceso / Camino ({enCamino.length})
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
+              {enCamino.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => moverApartado(ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-amber-600 hover:bg-amber-700 text-black" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+            </div>
+          </div>
+
+          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+            <div className="mb-4 border-b border-gray-800 pb-2">
+              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                <FaCheck className="text-green-500" /> Para Entregar ({paraEntregar.length})
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
+              {paraEntregar.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" btnIcon={<FaMoneyBillWave />} colorBtn="bg-green-600 hover:bg-green-700" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🚀 MODAL: NUEVO APARTADO */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-auto max-h-[95vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              <div>
+                <h3 className="font-black uppercase text-sm tracking-tight text-black">Registrar Nuevo Apartado</h3>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-gray-200 hover:bg-black hover:text-white flex items-center justify-center transition cursor-pointer">
+                <FaTimes size={12} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearApartado} className="flex flex-col flex-1 overflow-hidden">
+              
+              {/* CONTENIDO SCROLLABLE DEL MODAL */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-white">
+                <div className="relative" ref={employeeDropdownRef}>
+                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Asignar venta a empleado *</label>
+                  <div 
+                    onClick={() => setShowEmployeeDropdown(!showEmployeeDropdown)}
+                    className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold bg-white cursor-pointer flex justify-between items-center"
+                  >
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <FaUserTie className="text-gray-400" size={14}/>
+                      {form.vendedor || "Seleccionar..."}
+                    </div>
+                    <FaChevronDown className="text-gray-400" size={10} />
+                  </div>
+                  
+                  {showEmployeeDropdown && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[110]">
+                      {listaEmpleados.map(emp => (
+                        <div 
+                          key={emp}
+                          onClick={() => { setForm({...form, vendedor: emp}); setShowEmployeeDropdown(false); }}
+                          className={`p-3 text-xs font-bold cursor-pointer flex items-center justify-between transition ${form.vendedor === emp ? 'bg-zinc-700 text-white' : 'text-gray-300 hover:bg-zinc-700 hover:text-white'}`}
+                        >
+                          {emp}
+                          {form.vendedor === emp && <FaCheck className="text-green-400" size={10} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50">
+                  <h4 className="text-[11px] font-black uppercase text-gray-700 mb-3 border-b pb-2">Datos del Cliente</h4>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex justify-between items-center">
+                        Cédula *
+                        {buscandoCedula && <span className="text-blue-500 flex items-center gap-1"><FaSpinner className="animate-spin" size={10}/> TSE</span>}
+                      </label>
+                      <div className="relative">
+                        <FaIdCard className="absolute left-3 top-3 text-gray-400" size={12}/>
+                        <input 
+                          type="text" required placeholder="101110111" 
+                          value={form.cedula} onChange={handleCedulaChange} 
+                          className="w-full border p-2 pl-8 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white" 
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Teléfono *</label>
+                      <input type="tel" required placeholder="88888888" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})} className="w-full border p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Nombre Completo *</label>
+                    <div className="relative">
+                      <FaUserTie className="absolute left-3 top-3 text-gray-400" size={12}/>
+                      <input type="text" required placeholder="Nombre del cliente" value={form.cliente} onChange={e => setForm({...form, cliente: e.target.value})} className="w-full border p-2 pl-8 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-[11px] font-black uppercase text-gray-700">Chemas del Pedido ({form.productos.length})</h4>
+                    <button type="button" onClick={agregarOtraChema} className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition cursor-pointer flex items-center gap-1">
+                      <FaPlus /> Agregar Otra
+                    </button>
+                  </div>
+
+                  <div className="space-y-4" ref={searchRef}>
+                    {form.productos.map((prod, index) => (
+                      <div key={prod.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm relative">
+                        
+                        {form.productos.length > 1 && (
+                          <button type="button" onClick={() => eliminarChema(index)} className="absolute top-3 right-3 text-red-300 hover:text-red-600 transition cursor-pointer">
+                            <FaTrash size={12} />
+                          </button>
+                        )}
+
+                        <div className="flex items-center gap-6 mb-4 border-b pb-3">
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                            <input type="radio" checked={prod.tipoPedido === 'stock'} onChange={() => actualizarProducto(index, 'tipoPedido', 'stock')} className="accent-blue-600 w-3.5 h-3.5" />
+                            Stock
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                            <input type="radio" checked={prod.tipoPedido === 'nuevo'} onChange={() => { actualizarProducto(index, 'tipoPedido', 'nuevo'); actualizarProducto(index, 'productoObj', null); }} className="accent-blue-600 w-3.5 h-3.5" />
+                            Pedido Especial
+                          </label>
+                        </div>
+
+                        {prod.tipoPedido === 'stock' ? (
+                          <div className="mb-4 relative">
+                            <div className="relative">
+                              <input 
+                                type="text" placeholder="Toca para ver todo el catálogo o busca..." value={prod.busqueda}
+                                onChange={(e) => { actualizarProducto(index, 'busqueda', e.target.value); setActiveDropdownIndex(index); }}
+                                onFocus={() => setActiveDropdownIndex(index)}
+                                className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-green-500"
+                              />
+                              <FaSearch className="absolute right-3 top-3 text-gray-400" size={12} />
+                            </div>
+
+                            {activeDropdownIndex === index && (
+                              <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto z-50">
+                                {(Array.isArray(productosStock) ? productosStock : [])
+                                  .filter(p => (p.nombre || '').toLowerCase().includes((prod.busqueda || '').toLowerCase()))
+                                  .map(p => (
+                                  <div key={p._id} onClick={() => seleccionarProductoDelStock(index, p)} className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition">
+                                    <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                                      {p.imagenes && p.imagenes[0] ? <img src={p.imagenes[0]} alt="prod" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><FaImage /></div>}
+                                    </div>
+                                    <div className="flex-1">
+                                      <p className="text-[11px] font-black uppercase text-gray-800 leading-tight">{p.nombre}</p>
+                                    </div>
+                                    <div className="text-green-700 font-black text-xs">₡{(p.precio || 15000).toLocaleString()}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="mb-4 space-y-3">
+                            <textarea 
+                              required rows="2" placeholder="Describe la chema (Ej: Barcelona 2009 Visitante...)" 
+                              value={prod.descripcionManual} onChange={e => actualizarProducto(index, 'descripcionManual', e.target.value)}
+                              className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-green-500 resize-none bg-gray-50"
+                            ></textarea>
+                            
+                            <div className="grid grid-cols-2 gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Nombre Dorsal</label>
+                                <input type="text" placeholder="Ej: MESSI" value={prod.nombreCamiseta} onChange={e => actualizarProducto(index, 'nombreCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none uppercase bg-white" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
+                                <input type="number" placeholder="Ej: 10" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3 mb-3">
+                          {prod.tipoPedido === 'nuevo' && (
+                            <div>
+                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Versión</label>
+                              <select 
+                                value={prod.version} onChange={e => actualizarProducto(index, 'version', e.target.value)}
+                                className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white"
+                              >
+                                <option value="Player">Player (Ajustada)</option>
+                                <option value="Fan">Fan (Normal)</option>
+                                <option value="Retro">Retro</option>
+                                <option value="Mujer">Mujer</option>
+                                <option value="Niño">Niño</option>
+                              </select>
+                            </div>
+                          )}
+                          <div className={prod.tipoPedido === 'stock' ? 'col-span-2' : ''}>
+                            <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaTags size={10}/> Parches (Opcional)</label>
+                            <input 
+                              type="text" placeholder="Ej: Champions..." 
+                              value={prod.parches} onChange={e => actualizarProducto(index, 'parches', e.target.value)}
+                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500" 
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Talla</label>
+                            <select 
+                              value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value)}
+                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white"
+                            >
+                              <option value="S">S</option>
+                              <option value="M">M</option>
+                              <option value="L">L</option>
+                              <option value="XL">XL</option>
+                              <option value="XXL">XXL</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cant.</label>
+                            <input 
+                              type="number" min="1" required value={prod.cantidad} onChange={e => actualizarProducto(index, 'cantidad', e.target.value)}
+                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-black text-center outline-none focus:border-green-500" 
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Precio (₡)</label>
+                            <input 
+                              type="number" required placeholder="15000" value={prod.precioItem} onChange={e => actualizarProducto(index, 'precioItem', e.target.value)}
+                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-black outline-none focus:border-green-500" 
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-xl p-3 bg-gray-50">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaImage /> Adjuntar foto del comprobante / Referencia</label>
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-gray-200 file:text-black cursor-pointer w-full" />
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-green-800 tracking-wider">Total Pedido:</p>
+                      <p className="text-[9px] font-bold text-green-600">{form.productos.reduce((sum, p) => sum + Number(p.cantidad), 0)} chemas en total</p>
+                    </div>
+                    <p className="text-xl font-black text-green-700">₡{totalCalculado.toLocaleString()}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 border-t border-green-200 pt-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-green-800 uppercase mb-1 block">Abono Inicial (₡) *</label>
+                      <input type="number" required placeholder="Ej: 15000" value={form.abono} onChange={e => setForm({...form, abono: e.target.value})} className="w-full border border-green-300 p-2 rounded-xl text-sm font-black text-green-700 bg-white outline-none focus:border-green-600" />
+                    </div>
+                    <div className="flex flex-col justify-end">
+                      <p className="text-[9px] font-bold text-gray-500 uppercase mb-1">Saldo Faltante</p>
+                      <p className="text-lg font-black text-red-600">₡{faltanteCalculado > 0 ? faltanteCalculado.toLocaleString() : 0}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOTÓN FIJO EN EL FOOTER DEL MODAL */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0">
+                <button type="submit" className="w-full py-4 bg-[#D4AF37] hover:bg-yellow-600 text-black rounded-2xl font-black text-xs shadow-lg transition uppercase tracking-widest cursor-pointer">
+                  Confirmar y Registrar Abono
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 💸 MODAL: CONFIRMACIÓN DE ENTREGA */}
+      {showDeliverModal && apartadoSeleccionado && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
+            
+            <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
+              <FaCheck size={24} />
+            </div>
+
+            <h3 className="font-black uppercase text-lg tracking-tight mb-2">Entregar Pedido</h3>
+            
+            <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left border border-gray-100">
+              <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Cliente</p>
+              <p className="font-black text-sm mb-3">{apartadoSeleccionado.cliente}</p>
+              
+              <div className="border-t border-dashed pt-3 flex justify-between items-center">
+                <span className="text-[11px] font-black uppercase text-red-500">Cobrar Faltante:</span>
+                <span className="text-xl font-black text-red-600">₡{apartadoSeleccionado.faltante.toLocaleString()}</span>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-gray-400 mb-4 font-bold flex items-center justify-center gap-1">
+              <FaUserTie /> Vendido por: {apartadoSeleccionado.vendedor}
+            </p>
+
+            <div className="flex gap-3">
+              <button onClick={() => setShowDeliverModal(false)} className="w-1/2 py-3 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-100 transition cursor-pointer">Cancelar</button>
+              <button onClick={ejecutarEntrega} className="w-1/2 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[11px] shadow-md transition uppercase tracking-wider cursor-pointer">Confirmar Cobro</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+// 🃏 TARJETA INDIVIDUAL
+function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  let imgSrc = null;
+  if (data.imagen && typeof data.imagen !== 'string') {
+    imgSrc = URL.createObjectURL(data.imagen);
+  } else if (data.imagen) {
+    imgSrc = data.imagen; 
+  }
+
+  const primerProducto = data.productos[0];
+  const nombrePrincipal = primerProducto.tipoPedido === 'stock' ? primerProducto.busqueda : primerProducto.descripcionManual;
+  const masChemas = data.productos.length > 1 ? ` +${data.productos.length - 1}` : '';
+
+  return (
+    <div className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg hover:border-gray-500 transition relative overflow-hidden group">
+      
+      {/* BOTÓN ELIMINAR APARTADO EN ESQUINA SUPERIOR DERECHA */}
+      <button 
+        onClick={onDelete}
+        className="absolute top-3 right-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-md transition cursor-pointer z-10"
+        title="Borrar apartado"
+      >
+        <FaTrash size={12} />
+      </button>
+
+      <div className="flex items-center justify-between gap-1 text-[#D4AF37] mb-3 border-b border-gray-800 pb-2 pr-8">
+        <div className="flex items-center gap-1">
+          <FaUserTie size={10} />
+          <span className="text-[9px] font-black uppercase tracking-wider">Vendió: {data.vendedor.split(' ')[0]}</span>
+        </div>
+        <span className="text-[9px] text-gray-500 font-mono">{new Date(data.fecha).toLocaleDateString('es-CR')}</span>
+      </div>
+
+      <div className="flex gap-3 items-center mb-3">
+        <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 shrink-0 overflow-hidden flex items-center justify-center">
+          {imgSrc ? (
+             <img src={imgSrc} alt="Preview" className="w-full h-full object-cover" />
+          ) : (
+             <FaImage className="text-gray-700" size={16} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0 pr-2">
+          <p className="text-xs font-bold text-white truncate leading-tight">
+            {nombrePrincipal} <span className="text-gray-400">{masChemas}</span>
+          </p>
+          <p className="text-[10px] text-gray-400 mt-1 truncate">Cliente: <span className="text-gray-200">{data.cliente}</span></p>
+        </div>
+      </div>
+
+      <button 
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full flex items-center justify-center gap-1 py-1 text-[9px] font-black uppercase text-gray-500 hover:text-white transition bg-gray-900/50 rounded-lg mb-3"
+      >
+        {isExpanded ? <>Ver Menos <FaChevronUp size={8}/></> : <>Ver Más Detalles <FaChevronDown size={8}/></>}
+      </button>
+
+      {isExpanded && (
+        <div className="mb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          {data.productos.map((prod, idx) => (
+            <div key={idx} className="bg-gray-900 border border-gray-800 rounded p-2">
+              <div className="flex justify-between items-start mb-1">
+                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${prod.tipoPedido === 'stock' ? 'bg-blue-900/50 text-blue-400' : 'bg-purple-900/50 text-purple-400'}`}>
+                  {prod.tipoPedido === 'stock' ? 'Stock' : 'Pedido'}
+                </span>
+                <span className="text-[9px] font-bold text-gray-400">Talla: <span className="text-white">{prod.talla}</span> x{prod.cantidad}</span>
+              </div>
+              
+              <p className="font-bold text-gray-300 text-[10px] leading-tight">
+                {prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual}
+              </p>
+
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {prod.tipoPedido === 'nuevo' && (
+                  <span className="text-[8px] bg-gray-800 text-gray-300 px-1 py-0.5 rounded uppercase font-bold border border-gray-700">
+                    Ver: {prod.version}
+                  </span>
+                )}
+                {prod.parches && (
+                  <span className="text-[8px] bg-indigo-900/40 text-indigo-300 px-1 py-0.5 rounded uppercase font-bold border border-indigo-800/50 flex items-center gap-1">
+                    <FaTags size={7}/> {prod.parches}
+                  </span>
+                )}
+              </div>
+
+              {prod.tipoPedido === 'nuevo' && (prod.nombreCamiseta || prod.numeroCamiseta) && (
+                <p className="text-[9px] font-black text-[#D4AF37] uppercase tracking-wider mt-1.5 border-t border-gray-800 pt-1">
+                  Dorsal: {prod.nombreCamiseta || 'SIN NOMBRE'} {prod.numeroCamiseta ? `- #${prod.numeroCamiseta}` : ''}
+                </p>
+              )}
+            </div>
+          ))}
+
+          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-800">
+            <div>
+              <p className="text-[9px] text-gray-500 uppercase font-bold">Cédula</p>
+              <p className="text-[10px] text-gray-300 font-mono truncate">{data.cedula}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[9px] text-gray-500 uppercase font-bold">Teléfono</p>
+              <p className="text-[10px] text-gray-300 font-mono">{data.telefono}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-[#111] rounded-lg p-2 flex justify-between items-center mt-3 border border-gray-800">
+        <div>
+          <p className="text-[9px] text-gray-500 uppercase font-bold">Abonado</p>
+          <p className="text-xs text-green-500 font-bold">₡{data.abono.toLocaleString()}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-[9px] text-gray-500 uppercase font-bold">Faltante</p>
+          <p className="text-xs text-red-400 font-black">₡{data.faltante.toLocaleString()}</p>
+        </div>
+      </div>
+      
+      <button 
+        onClick={accion}
+        className={`mt-3 w-full py-2.5 rounded-lg text-[11px] font-black uppercase flex items-center justify-center gap-2 transition cursor-pointer ${colorBtn}`}
+      >
+        {btnTexto} {btnIcon}
+      </button>
+    </div>
+  );
+}

@@ -1,5 +1,9 @@
 import logo from "../assets/logo.png";
-import { FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, FaHistory, FaCashRegister, FaChartLine, FaBalanceScale } from "react-icons/fa"; 
+import { 
+  FaBars, FaTimes, FaShoppingCart, FaUser, FaBoxOpen, 
+  FaHistory, FaCashRegister, FaChartLine, FaBalanceScale, 
+  FaColumns // 🆕 Agregado para el ícono del tablero
+} from "react-icons/fa"; 
 import { LiaRulerSolid } from "react-icons/lia";
 import { FiPhoneCall } from "react-icons/fi";
 import { useState } from "react";
@@ -149,7 +153,7 @@ export default function Header({
                       </>
                     )}
                     
-                    {/* 🔹 HISTORIAL DE CAMBIOS (SEPARADO COMO SIEMPRE) */}
+                    {/* 🔹 HISTORIAL DE CAMBIOS */}
                     {canSeeHistory && (
                       <button 
                         onClick={() => { navigate('/historial'); setSidebarOpen(false); }} 
@@ -166,6 +170,14 @@ export default function Header({
                           className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer"
                         >
                           <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
+                        </button>
+
+                        {/* 🆕 TABLERO DE APARTADOS (ESTILO TRELLO) */}
+                        <button 
+                          onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} 
+                          className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer"
+                        >
+                          <FaColumns size={16} /> Tablero de Apartados
                         </button>
 
                         {/* 🏆 APARTADO DE VENTAS */}

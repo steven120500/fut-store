@@ -8,6 +8,8 @@ import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/CartDrawer"; 
 
 // Componentes
+
+
 import Header from "./components/Header";
 import ProductCard from "./components/ProductCard";
 import AddProductModal from "./components/AddProductModal";
@@ -35,7 +37,8 @@ import OrdersPage from "./pages/OrdersPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx"; 
 import SalesPage from "./pages/SalesPage.jsx"; 
 import DailyReportPage from "./pages/DailyReportPage.jsx"; 
-import BalancePage from "./pages/BalancePage.jsx"; // 👈 NUEVO: Importación de Balance y Gastos
+import BalancePage from "./pages/BalancePage.jsx";
+import ApartadosPage from './pages/ApartadosPage';
 
 const API_BASE = "https://fut-store.onrender.com"; 
 const GOLD = "#9E8F91"
@@ -302,6 +305,8 @@ export default function App() {
             
             {/* ⚖️ NUEVA RUTA DE BALANCE Y RENDIMIENTO FINANCIERO */}
             <Route path="/balance" element={<BalancePage user={user} onLogout={handleLogout} />} />
+
+            <Route path="/apartados" element={<ApartadosPage />} />
             
             <Route path="/" element={
               <AnimatePresence mode="wait">
