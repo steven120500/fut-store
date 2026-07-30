@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   FaPlus, FaArrowRight, FaCheck, FaBoxOpen, FaTruck, FaStore, 
-  FaTimes, FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaIdCard, FaTrash, FaTags, FaChevronDown, FaChevronUp, FaFilePdf, FaSpinner
+  FaTimes, FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaIdCard, FaTrash, FaTags, FaChevronDown, FaChevronUp, FaFilePdf, FaSpinner, FaTshirt
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
@@ -28,7 +28,6 @@ export default function ApartadosPage({ user }) {
   const [isExporting, setIsExporting] = useState(false);
   
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
-  
   const [productosStock, setProductosStock] = useState([]);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null); 
   const searchRef = useRef(null);
@@ -62,23 +61,39 @@ export default function ApartadosPage({ user }) {
         parches: '', 
         talla: 'L',
         cantidad: 1,
-        precioItem: ''
+        precioItem: '',
+        type: '' 
       }
     ]
   });
   const [previewImg, setPreviewImg] = useState(null);
   const [buscandoCedula, setBuscandoCedula] = useState(false); 
 
+  // 📡 CARGAR APARTADOS DESDE MONGODB
+  useEffect(() => {
+    const fetchApartados = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/apartados`);
+        if (res.ok) {
+          const data = await res.json();
+          setApartados(data);
+        }
+      } catch (error) {
+        console.error("Error al cargar apartados", error);
+      }
+    };
+    fetchApartados();
+  }, []);
+
+  // 📡 CARGAR CATÁLOGO DE PRODUCTOS
   useEffect(() => {
     const fetchProductos = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/products`);
+        const res = await fetch(`${API_BASE}/api/products/all-pos`);
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data)) setProductosStock(data);
-          else if (data?.products && Array.isArray(data.products)) setProductosStock(data.products);
-          else if (data?.data && Array.isArray(data.data)) setProductosStock(data.data);
-          else setProductosStock([]); 
+          let listaProductos = Array.isArray(data) ? data : (data.items || data.products || data.data || []);
+          setProductosStock(listaProductos);
         }
       } catch (error) {
         console.error("Error al cargar stock", error);
@@ -102,15 +117,16 @@ export default function ApartadosPage({ user }) {
   }, []);
 
   const consultarTSE = async (cedulaABuscar) => {
-    if (cedulaABuscar.length < 9) return;
+    const cleanCedula = cedulaABuscar.replace(/\D/g, '');
+    if (cleanCedula.length < 9) return;
     setBuscandoCedula(true);
     try {
-      const response = await fetch(`https://apis.gometa.org/cedulas/${cedulaABuscar}`);
+      const response = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
       if (response.ok) {
         const data = await response.json();
-        if (data.nombre) {
+        if (data && data.nombre) {
           setForm(prev => ({ ...prev, cliente: data.nombre }));
-          toast.success("Cliente encontrado en TSE");
+          toast.success("Cliente encontrado en el registro");
         }
       }
     } catch (error) {
@@ -124,7 +140,8 @@ export default function ApartadosPage({ user }) {
     const cedula = e.target.value;
     setForm(prev => ({ ...prev, cedula }));
     
-    if (cedula.length >= 9 && !cedula.includes("-")) {
+    const cleanCedula = cedula.replace(/\D/g, '');
+    if (cleanCedula.length === 9) {
       consultarTSE(cedula);
     }
   };
@@ -139,7 +156,7 @@ export default function ApartadosPage({ user }) {
   const agregarOtraChema = () => {
     setForm({
       ...form,
-      productos: [...form.productos, { id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '' }]
+      productos: [...form.productos, { id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '' }]
     });
   };
 
@@ -151,65 +168,133 @@ export default function ApartadosPage({ user }) {
   const actualizarProducto = (index, campo, valor) => {
     const nuevos = [...form.productos];
     nuevos[index][campo] = valor;
+
+    if (campo === 'busqueda' && nuevos[index].productoObj) {
+      nuevos[index].productoObj = null;
+      nuevos[index].type = '';
+    }
+
     setForm({ ...form, productos: nuevos });
   };
 
-  const seleccionarProductoDelStock = (index, prod) => {
+  const seleccionarProductoDelStock = (index, itemCat) => {
     const nuevos = [...form.productos];
-    nuevos[index].productoObj = prod;
-    nuevos[index].busqueda = prod.nombre;
-    nuevos[index].precioItem = prod.precio || 15000; 
+    const precioFinal = itemCat.discountPrice ? itemCat.discountPrice : (itemCat.price || 15000);
+    
+    let tallasDisponibles = itemCat.stock ? Object.keys(itemCat.stock).filter(k => Number(itemCat.stock[k]) > 0) : [];
+    let tallaAUsar = tallasDisponibles.length > 0 ? tallasDisponibles[0] : (nuevos[index].talla || 'L');
+
+    nuevos[index].productoObj = itemCat;
+    nuevos[index].busqueda = itemCat.name;
+    nuevos[index].precioItem = precioFinal * (Number(nuevos[index].cantidad) || 1);
+    nuevos[index].talla = tallaAUsar;
+    nuevos[index].type = itemCat.type || 'Camiseta';
+    
     setForm({ ...form, productos: nuevos });
     setActiveDropdownIndex(null);
   };
 
+  // 🚀 CREAR APARTADO EN EL BACKEND
   const handleCrearApartado = async (e) => {
     e.preventDefault();
     if (!form.vendedor) return toast.warning("Debes asignar un vendedor a la venta");
     if (Number(form.abono) > totalCalculado) return toast.warning("El abono no puede ser mayor al precio total");
 
-    const nuevoApartado = {
-      id: Date.now().toString(),
-      vendedor: form.vendedor,
-      cliente: form.cliente,
-      cedula: form.cedula,
-      telefono: form.telefono,
-      productos: form.productos,
-      precioTotal: totalCalculado,
-      abono: Number(form.abono),
-      faltante: faltanteCalculado,
-      estado: 'PENDIENTE',
-      fecha: new Date().toISOString(),
-      imagen: form.imagen || (form.productos[0]?.productoObj?.imagenes ? form.productos[0].productoObj.imagenes[0] : null)
-    };
+    try {
+      let imgBase64 = null;
+      if (form.imagen) {
+        imgBase64 = await getBase64(form.imagen);
+      } else {
+        imgBase64 = form.productos[0]?.productoObj?.images?.[0]?.url || form.productos[0]?.productoObj?.imageSrc || null;
+      }
 
-    setApartados([...apartados, nuevoApartado]);
-    setShowAddModal(false);
-    toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono sumado.`);
-    
-    setForm({ 
-      vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen: null, 
-      productos: [{ id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '' }] 
-    });
-    setPreviewImg(null);
+      const payload = {
+        vendedor: form.vendedor,
+        cliente: form.cliente,
+        cedula: form.cedula,
+        telefono: form.telefono,
+        productos: form.productos,
+        precioTotal: totalCalculado,
+        abono: Number(form.abono),
+        faltante: faltanteCalculado,
+        imagen: imgBase64
+      };
+
+      const res = await fetch(`${API_BASE}/api/apartados`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setApartados([...apartados, data.apartado]);
+        setShowAddModal(false);
+        toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado en Ingresos.`);
+        
+        setForm({ 
+          vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '', imagen: null, 
+          productos: [{ id: Date.now(), tipoPedido: 'stock', busqueda: '', productoObj: null, descripcionManual: '', nombreCamiseta: '', numeroCamiseta: '', version: 'Player', parches: '', talla: 'L', cantidad: 1, precioItem: '', type: '' }] 
+        });
+        setPreviewImg(null);
+      } else {
+        toast.error("Error al guardar en el servidor.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error de conexión");
+    }
   };
 
-  const moverApartado = (id, nuevoEstado) => setApartados(prev => prev.map(ap => ap.id === id ? { ...ap, estado: nuevoEstado } : ap));
+  // 🔄 MOVER ESTADO DEL APARTADO
+  const moverApartado = async (id, nuevoEstado) => {
+    setApartados(prev => prev.map(ap => (ap._id === id || ap.id === id) ? { ...ap, estado: nuevoEstado } : ap));
+    try {
+      await fetch(`${API_BASE}/api/apartados/${id}/estado`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado })
+      });
+    } catch (error) {
+      console.error("Error cambiando estado", error);
+    }
+  };
   
-  const borrarApartadoTotalmente = (id) => {
+  // 🗑️ BORRAR APARTADO TOTALMENTE
+  const borrarApartadoTotalmente = async (id) => {
     if (window.confirm("⚠️ ¿Estás seguro que deseas ELIMINAR este pedido por completo? Esta acción no se puede deshacer.")) {
-      setApartados(prev => prev.filter(ap => ap.id !== id));
-      toast.info("Apartado eliminado exitosamente.");
+      setApartados(prev => prev.filter(ap => (ap._id !== id && ap.id !== id)));
+      try {
+        await fetch(`${API_BASE}/api/apartados/${id}`, { method: 'DELETE' });
+        toast.info("Apartado eliminado exitosamente.");
+      } catch (error) {
+        console.error("Error eliminando", error);
+      }
     }
   };
 
   const confirmarEntrega = (apartado) => { setApartadoSeleccionado(apartado); setShowDeliverModal(true); };
   
+  // 💸 ENTREGAR Y REGISTRAR VENTAS
   const ejecutarEntrega = async () => {
-    setApartados(prev => prev.filter(item => item.id !== apartadoSeleccionado.id));
-    setShowDeliverModal(false);
-    setApartadoSeleccionado(null);
-    toast.success(`¡Entregado exitosamente!`);
+    const id = apartadoSeleccionado._id || apartadoSeleccionado.id;
+    try {
+      const res = await fetch(`${API_BASE}/api/apartados/${id}/entregar`, {
+        method: 'POST'
+      });
+
+      if (res.ok) {
+        setApartados(prev => prev.filter(item => (item._id !== id && item.id !== id)));
+        setShowDeliverModal(false);
+        setApartadoSeleccionado(null);
+        toast.success(`¡Entregado exitosamente! Ganancia sumada a Chemas.`);
+      } else {
+        toast.error("Error al procesar la entrega en el servidor.");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error de conexión al entregar.");
+    }
   };
 
   const handleImageChange = (e) => {
@@ -245,7 +330,7 @@ export default function ApartadosPage({ user }) {
             imagenBase64: imgBase64,
             nombre: prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual,
             genero: genero,
-            version: prod.version || 'Fan',
+            version: prod.tipoPedido === 'stock' ? 'Fan' : (prod.version || 'Fan'),
             talla: prod.talla,
             dorsalNombre: prod.nombreCamiseta || '',
             dorsalNumero: prod.numeroCamiseta ? `#${prod.numeroCamiseta}` : '',
@@ -333,7 +418,7 @@ export default function ApartadosPage({ user }) {
 
   const apartadosFiltrados = apartados.filter(ap => {
     const termino = filtroBusqueda.toLowerCase();
-    return ap.cedula.toLowerCase().includes(termino) || ap.cliente.toLowerCase().includes(termino);
+    return ap.cedula?.toLowerCase().includes(termino) || ap.cliente?.toLowerCase().includes(termino);
   });
 
   const pendientes = apartadosFiltrados.filter(ap => ap.estado === 'PENDIENTE');
@@ -393,7 +478,7 @@ export default function ApartadosPage({ user }) {
             
             <div className="space-y-3">
               {pendientes.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
-              {pendientes.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => moverApartado(ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-blue-600 hover:bg-blue-700" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-blue-600 hover:bg-blue-700" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -405,7 +490,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
-              {enCamino.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => moverApartado(ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-amber-600 hover:bg-amber-700 text-black" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-amber-600 hover:bg-amber-700 text-black" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -417,7 +502,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
-              {paraEntregar.map(ap => <TarjetaApartado key={ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" btnIcon={<FaMoneyBillWave />} colorBtn="bg-green-600 hover:bg-green-700" onDelete={() => borrarApartadoTotalmente(ap.id)} />)}
+              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" btnIcon={<FaMoneyBillWave />} colorBtn="bg-green-600 hover:bg-green-700" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
         </div>
@@ -425,10 +510,11 @@ export default function ApartadosPage({ user }) {
 
       {/* 🚀 MODAL: NUEVO APARTADO */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col h-[90vh] sm:h-auto max-h-[95vh] overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
+          
+          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col my-auto relative animate-in zoom-in-95 duration-200">
             
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-[2rem]">
               <div>
                 <h3 className="font-black uppercase text-sm tracking-tight text-black">Registrar Nuevo Apartado</h3>
               </div>
@@ -437,10 +523,10 @@ export default function ApartadosPage({ user }) {
               </button>
             </div>
 
-            <form onSubmit={handleCrearApartado} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleCrearApartado}>
               
-              {/* CONTENIDO SCROLLABLE DEL MODAL */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 bg-white">
+              <div className="p-4 sm:p-6 space-y-5 bg-white">
+                
                 <div className="relative" ref={employeeDropdownRef}>
                   <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Asignar venta a empleado *</label>
                   <div 
@@ -455,15 +541,15 @@ export default function ApartadosPage({ user }) {
                   </div>
                   
                   {showEmployeeDropdown && (
-                    <div className="absolute top-full left-0 w-full mt-1 bg-zinc-800 border border-zinc-700 rounded-xl shadow-2xl overflow-hidden z-[110]">
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-xl shadow-2xl overflow-hidden z-[110]">
                       {listaEmpleados.map(emp => (
                         <div 
                           key={emp}
                           onClick={() => { setForm({...form, vendedor: emp}); setShowEmployeeDropdown(false); }}
-                          className={`p-3 text-xs font-bold cursor-pointer flex items-center justify-between transition ${form.vendedor === emp ? 'bg-zinc-700 text-white' : 'text-gray-300 hover:bg-zinc-700 hover:text-white'}`}
+                          className={`p-3 text-xs font-bold cursor-pointer flex items-center justify-between transition ${form.vendedor === emp ? 'bg-gray-100 text-black' : 'text-gray-600 hover:bg-gray-100 hover:text-black'}`}
                         >
                           {emp}
-                          {form.vendedor === emp && <FaCheck className="text-green-400" size={10} />}
+                          {form.vendedor === emp && <FaCheck className="text-green-500" size={10} />}
                         </div>
                       ))}
                     </div>
@@ -510,141 +596,218 @@ export default function ApartadosPage({ user }) {
                   </div>
 
                   <div className="space-y-4" ref={searchRef}>
-                    {form.productos.map((prod, index) => (
-                      <div key={prod.id} className="border border-gray-200 rounded-2xl p-4 bg-white shadow-sm relative">
-                        
-                        {form.productos.length > 1 && (
-                          <button type="button" onClick={() => eliminarChema(index)} className="absolute top-3 right-3 text-red-300 hover:text-red-600 transition cursor-pointer">
-                            <FaTrash size={12} />
-                          </button>
-                        )}
+                    {form.productos.map((prod, index) => {
+                      const queryText = (prod.busqueda || "").trim().toLowerCase();
+                      const sugerencias = queryText.length === 0
+                        ? productosStock 
+                        : productosStock.filter(cat => {
+                            const nombreMatch = cat.name && cat.name.toLowerCase().includes(queryText);
+                            const tipoMatch = cat.type && cat.type.toLowerCase().includes(queryText);
+                            return nombreMatch || tipoMatch;
+                          });
+                      
+                      const productoVinculado = prod.productoObj;
+                      const tallasDisponibles = productoVinculado && productoVinculado.stock 
+                        ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
+                        : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'];
 
-                        <div className="flex items-center gap-6 mb-4 border-b pb-3">
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
-                            <input type="radio" checked={prod.tipoPedido === 'stock'} onChange={() => actualizarProducto(index, 'tipoPedido', 'stock')} className="accent-blue-600 w-3.5 h-3.5" />
-                            Stock
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
-                            <input type="radio" checked={prod.tipoPedido === 'nuevo'} onChange={() => { actualizarProducto(index, 'tipoPedido', 'nuevo'); actualizarProducto(index, 'productoObj', null); }} className="accent-blue-600 w-3.5 h-3.5" />
-                            Pedido Especial
-                          </label>
-                        </div>
+                      return (
+                        <div key={prod.id} className="border border-gray-200 rounded-2xl p-4 bg-gray-50/85 shadow-sm relative">
+                          
+                          {form.productos.length > 1 && (
+                            <button type="button" onClick={() => eliminarChema(index)} className="absolute -top-2 -right-2 bg-red-100 text-red-600 w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-200 transition shadow cursor-pointer z-10">
+                              <FaTimes size={10} />
+                            </button>
+                          )}
 
-                        {prod.tipoPedido === 'stock' ? (
-                          <div className="mb-4 relative">
-                            <div className="relative">
-                              <input 
-                                type="text" placeholder="Toca para ver todo el catálogo o busca..." value={prod.busqueda}
-                                onChange={(e) => { actualizarProducto(index, 'busqueda', e.target.value); setActiveDropdownIndex(index); }}
-                                onFocus={() => setActiveDropdownIndex(index)}
-                                className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-green-500"
-                              />
-                              <FaSearch className="absolute right-3 top-3 text-gray-400" size={12} />
-                            </div>
-
-                            {activeDropdownIndex === index && (
-                              <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto z-50">
-                                {(Array.isArray(productosStock) ? productosStock : [])
-                                  .filter(p => (p.nombre || '').toLowerCase().includes((prod.busqueda || '').toLowerCase()))
-                                  .map(p => (
-                                  <div key={p._id} onClick={() => seleccionarProductoDelStock(index, p)} className="flex items-center gap-3 p-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer transition">
-                                    <div className="w-10 h-10 bg-gray-100 rounded-lg overflow-hidden shrink-0 border border-gray-200">
-                                      {p.imagenes && p.imagenes[0] ? <img src={p.imagenes[0]} alt="prod" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><FaImage /></div>}
-                                    </div>
-                                    <div className="flex-1">
-                                      <p className="text-[11px] font-black uppercase text-gray-800 leading-tight">{p.nombre}</p>
-                                    </div>
-                                    <div className="text-green-700 font-black text-xs">₡{(p.precio || 15000).toLocaleString()}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
+                          <div className="flex items-center gap-6 mb-4 border-b pb-3">
+                            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                              <input type="radio" checked={prod.tipoPedido === 'stock'} onChange={() => actualizarProducto(index, 'tipoPedido', 'stock')} className="accent-black w-3.5 h-3.5" />
+                              Stock
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                              <input type="radio" checked={prod.tipoPedido === 'nuevo'} onChange={() => { actualizarProducto(index, 'tipoPedido', 'nuevo'); actualizarProducto(index, 'productoObj', null); }} className="accent-gray-700 w-3.5 h-3.5" />
+                              Pedido Especial
+                            </label>
                           </div>
-                        ) : (
-                          <div className="mb-4 space-y-3">
-                            <textarea 
-                              required rows="2" placeholder="Describe la chema (Ej: Barcelona 2009 Visitante...)" 
-                              value={prod.descripcionManual} onChange={e => actualizarProducto(index, 'descripcionManual', e.target.value)}
-                              className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-green-500 resize-none bg-gray-50"
-                            ></textarea>
-                            
-                            <div className="grid grid-cols-2 gap-3 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                              <div>
-                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Nombre Dorsal</label>
-                                <input type="text" placeholder="Ej: MESSI" value={prod.nombreCamiseta} onChange={e => actualizarProducto(index, 'nombreCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none uppercase bg-white" />
-                              </div>
-                              <div>
-                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
-                                <input type="number" placeholder="Ej: 10" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white" />
-                              </div>
-                            </div>
-                          </div>
-                        )}
 
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                          {prod.tipoPedido === 'nuevo' && (
-                            <div>
-                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Versión</label>
-                              <select 
-                                value={prod.version} onChange={e => actualizarProducto(index, 'version', e.target.value)}
-                                className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white"
-                              >
-                                <option value="Player">Player (Ajustada)</option>
-                                <option value="Fan">Fan (Normal)</option>
-                                <option value="Retro">Retro</option>
-                                <option value="Mujer">Mujer</option>
-                                <option value="Niño">Niño</option>
-                              </select>
+                          {prod.tipoPedido === 'stock' && prod.productoObj && (
+                            <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs mb-3">
+                              <div className="flex items-center gap-2 truncate">
+                                <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
+                                  {prod.type || 'Camiseta'}
+                                </span>
+                                <span className="font-bold text-gray-800 truncate">{prod.busqueda}</span>
+                              </div>
                             </div>
                           )}
-                          <div className={prod.tipoPedido === 'stock' ? 'col-span-2' : ''}>
-                            <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaTags size={10}/> Parches (Opcional)</label>
-                            <input 
-                              type="text" placeholder="Ej: Champions..." 
-                              value={prod.parches} onChange={e => actualizarProducto(index, 'parches', e.target.value)}
-                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500" 
-                            />
-                          </div>
-                        </div>
 
-                        <div className="grid grid-cols-3 gap-3 pt-3 border-t border-gray-100">
-                          <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Talla</label>
-                            <select 
-                              value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value)}
-                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-green-500 bg-white"
-                            >
-                              <option value="S">S</option>
-                              <option value="M">M</option>
-                              <option value="L">L</option>
-                              <option value="XL">XL</option>
-                              <option value="XXL">XXL</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Cant.</label>
-                            <input 
-                              type="number" min="1" required value={prod.cantidad} onChange={e => actualizarProducto(index, 'cantidad', e.target.value)}
-                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-black text-center outline-none focus:border-green-500" 
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 block">Precio (₡)</label>
-                            <input 
-                              type="number" required placeholder="15000" value={prod.precioItem} onChange={e => actualizarProducto(index, 'precioItem', e.target.value)}
-                              className="w-full border border-gray-300 p-2 rounded-xl text-xs font-black outline-none focus:border-green-500" 
-                            />
+                          {prod.tipoPedido === 'stock' ? (
+                            <div className="mb-4 relative">
+                              <div className="relative">
+                                <input 
+                                  type="text" placeholder="Toca para ver todo el catálogo o busca..." value={prod.busqueda}
+                                  onChange={(e) => { actualizarProducto(index, 'busqueda', e.target.value); setActiveDropdownIndex(index); }}
+                                  onFocus={() => setActiveDropdownIndex(index)}
+                                  className={`w-full border p-2.5 rounded-xl text-xs font-bold outline-none pr-7 ${
+                                    prod.productoObj ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white border-gray-300 focus:border-black'
+                                  }`}
+                                />
+                                <FaSearch className="absolute right-3 top-3 text-gray-400" size={12} />
+                              </div>
+
+                              {!prod.productoObj && activeDropdownIndex === index && (
+                                <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-2xl max-h-56 overflow-y-auto z-50 divide-y divide-gray-100">
+                                  {sugerencias.length === 0 ? (
+                                    <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
+                                      No se encontraron resultados en stock.
+                                    </div>
+                                  ) : (
+                                    sugerencias.map(cat => {
+                                      const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                                      const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+                                      const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
+                                      const tipoCat = cat.type || 'Camiseta';
+
+                                      return (
+                                        <button
+                                          key={cat.id || cat._id}
+                                          type="button"
+                                          onClick={() => seleccionarProductoDelStock(index, cat)}
+                                          className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
+                                        >
+                                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                            {imgCat ? (
+                                              <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                            ) : (
+                                              <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                                <FaTshirt size={12} />
+                                              </div>
+                                            )}
+                                            <div className="truncate">
+                                              <div className="flex items-center gap-1">
+                                                <span className="text-[8px] uppercase font-black px-1.5 py-0.2 bg-gray-200 text-gray-800 rounded">
+                                                  {tipoCat}
+                                                </span>
+                                              </div>
+                                              <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
+                                              <span className="text-[10px] text-gray-500 font-medium">
+                                                Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
+                                              </span>
+                                            </div>
+                                          </div>
+                                          <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                            ₡{precioCat.toLocaleString()}
+                                          </span>
+                                        </button>
+                                      );
+                                    })
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="mb-4 space-y-3">
+                              <textarea 
+                                required rows="2" placeholder="Describe la chema (Ej: Barcelona 2009 Visitante...)" 
+                                value={prod.descripcionManual} onChange={e => actualizarProducto(index, 'descripcionManual', e.target.value)}
+                                className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-black resize-none bg-white"
+                              ></textarea>
+                              
+                              <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Nombre Dorsal</label>
+                                  <input type="text" placeholder="Ej: MESSI" value={prod.nombreCamiseta} onChange={e => actualizarProducto(index, 'nombreCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none uppercase bg-white focus:border-black" />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
+                                  <input type="number" placeholder="Ej: 10" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white focus:border-black" />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Versión</label>
+                                  <select 
+                                    value={prod.version} onChange={e => actualizarProducto(index, 'version', e.target.value)}
+                                    className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-black bg-white"
+                                  >
+                                    <option value="Player">Player (Ajustada)</option>
+                                    <option value="Fan">Fan (Normal)</option>
+                                    <option value="Retro">Retro</option>
+                                    <option value="Mujer">Mujer</option>
+                                    <option value="Niño">Niño</option>
+                                  </select>
+                                </div>
+                                
+                                <div>
+                                  <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaTags size={10}/> Parches (Opcional)</label>
+                                  <input 
+                                    type="text" placeholder="Ej: Champions..." 
+                                    value={prod.parches} onChange={e => actualizarProducto(index, 'parches', e.target.value)}
+                                    className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-black" 
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-12 gap-1.5 items-center">
+                            <div className="col-span-4">
+                              <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
+                              {prod.tipoPedido === 'stock' ? (
+                                <select 
+                                  value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value)}
+                                  className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-bold outline-none focus:border-black bg-white h-8"
+                                >
+                                  {tallasDisponibles.length === 0 ? (
+                                    <option value="">Agotado</option>
+                                  ) : (
+                                    tallasDisponibles.map(t => <option key={t} value={t}>{t}</option>)
+                                  )}
+                                </select>
+                              ) : (
+                                <input 
+                                  type="text" value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value.toUpperCase())}
+                                  placeholder="Ej: L" className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-bold outline-none focus:border-black bg-white h-8 text-center"
+                                />
+                              )}
+                            </div>
+                            <div className="col-span-3">
+                              <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center">Cant.</label>
+                              <input 
+                                type="number" min="1" required value={prod.cantidad} 
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  actualizarProducto(index, 'cantidad', val);
+                                  if (prod.tipoPedido === 'stock' && prod.productoObj) {
+                                    const pr = prod.productoObj.discountPrice ? prod.productoObj.discountPrice : (prod.productoObj.price || 15000);
+                                    actualizarProducto(index, 'precioItem', pr * (Number(val) || 1));
+                                  }
+                                }}
+                                className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-black text-center outline-none focus:border-black bg-amber-50 h-8" 
+                              />
+                            </div>
+                            <div className="col-span-5">
+                              <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Precio (₡)</label>
+                              <input 
+                                type="number" required placeholder="15000" value={prod.precioItem} onChange={e => actualizarProducto(index, 'precioItem', e.target.value)}
+                                className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-black outline-none focus:border-black bg-white h-8" 
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="border border-gray-200 rounded-xl p-3 bg-gray-50">
-                  <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaImage /> Adjuntar foto del comprobante / Referencia</label>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-gray-200 file:text-black cursor-pointer w-full" />
-                </div>
+                {form.productos.some(prod => prod.tipoPedido === 'nuevo') && (
+                  <div className="border border-gray-200 rounded-xl p-3 bg-gray-50">
+                    <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaImage /> Adjuntar comprobante / Referencia Visual</label>
+                    <input type="file" accept="image/*" onChange={handleImageChange} className="text-xs text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-gray-200 file:text-black cursor-pointer w-full" />
+                  </div>
+                )}
 
                 <div className="bg-green-50 border border-green-200 rounded-2xl p-4">
                   <div className="flex justify-between items-center mb-3">
@@ -666,12 +829,20 @@ export default function ApartadosPage({ user }) {
                     </div>
                   </div>
                 </div>
+
               </div>
 
-              {/* BOTÓN FIJO EN EL FOOTER DEL MODAL */}
-              <div className="p-4 border-t border-gray-100 bg-gray-50 shrink-0">
-                <button type="submit" className="w-full py-4 bg-[#D4AF37] hover:bg-yellow-600 text-black rounded-2xl font-black text-xs shadow-lg transition uppercase tracking-widest cursor-pointer">
-                  Confirmar y Registrar Abono
+              {/* PIE DEL MODAL */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 rounded-b-[2rem] shrink-0">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAddModal(false)} 
+                  className="w-1/3 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-200 transition cursor-pointer bg-white shadow-sm"
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className="w-2/3 py-3 bg-[#D4AF37] hover:bg-yellow-600 text-black rounded-xl font-black text-xs shadow-md transition uppercase tracking-widest cursor-pointer">
+                  Registrar Abono
                 </button>
               </div>
 
@@ -735,7 +906,6 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
   return (
     <div className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg hover:border-gray-500 transition relative overflow-hidden group">
       
-      {/* BOTÓN ELIMINAR APARTADO EN ESQUINA SUPERIOR DERECHA */}
       <button 
         onClick={onDelete}
         className="absolute top-3 right-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-md transition cursor-pointer z-10"
@@ -749,7 +919,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
           <FaUserTie size={10} />
           <span className="text-[9px] font-black uppercase tracking-wider">Vendió: {data.vendedor.split(' ')[0]}</span>
         </div>
-        <span className="text-[9px] text-gray-500 font-mono">{new Date(data.fecha).toLocaleDateString('es-CR')}</span>
+        <span className="text-[9px] text-gray-500 font-mono">{new Date(data.fecha || data.fechaCreacion).toLocaleDateString('es-CR')}</span>
       </div>
 
       <div className="flex gap-3 items-center mb-3">
@@ -790,18 +960,18 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
                 {prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual}
               </p>
 
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {prod.tipoPedido === 'nuevo' && (
+              {prod.tipoPedido === 'nuevo' && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
                   <span className="text-[8px] bg-gray-800 text-gray-300 px-1 py-0.5 rounded uppercase font-bold border border-gray-700">
                     Ver: {prod.version}
                   </span>
-                )}
-                {prod.parches && (
-                  <span className="text-[8px] bg-indigo-900/40 text-indigo-300 px-1 py-0.5 rounded uppercase font-bold border border-indigo-800/50 flex items-center gap-1">
-                    <FaTags size={7}/> {prod.parches}
-                  </span>
-                )}
-              </div>
+                  {prod.parches && (
+                    <span className="text-[8px] bg-indigo-900/40 text-indigo-300 px-1 py-0.5 rounded uppercase font-bold border border-indigo-800/50 flex items-center gap-1">
+                      <FaTags size={7}/> {prod.parches}
+                    </span>
+                  )}
+                </div>
+              )}
 
               {prod.tipoPedido === 'nuevo' && (prod.nombreCamiseta || prod.numeroCamiseta) && (
                 <p className="text-[9px] font-black text-[#D4AF37] uppercase tracking-wider mt-1.5 border-t border-gray-800 pt-1">

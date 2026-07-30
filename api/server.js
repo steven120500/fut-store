@@ -14,7 +14,8 @@ import historyRoutes from './routes/historyRoutes.js';
 import tiloPayRoutes from './routes/tiloPayRoutes.js';
 import orderRoutes from './routes/orderRoutes.js'; 
 import salesRoutes from './routes/sales.js'; 
-import expensesRoutes from './routes/expenses.js'; // 👈 1. IMPORTACIÓN DE LA RUTA DE GASTOS
+import expensesRoutes from './routes/expenses.js';
+import apartadosRoutes from './routes/apartados.js'; // 👈 1. IMPORTACIÓN DE LA RUTA DE APARTADOS
 
 dotenv.config();
 
@@ -65,7 +66,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/tilopay', tiloPayRoutes);
 app.use('/api/orders', orderRoutes); 
 app.use('/api/sales', salesRoutes); 
-app.use('/api/expenses', expensesRoutes); // 👈 2. RUTA DE GASTOS CONECTADA
+app.use('/api/expenses', expensesRoutes);
+app.use('/api/apartados', apartadosRoutes); // 👈 2. RUTA DE APARTADOS CONECTADA
 
 app.get('/', (req, res) => res.send('BACKEND ONLINE 🚀'));
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
