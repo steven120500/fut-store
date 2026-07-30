@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   FaPlus, FaArrowRight, FaCheck, FaBoxOpen, FaTruck, FaStore, 
-  FaTimes, FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaIdCard, FaTrash, FaTags, FaChevronDown, FaChevronUp, FaFilePdf, FaSpinner, FaTshirt
+  FaTimes, FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaIdCard, FaTrash, FaTags, FaChevronDown, FaChevronUp, FaFilePdf, FaSpinner, FaTshirt, FaArrowLeft
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
@@ -21,6 +22,7 @@ const getBase64 = (file) => {
 };
 
 export default function ApartadosPage({ user }) {
+  const navigate = useNavigate();
   const [apartados, setApartados] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeliverModal, setShowDeliverModal] = useState(false);
@@ -429,6 +431,14 @@ export default function ApartadosPage({ user }) {
     <div className="min-h-screen bg-black text-white pt-32 pb-16 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
         
+        {/* BOTÓN VOLVER */}
+        <button 
+          onClick={() => navigate(-1)} 
+          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer w-fit mb-6 shadow-sm"
+        >
+          <FaArrowLeft /> Volver
+        </button>
+
         {/* ENCABEZADO Y BUSCADOR GENERAL */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-gray-800 pb-6">
           <div>
@@ -452,7 +462,7 @@ export default function ApartadosPage({ user }) {
 
             <button 
               onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto bg-[#D4AF37] hover:bg-yellow-600 text-black px-4 py-2.5 rounded-xl font-black flex items-center justify-center gap-2 transition cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest text-xs"
+              className="w-full sm:w-auto bg-white hover:bg-gray-600 text-black px-4 py-2.5 rounded-xl font-black flex items-center justify-center gap-2 transition cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest text-xs"
             >
               <FaPlus /> Nuevo Apartado
             </button>
@@ -470,15 +480,15 @@ export default function ApartadosPage({ user }) {
               <button 
                 onClick={generarPDFPedidos}
                 disabled={isExporting}
-                className={`bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-3 py-1.5 rounded-lg font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
+                className={`bg-white hover:bg-gray-300 text-black text-[10px] px-3 py-1.5 rounded-lg font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
               >
                 <FaFilePdf size={12} /> {isExporting ? 'Generando...' : 'Exportar'}
               </button>
             </div>
             
             <div className="space-y-3">
-              {pendientes.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
-              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-blue-600 hover:bg-blue-700" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {pendientes.length === 0 && <p className="text-xs text-white text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
+              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -490,7 +500,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
-              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-amber-600 hover:bg-amber-700 text-black" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900 text-white" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
 
@@ -502,7 +512,7 @@ export default function ApartadosPage({ user }) {
             </div>
             <div className="space-y-3">
               {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
-              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" btnIcon={<FaMoneyBillWave />} colorBtn="bg-green-600 hover:bg-green-700" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
+              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => borrarApartadoTotalmente(ap._id || ap.id)} />)}
             </div>
           </div>
         </div>
@@ -721,7 +731,7 @@ export default function ApartadosPage({ user }) {
                                 </div>
                                 <div>
                                   <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
-                                  <input type="number" placeholder="Ej: 10" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white focus:border-black" />
+                                  <input type="text" placeholder="Ej: 10 o N/A" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white focus:border-black" />
                                 </div>
                               </div>
 
@@ -841,8 +851,8 @@ export default function ApartadosPage({ user }) {
                 >
                   Cancelar
                 </button>
-                <button type="submit" className="w-2/3 py-3 bg-[#D4AF37] hover:bg-yellow-600 text-black rounded-xl font-black text-xs shadow-md transition uppercase tracking-widest cursor-pointer">
-                  Registrar Abono
+                <button type="submit" className="w-2/3 py-3 bg-black hover:bg-gray-600 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-widest cursor-pointer">
+                  Registrar 
                 </button>
               </div>
 
