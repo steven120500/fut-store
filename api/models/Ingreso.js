@@ -1,30 +1,18 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const ingresoSchema = new mongoose.Schema({
-  monto: { 
-    type: Number, 
-    required: true 
-  },
-  concepto: { 
-    type: String, 
-    required: true 
-  },
+  monto: { type: Number, required: true },
+  concepto: { type: String, required: true },
   tipo: { 
     type: String, 
     required: true,
     enum: ['Abono Apartado', 'Cancelación Apartado', 'Venta Directa', 'Otro'],
     default: 'Abono Apartado'
   },
-  vendedor: { 
-    type: String, 
-    required: true 
-  },
-  fecha: { 
-    type: Date, 
-    default: Date.now 
-  }
+  vendedor: { type: String, required: true },
+  fecha: { type: Date, default: Date.now }
 }, {
-  timestamps: true // Esto agregará automáticamente createdAt y updatedAt
+  timestamps: true 
 });
 
-module.exports = mongoose.model('Ingreso', ingresoSchema);
+export default mongoose.model('Ingreso', ingresoSchema);
