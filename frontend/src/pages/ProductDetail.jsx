@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle, FaCashRegister, FaUser, FaIdCard, FaPhone, FaMoneyBillWave } from 'react-icons/fa';
+import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight, FaEdit, FaTrash, FaShoppingCart, FaArrowLeft, FaExclamationTriangle } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from '../context/CartContext';
 
@@ -12,6 +12,7 @@ import Footer from '../components/Footer';
 import LoginModal from '../components/LoginModal'; 
 import RegisterUserModal from '../components/RegisterUserModal'; 
 import Medidas from '../components/Medidas';
+import SaleModal from '../components/SaleModal'; // 👈 IMPORTAMOS EL NUEVO COMPONENTE
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -56,6 +57,8 @@ export default function ProductDetail({
     numero: '',
     totalPago: 0,
     costoEnvio: 0, 
+    requiereEnvio: false, // 👈 NUEVO: Controla si se pide dirección
+    direccionEnvio: '',   // 👈 NUEVO: Almacena la dirección
     tallaVendida: '',
     cantidadVendida: 1
   });
@@ -106,32 +109,6 @@ export default function ProductDetail({
     };
   }, [isEditing, id]);
 
-  // 🇨🇷 EFECTO PARA BUSCAR CÉDULA AUTOMÁTICAMENTE EN COSTA RICA (TSE)
-  useEffect(() => {
-    const checkCedulaTSE = async () => {
-      const cleanCedula = saleForm.cedula.replace(/\D/g, '');
-      if (cleanCedula.length === 9) {
-        setLoadingCedula(true);
-        try {
-          const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data && data.nombre) {
-              setSaleForm(prev => ({ ...prev, nombre: data.nombre }));
-              toast.success("Cliente encontrado en el registro");
-            }
-          }
-        } catch (error) {
-          console.error("No se pudo obtener el nombre de la cédula:", error);
-        } finally {
-          setLoadingCedula(false);
-        }
-      }
-    };
-    
-    checkCedulaTSE();
-  }, [saleForm.cedula]);
-
   const syncEditState = (data) => {
     setEditedName(data.name || '');
     setEditedPrice(data.price ?? 0);
@@ -145,6 +122,8 @@ export default function ProductDetail({
       ...prev,
       totalPago: data.discountPrice || data.price || 0,
       costoEnvio: 0,
+      requiereEnvio: false,
+      direccionEnvio: '',
       tallaVendida: selectedSize || 'L',
       cantidadVendida: 1
     }));
@@ -223,7 +202,6 @@ export default function ProductDetail({
     return changes;
   };
 
-  // 🏆 ESCÁNER MULTI-TALLA: Detecta si restaste 1 talla, o varias diferentes (Ej: 1 XL y 1 M)
   const handleOpenSaleForm = () => {
     let detectedSizes = [];
     let totalQty = 0;
@@ -245,11 +223,9 @@ export default function ProductDetail({
     let finalQty = 1;
 
     if (detectedSizes.length === 1) {
-      // Solo 1 talla modificada (ej: 2 chemas talla XL)
       finalSizeStr = detectedSizes[0].split(' ')[0];
       finalQty = totalQty;
     } else if (detectedSizes.length > 1) {
-      // Múltiples tallas modificadas (ej: 1 XL y 1 M)
       finalSizeStr = detectedSizes.join(', ');
       finalQty = totalQty;
     }
@@ -274,6 +250,30 @@ export default function ProductDetail({
       cantidadVendida: newQty,
       totalPago: precioBase * newQty
     }));
+  };
+
+  const handleCedulaChange = async (e) => {
+    const cedulaInput = e.target.value;
+    setSaleForm({ ...saleForm, cedula: cedulaInput });
+    
+    const cleanCedula = cedulaInput.replace(/\D/g, '');
+    if (cleanCedula.length === 9) {
+      setLoadingCedula(true);
+      try {
+        const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.nombre) {
+            setSaleForm(prev => ({ ...prev, nombre: data.nombre }));
+            toast.success("Cliente encontrado en el registro");
+          }
+        }
+      } catch (error) {
+        console.error("No se pudo obtener el nombre de la cédula:", error);
+      } finally {
+        setLoadingCedula(false);
+      }
+    }
   };
 
   const handleSave = async (overrideStock = null) => {
@@ -338,7 +338,8 @@ export default function ProductDetail({
         nombre: saleForm.nombre,
         numero: saleForm.numero,
         totalPago: subtotalPrenda,
-        costoEnvio: montoEnvio,    
+        costoEnvio: saleForm.requiereEnvio ? montoEnvio : 0,    
+        direccionEnvio: saleForm.requiereEnvio ? saleForm.direccionEnvio : '',
         montoTotal: granTotal,     
         tallaVendida: talla,
         cantidad: cant,
@@ -359,7 +360,8 @@ export default function ProductDetail({
       const currentEditedStockSize = parseInt(editedStock?.[talla] ?? 0, 10);
 
       // Si no restaron el stock en los cuadritos y es una sola talla normal, lo rebajamos automáticamente
-      if (tallasVisibles.includes(talla) && oldStockSize === currentEditedStockSize) {
+      const tallasVisiblesActuales = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO);
+      if (tallasVisiblesActuales.includes(talla) && oldStockSize === currentEditedStockSize) {
         finalStock[talla] = Math.max(0, currentEditedStockSize - cant);
         setEditedStock(finalStock);
       }
@@ -442,7 +444,7 @@ export default function ProductDetail({
   const inventoryChanges = getInventoryChanges();
 
   const subTotalChema = Number(saleForm.totalPago) || 0;
-  const costoDeEnvio = Number(saleForm.costoEnvio) || 0;
+  const costoDeEnvio = saleForm.requiereEnvio ? (Number(saleForm.costoEnvio) || 0) : 0;
   const totalConEnvio = subTotalChema + costoDeEnvio;
 
   return (
@@ -625,7 +627,6 @@ export default function ProductDetail({
                     </div>
                   )}
 
-                  {/* 🌸 NUEVO: AVISO PARA VERSIÓN MUJER */}
                   {product.type === "Mujer" && (
                     <div className="mb-4 flex items-center gap-3 bg-pink-50 border border-pink-200 p-3 rounded-lg text-pink-900 shadow-sm">
                       <FaExclamationTriangle className="flex-shrink-0 text-pink-400" />
@@ -634,8 +635,6 @@ export default function ProductDetail({
                       </p>
                     </div>
                   )}
-
-              
 
                   <p className="font-bold text-xs mb-3 uppercase tracking-wide text-gray-500">Selecciona tu talla:</p>
                   <div className="flex flex-wrap gap-2">
@@ -724,145 +723,27 @@ export default function ProductDetail({
           )}
         </AnimatePresence>
 
-        {/* 🏆 MODAL DE CONFIRMACIÓN ALINEADO Y CON ESCÁNER MULTI-TALLA */}
+        {/* 🏆 MODAL DE VENTA/GUARDAR SEPARADO */}
         <AnimatePresence>
           {showConfirmSave && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center text-black overflow-hidden">
-                
-                {!isRegisteringSale ? (
-                  <>
-                    <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-black"><FaEdit size={24} /></div>
-                    <h3 className="text-lg font-black uppercase mb-2">¿Cómo deseas guardar?</h3>
-                    
-                    {inventoryChanges.length > 0 ? (
-                      <div className="text-left bg-gray-50 border border-gray-200 p-3 rounded-xl mb-4 text-xs font-mono text-gray-700 max-h-28 overflow-y-auto shadow-inner">
-                        {inventoryChanges.map((change, i) => (<div key={i} className="py-1">{change}</div>))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-gray-500 mb-4 font-medium">Se actualizarán los datos del producto o inventario.</p>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                      <button 
-                        onClick={handleOpenSaleForm} 
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition"
-                      >
-                        <FaCashRegister size={18} /> VENTA
-                      </button>
-
-                      <button 
-                        onClick={() => handleSave()} 
-                        disabled={loadingAction}
-                        className="w-full py-3 bg-black hover:bg-gray-800 text-white rounded-xl font-bold text-sm transition"
-                      >
-                        {loadingAction ? '...' : 'SOLO ACTUALIZAR'}
-                      </button>
-
-                      <button 
-                        onClick={() => setShowConfirmSave(false)} 
-                        className="w-full py-2 border border-gray-200 rounded-xl font-bold text-xs text-red-500 hover:text-red-500 hover:bg-gray-800 mt-1"
-                      >
-                        Cancelar
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  /* 💰 FORMULARIO CON ALINEACIÓN PERFECTA (GRID 12 COLUMNAS + ITEMS-END) */
-                  <form onSubmit={handleRegisterSaleSubmit} className="text-left space-y-3 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center justify-between border-b pb-2 mb-3">
-                      <h3 className="font-black uppercase text-sm flex items-center gap-2 text-green-700">
-                        <FaCashRegister /> Registrar Venta
-                      </h3>
-                      <span className="text-[10px] font-bold bg-gray-100 px-2 py-1 rounded text-gray-600 uppercase">
-                        POR: {displayName}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Cédula Cliente *</label>
-                        <div className="relative">
-                          <input type="text" required value={saleForm.cedula} onChange={e => setSaleForm({...saleForm, cedula: e.target.value})} placeholder="Ej: 101110111" className="w-full border p-2 rounded-lg text-xs font-mono focus:border-black outline-none pl-7 h-9.5" />
-                          <FaIdCard className="absolute left-2.5 top-3 text-gray-400 text-xs" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Teléfono *</label>
-                        <div className="relative">
-                          <input type="tel" required value={saleForm.numero} onChange={e => setSaleForm({...saleForm, numero: e.target.value})} placeholder="88888888" className="w-full border p-2 rounded-lg text-xs font-mono focus:border-black outline-none pl-7 h-9.5" />
-                          <FaPhone className="absolute left-2.5 top-3 text-gray-400 text-xs" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre del Cliente *</label>
-                        {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando...</span>}
-                      </div>
-                      <div className="relative">
-                        <input type="text" required value={saleForm.nombre} onChange={e => setSaleForm({...saleForm, nombre: e.target.value})} placeholder={loadingCedula ? "Autocompletando..." : "Nombre completo"} className="w-full border p-2 rounded-lg text-xs focus:border-black outline-none pl-7 font-bold h-9.5" />
-                        <FaUser className="absolute left-2.5 top-3 text-gray-400 text-xs" />
-                      </div>
-                    </div>
-
-                    {/* 🏆 FILA ALINEADA QUIRÚRGICAMENTE AL FONDO */}
-                    <div className="grid grid-cols-12 gap-2 items-end">
-                      
-                      {/* TALLA (Ancho: 4 columnas) */}
-                      <div className="col-span-4">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">Talla *</label>
-                        <select value={saleForm.tallaVendida} onChange={e => setSaleForm({...saleForm, tallaVendida: e.target.value})} className="w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-gray-50 h-9.5">
-                          {!tallasVisibles.includes(saleForm.tallaVendida) && (
-                            <option value={saleForm.tallaVendida}>{saleForm.tallaVendida}</option>
-                          )}
-                          {tallasVisibles.map(t => <option key={t} value={t}>{t}</option>)}
-                          <option value="Varias Tallas">Varias Tallas</option>
-                        </select>
-                      </div>
-
-                      {/* CANTIDAD (Ancho: 2 columnas) */}
-                      <div className="col-span-2">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center truncate">Cant.</label>
-                        <input type="number" min="1" required value={saleForm.cantidadVendida} onChange={e => handleQuantityChange(e.target.value)} className="w-full border p-2 rounded-lg text-xs font-black text-center text-black focus:border-black outline-none bg-amber-50 h-9.5" />
-                      </div>
-
-                      {/* CHEMAS (Ancho: 3 columnas) */}
-                      <div className="col-span-3">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">Chemas (₡)</label>
-                        <input type="number" required value={saleForm.totalPago} onChange={e => setSaleForm({...saleForm, totalPago: e.target.value})} className="w-full border p-2 rounded-lg text-xs font-bold text-gray-800 focus:border-black outline-none h-9.5 px-1" />
-                      </div>
-
-                      {/* ENVÍO (Ancho: 3 columnas) */}
-                      <div className="col-span-3">
-                        <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 truncate">+ Envío (₡)</label>
-                        <input type="number" required value={saleForm.costoEnvio} onChange={e => setSaleForm({...saleForm, costoEnvio: e.target.value})} placeholder="0" className="w-full border p-2 rounded-lg text-xs font-bold text-blue-600 focus:border-black outline-none h-9.5 px-1" />
-                      </div>
-
-                    </div>
-
-                    {/* 🏆 CUADRO DE RESUMEN FINAL AUTOMÁTICO */}
-                    <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2">
-                      <span className="font-bold text-green-800 flex items-center gap-1.5">
-                        <FaMoneyBillWave /> TOTAL GENERAL:
-                      </span>
-                      <span className="font-black text-green-700 text-sm">
-                        ₡{totalConEnvio.toLocaleString()}
-                      </span>
-                    </div>
-
-                    <div className="flex gap-2 pt-2 border-t mt-3">
-                      <button type="button" onClick={() => setIsRegisteringSale(false)} className="w-1/3 py-2.5 border rounded-xl font-bold text-xs text-gray-600 hover:bg-gray-50">Atrás</button>
-                      <button type="submit" disabled={loadingAction || loadingCedula} className="w-2/3 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-xs shadow-md transition">
-                        {loadingAction ? 'Guardando...' : 'CONFIRMAR VENTA '}
-                      </button>
-                    </div>
-                  </form>
-                )}
-
-              </div>
-            </motion.div>
+            <SaleModal 
+              isRegisteringSale={isRegisteringSale}
+              setIsRegisteringSale={setIsRegisteringSale}
+              inventoryChanges={inventoryChanges}
+              handleOpenSaleForm={handleOpenSaleForm}
+              handleSave={handleSave}
+              loadingAction={loadingAction}
+              setShowConfirmSave={setShowConfirmSave}
+              handleRegisterSaleSubmit={handleRegisterSaleSubmit}
+              displayName={displayName}
+              saleForm={saleForm}
+              setSaleForm={setSaleForm}
+              loadingCedula={loadingCedula}
+              tallasVisibles={tallasVisibles}
+              handleQuantityChange={handleQuantityChange}
+              handleCedulaChange={handleCedulaChange}
+              totalConEnvio={totalConEnvio}
+            />
           )}
         </AnimatePresence>
         

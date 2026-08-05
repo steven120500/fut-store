@@ -6,6 +6,7 @@ const saleSchema = new Schema({
   numero: { type: String, required: true },
   totalPago: { type: Number, required: true, default: 0 },   // Costo total chemas
   costoEnvio: { type: Number, required: true, default: 0 },  // Costo envío único del pedido
+  direccionEnvio: { type: String, default: '' },             // 📍 NUEVO: Dirección de envío
   montoTotal: { type: Number, required: true, default: 0 },  // Suma total
   
   // Compatibilidad con ventas anteriores (de un solo producto)
