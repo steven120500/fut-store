@@ -5,7 +5,12 @@ import Product from '../models/Product.js';
 
 export const crearApartado = async (req, res) => {
   try {
-    const { vendedor, cliente, cedula, telefono, productos, precioTotal, abono, faltante, imagen } = req.body;
+    // 👈 AQUÍ AÑADIMOS imagen2, costoEnvio y direccionEnvio
+    const { 
+      vendedor, cliente, cedula, telefono, productos, 
+      precioTotal, abono, faltante, imagen, imagen2, 
+      costoEnvio, direccionEnvio 
+    } = req.body;
 
     // 1. DESCONTAR DEL STOCK
     for (const prod of productos) {
@@ -23,7 +28,12 @@ export const crearApartado = async (req, res) => {
       }
     }
 
-    const nuevoApartado = new Apartado({ vendedor, cliente, cedula, telefono, productos, precioTotal, abono, faltante, imagen });
+    // 👈 AQUÍ LOS PASAMOS AL NUEVO APARTADO
+    const nuevoApartado = new Apartado({ 
+      vendedor, cliente, cedula, telefono, productos, 
+      precioTotal, abono, faltante, imagen, imagen2, 
+      costoEnvio, direccionEnvio 
+    });
     const apartadoGuardado = await nuevoApartado.save();
 
     // 2. REGISTRAR ABONO
@@ -77,12 +87,13 @@ export const entregarApartado = async (req, res) => {
 
       // 3. REGISTRAR LA VENTA CON LOS NOMBRES EXACTOS DE SALE.JS
       const nuevaVenta = new Venta({
-        nombre: apartado.cliente,          // Sale.js usa 'nombre'
+        nombre: apartado.cliente,          
         cedula: apartado.cedula || 'N/A',
-        numero: apartado.telefono || 'N/A',// Sale.js usa 'numero'
-        totalPago: apartado.precioTotal,
-        costoEnvio: 0,
-        montoTotal: apartado.precioTotal,  // Sale.js usa 'montoTotal'
+        numero: apartado.telefono || 'N/A',
+        totalPago: apartado.precioTotal - (apartado.costoEnvio || 0), // Separamos el costo de prendas del envío
+        costoEnvio: apartado.costoEnvio || 0,        // 👈 TRASLADAMOS EL ENVÍO
+        direccionEnvio: apartado.direccionEnvio || '', // 👈 TRASLADAMOS LA DIRECCIÓN A LA VENTA
+        montoTotal: apartado.precioTotal,  
         tallaVendida: apartado.productos[0]?.talla || 'L',
         cantidad: totalCantidad,
         productoNombre: resumenChemas,

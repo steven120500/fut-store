@@ -78,6 +78,7 @@ router.post('/', async (req, res) => {
       numero: req.body.numero,
       totalPago: Number(req.body.totalPago) || 0,
       costoEnvio: Number(req.body.costoEnvio) || 0,
+      direccionEnvio: req.body.direccionEnvio || '', // 👈 AÑADIDO: Guardar la dirección
       montoTotal: Number(req.body.montoTotal) || 0,
       
       tallaVendida: req.body.tallaVendida || (productosVendidos[0]?.talla || 'N/A'),

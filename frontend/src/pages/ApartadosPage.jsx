@@ -7,7 +7,7 @@ import {
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import NewApartadoModal from '../components/NewApartadoModal'; // 👈 IMPORTAMOS EL MODAL
+import NewApartadoModal from '../components/NewApartadoModal'; 
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -46,7 +46,6 @@ export default function ApartadosPage({ user }) {
 
   const currentUser = user?.firstName || user?.username || 'Steven Corrales';
 
-  // 👈 SE INCLUYÓ REQUIERE_ENVIO Y DIRECCIÓN
   const [form, setForm] = useState({
     vendedor: currentUser, 
     cliente: '',
@@ -330,7 +329,7 @@ export default function ApartadosPage({ user }) {
     }
   };
 
-  // 📄 EXPORTAR PDF CON DISEÑO FUTSTORE
+  // 📄 EXPORTAR PDF CON DISEÑO FUTSTORE (SÚPER SEGURO)
   const generarPDFPedidos = async () => {
     if (pendientes.length === 0) {
       return toast.warning("No hay pedidos pendientes para exportar.");
@@ -393,8 +392,9 @@ export default function ApartadosPage({ user }) {
       doc.setTextColor(200, 200, 200);
       doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CR')}`, 14, 30);
 
+      // 🚨 INYECCIÓN DIRECTA DE IMÁGENES AL OBJETO ROW (A PRUEBA DE FALLOS DE ÍNDICE)
       const rows = productosAplanados.map(p => [
-        '', 
+        { content: '', imagen1: p.imagen1, imagen2: p.imagen2 }, // Celda enriquecida
         p.nombre,
         p.genero,
         p.version,
@@ -422,8 +422,9 @@ export default function ApartadosPage({ user }) {
         
         didDrawCell: function (data) {
           if (data.column.index === 0 && data.cell.section === 'body') {
-            const rowIndex = data.row.index;
-            const { imagen1, imagen2 } = productosAplanados[rowIndex];
+            const rawCell = data.cell.raw || {};
+            const imagen1 = rawCell.imagen1;
+            const imagen2 = rawCell.imagen2;
             const padding = 2;
             const x = data.cell.x;
             const y = data.cell.y;
@@ -488,7 +489,7 @@ export default function ApartadosPage({ user }) {
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
               <FaBoxOpen /> Tablero de Apartados
             </h1>
-            <p className="text-gray-400 text-sm mt-2">Gestiona los pedidos y entregas estilo Trello.</p>
+            
           </div>
           
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">

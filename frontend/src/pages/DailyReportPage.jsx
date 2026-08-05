@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle, FaTrash, FaMapMarkerAlt } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -133,6 +133,7 @@ export default function DailyReportPage({ user, onLogout }) {
         item.nombre || item.cliente || 'N/A',
         item.cedula || 'N/A',
         item.numero || item.telefono || 'N/A',
+        item.direccionEnvio || 'N/A', // 👈 DIRECCIÓN AÑADIDA AL PDF
         getResumenPrendas(item),
         cantPrendas,
         `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
@@ -143,13 +144,14 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja / Total (CRC)']],
+      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] }, // Letra un poco más pequeña para que quepa todo
       alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { horizontal: 14 }
+      margin: { horizontal: 10 },
+      columnStyles: { 6: { cellWidth: 35 } } // Ajuste de ancho de la columna Dirección
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -193,6 +195,7 @@ export default function DailyReportPage({ user, onLogout }) {
         item.nombre || item.cliente || 'N/A',
         item.cedula || 'N/A',
         item.numero || item.telefono || 'N/A',
+        item.direccionEnvio || 'N/A', // 👈 DIRECCIÓN AÑADIDA AL PDF
         getResumenPrendas(item),
         cantPrendas,
         `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
@@ -203,13 +206,14 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja / Total (CRC)']],
+      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 9 },
-      bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
+      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] }, // Letra un poco más pequeña para que quepa todo
       alternateRowStyles: { fillColor: [245, 245, 245] },
-      margin: { horizontal: 14 }
+      margin: { horizontal: 10 },
+      columnStyles: { 6: { cellWidth: 35 } } // Ajuste de ancho de la columna Dirección
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -251,7 +255,7 @@ export default function DailyReportPage({ user, onLogout }) {
   const totalChemas = sales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
   const totalDineroEnvios = sales.reduce((sum, item) => sum + (item.costoEnvio || 0), 0);
   
-  // 👈 CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
+  // CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
   const totalAbonosActivos = apartadosActivos.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
   const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0) + totalAbonosActivos;
 
@@ -349,6 +353,7 @@ export default function DailyReportPage({ user, onLogout }) {
                   <tr>
                     <th className="p-4">Fecha / Vendedor</th>
                     <th className="p-4">Cliente / Cédula / Tel</th>
+                    <th className="p-4">Dirección</th> {/* 👈 COLUMNA AÑADIDA A LA TABLA */}
                     <th className="p-4">Detalle Chemas</th>
                     <th className="p-4 text-center">Cant.</th>
                     <th className="p-4 text-right">Chemas</th>
@@ -377,11 +382,22 @@ export default function DailyReportPage({ user, onLogout }) {
                             </span>
                           )}
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 min-w-[140px]">
                           <span className="font-bold text-gray-200 block uppercase">{item.nombre || item.cliente}</span>
                           <span className="text-[10px] text-gray-500 font-mono">ID: {item.cedula} | Tel: {item.numero || item.telefono}</span>
                         </td>
-                        <td className="p-4 max-w-[220px]">
+                        
+                        {/* 👈 CELDAS DE DIRECCIÓN CON ICONO */}
+                        <td className="p-4">
+                          <div className="flex items-start gap-1">
+                            {item.direccionEnvio ? <FaMapMarkerAlt className="text-gray-500 mt-0.5 flex-shrink-0" size={10} /> : null}
+                            <span className="text-[10px] text-gray-400 block max-w-[140px] truncate" title={item.direccionEnvio || 'No requiere'}>
+                              {item.direccionEnvio || 'No requiere'}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="p-4 max-w-[200px]">
                           <span className="font-black text-white uppercase block leading-snug">
                             {getResumenPrendas(item)}
                           </span>
