@@ -21,7 +21,7 @@ export default function SaleModal({
   totalConEnvio
 }) {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-md w-full text-center text-black overflow-hidden relative">
         
         {!isRegisteringSale ? (
