@@ -252,26 +252,35 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 🏆 LÓGICA DE SEPARACIÓN TACOS VS CHEMAS EN LOS REPORTES
+  // 🏆 LÓGICA DE SEPARACIÓN TACOS VS CHEMAS EN LOS REPORTES (INCLUYE APARTADOS)
   const totalDineroEnvios = sales.reduce((sum, item) => sum + (item.costoEnvio || 0), 0);
   
   // CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
   const totalAbonosActivos = apartadosActivos.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
   const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0) + totalAbonosActivos;
 
-  // Calculamos los tacos buscando si "tacos" está en el nombre o tipo del producto dentro de la venta
+  // Calculamos los tacos buscando si "tacos" está en el nombre o tipo del producto dentro de TODAS las transacciones
   let countTacos = 0;
   let countPrendasGlobal = 0;
 
-  sales.forEach(s => {
-    countPrendasGlobal += (s.cantidad || 1);
+  combinedHistory.forEach(s => {
+    const isApartado = s.isApartado;
+    
+    // Contar el global del pedido/apartado
+    countPrendasGlobal += isApartado ? s.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (s.cantidad || 1);
+
     if (s.productos && s.productos.length > 0) {
       s.productos.forEach(p => {
-        if ((p.type || '').toLowerCase().includes('tacos') || (p.nombre || '').toLowerCase().includes('tacos')) {
+        // En apartados, el nombre está en descripcionManual o busqueda. En ventas en nombre.
+        const nombreAAnalizar = (p.nombre || p.descripcionManual || p.busqueda || '').toLowerCase();
+        const tipoAAnalizar = (p.type || p.version || '').toLowerCase();
+        const tallaAAnalizar = (p.talla || '').toLowerCase();
+
+        if (tipoAAnalizar.includes('tacos') || nombreAAnalizar.includes('tacos') || tallaAAnalizar.includes('us')) {
           countTacos += (Number(p.cantidad) || 1);
         }
       });
-    } else {
+    } else if (!isApartado) {
       // Por si fue una venta vieja antes de usar el array
       if ((s.productoNombre || '').toLowerCase().includes('tacos')) {
         countTacos += (Number(s.cantidad) || 1);
@@ -333,9 +342,9 @@ export default function DailyReportPage({ user, onLogout }) {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaCashRegister className="text-gray-400"/> Ventas
+              <FaCashRegister className="text-gray-400"/> Movimientos
             </span>
-            <span className="text-2xl font-black text-white">{sales.length} <span className="text-xs font-normal text-gray-500">pedidos</span></span>
+            <span className="text-2xl font-black text-white">{combinedHistory.length} <span className="text-xs font-normal text-gray-500">reg.</span></span>
           </div>
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">

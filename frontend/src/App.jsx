@@ -8,8 +8,6 @@ import { CartProvider } from "./context/CartContext";
 import CartDrawer from "./components/CartDrawer"; 
 
 // Componentes
-
-
 import Header from "./components/Header";
 import ProductCard from "./components/ProductCard";
 import AddProductModal from "./components/AddProductModal";
@@ -23,6 +21,7 @@ import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
 import LoadingOverlay from "./components/LoadingOverlay"; 
+import ProtectedRoute from "./components/ProtectedRoute"; // 👈 IMPORTACIÓN DEL GUARDIA DE RUTAS
 import tallaPorTipo from "./utils/tallaPorTipo";
 import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -52,11 +51,11 @@ const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
 export default function App() {
   const [products, setProducts] = useState([]);
-  
+
   const [loading, setLoading] = useState(() => {
     return sessionStorage.getItem("introMundial") ? false : true;
   });
-  
+
   const [startedWithIntro] = useState(loading);
   const [isFiltering, setIsFiltering] = useState(false); 
 
@@ -74,7 +73,7 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
-  
+
   const isFrontendFilterActive = filterType === "Mundial" || filterSizes.length > 0;
 
   const pages = isFrontendFilterActive
@@ -94,12 +93,12 @@ export default function App() {
         filtrarOfertas: "Ofertas",
         filtrarMundial: "Mundial" 
       };
-      
+
       const newFilter = typeMap[e.type];
       if (newFilter) {
         setFilterType(newFilter);
         setPage(1); 
-        
+
         if (pageTopRef.current) {
           const rect = pageTopRef.current.getBoundingClientRect();
           const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -168,14 +167,14 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
-      
+
       let fetchedItems = json.items || [];
       let fetchedTotal = json.total || 0;
 
       if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
          const limitUsed = fetchedItems.length; 
          const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
-         
+
          const fetchPromises = [];
          const maxPages = Math.min(totalPagesToFetch, 50); 
 
@@ -187,7 +186,7 @@ export default function App() {
                .catch(() => ({ items: [] }))
            );
          }
-         
+
          const results = await Promise.all(fetchPromises);
          results.forEach(result => {
            if (result.items) fetchedItems = [...fetchedItems, ...result.items];
@@ -279,6 +278,7 @@ export default function App() {
         <Router>
           <CartDrawer />
           <Routes>
+            {/* RUTAS PÚBLICAS */}
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             
             <Route 
@@ -295,19 +295,62 @@ export default function App() {
                 />
               } 
             />
-            
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/pedidos" element={<OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />} /> 
-            <Route path="/historial" element={<HistoryPage user={user} onLogout={handleLogout} />} />
-            
-            <Route path="/ventas" element={<SalesPage user={user} onLogout={handleLogout} />} />
-            <Route path="/reportes" element={<DailyReportPage user={user} onLogout={handleLogout} />} />
-            
-            {/* ⚖️ NUEVA RUTA DE BALANCE Y RENDIMIENTO FINANCIERO */}
-            <Route path="/balance" element={<BalancePage user={user} onLogout={handleLogout} />} />
 
-            <Route path="/apartados" element={<ApartadosPage />} />
-            
+            <Route path="/checkout" element={<Checkout />} />
+
+            {/* 🔒 RUTAS PROTEGIDAS (Solo usuarios logueados) */}
+            <Route 
+              path="/pedidos" 
+              element={
+                <ProtectedRoute user={user}>
+                  <OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />
+                </ProtectedRoute>
+              } 
+            /> 
+            <Route 
+              path="/historial" 
+              element={
+                <ProtectedRoute user={user}>
+                  <HistoryPage user={user} onLogout={handleLogout} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/ventas" 
+              element={
+                <ProtectedRoute user={user}>
+                  <SalesPage user={user} onLogout={handleLogout} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/apartados" 
+              element={
+                <ProtectedRoute user={user}>
+                  <ApartadosPage user={user} />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* 👑 RUTAS SÚPER PROTEGIDAS (Solo Admins) */}
+            <Route 
+              path="/reportes" 
+              element={
+                <ProtectedRoute user={user} requireAdmin={true}>
+                  <DailyReportPage user={user} onLogout={handleLogout} />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/balance" 
+              element={
+                <ProtectedRoute user={user} requireAdmin={true}>
+                  <BalancePage user={user} onLogout={handleLogout} />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* RUTA PRINCIPAL DE LA TIENDA */}
             <Route path="/" element={
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -326,14 +369,13 @@ export default function App() {
                     {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
 
                     {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-                    
-                    {/* ✅ CORREGIDO: Ahora cierra correctamente el modal de lista de usuarios */}
+
                     {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
-                    
+
                     {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
                     {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
                     {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
-                    
+
                     <div className="fixed top-0 left-0 w-full z-50">
                       <TopBanner />
                       <Header
