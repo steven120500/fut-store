@@ -5,8 +5,8 @@ import mongoose from "mongoose";
 const ADULT_SIZES = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
 const KID_SIZES = ["16", "18", "20", "22", "24", "26", "28"];
 const BALL_SIZES = ["3", "4", "5"]; // ⚽ Tallas de balones
-// 👟 NUEVO: Tallas de tacos combinadas (US / EU)
-const TACO_SIZES = ['7 US (40)', '7.5 US (40.5)', '8 US (41)', '8.5 US (42)', '9 US (42.5)', '9.5 US (43)', '10 US (44)', '10.5 US (44.5)', '11 US (45)', '11.5 US (45.5)', '12 US (46)'];
+// 👟 NUEVO: Tallas de tacos combinadas (US / EU) - ¡CON COMAS!
+const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
 
 // 🔹 Unificamos todas las tallas válidas (INCLUYENDO TACOS)
 const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES, ...TACO_SIZES]);
@@ -120,16 +120,16 @@ productSchema.pre("validate", function (next) {
     this.stock = { "3": 0, "4": 0, "5": 0 };
   }
 
-  // 👟 Si son Tacos y el stock está vacío, se rellenan las tallas por defecto
+  // 👟 Si son Tacos y el stock está vacío, se rellenan las tallas por defecto (CON COMAS)
   if (
     this.type &&
     this.type.toLowerCase() === "tacos" &&
     (!this.stock || Object.keys(this.stock).length === 0)
   ) {
     this.stock = {
-      '7 US (40)': 0, '7.5 US (40.5)': 0, '8 US (41)': 0, '8.5 US (42)': 0,
-      '9 US (42.5)': 0, '9.5 US (43)': 0, '10 US (44)': 0, '10.5 US (44.5)': 0,
-      '11 US (45)': 0, '11.5 US (45.5)': 0, '12 US (46)': 0
+      '7 US (40)': 0, '7,5 US (40,5)': 0, '8 US (41)': 0, '8,5 US (42)': 0,
+      '9 US (42,5)': 0, '9,5 US (43)': 0, '10 US (44)': 0, '10,5 US (44,5)': 0,
+      '11 US (45)': 0, '11,5 US (45,5)': 0, '12 US (46)': 0
     };
   }
 
