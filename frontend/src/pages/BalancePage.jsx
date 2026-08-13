@@ -63,24 +63,28 @@ export default function BalancePage({ user }) {
       setLoading(false);
     }
   };
+  
+// 🧮 LÓGICA DE COSTOS POR PRODUCTO
+const calcularCostoItem = (prod) => {
+  const tipo = (prod.type || '').toLowerCase();
+  const nombre = (prod.nombre || '').toLowerCase();
+  const cant = Number(prod.cantidad) || 1;
 
-  // 🧮 LÓGICA DE COSTOS POR PRODUCTO
-  const calcularCostoItem = (prod) => {
-    const tipo = (prod.type || '').toLowerCase();
-    const nombre = (prod.nombre || '').toLowerCase();
-    const cant = Number(prod.cantidad) || 1;
-
-    // 1. Es Nacional? (₡15,000)
-    if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
-      return 15000 * cant;
-    }
-    // 2. Es Bola o Balón? (₡11,000)
-    if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) {
-      return 11000 * cant;
-    }
-    // 3. Todo lo demás: Retro, Fan, Mujer, Player, Niño (₡9,000)
-    return 9000 * cant;
-  };
+  // 1. Es Nacional? (₡15,000)
+  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
+    return 15000 * cant;
+  }
+  // 2. Es Tacos? (₡20,000) 👈 ¡AQUÍ ESTÁ LA NUEVA REGLA PARA LOS TACOS!
+  if (tipo.includes('tacos') || nombre.includes('tacos')) {
+    return 20000 * cant;
+  }
+  // 3. Es Bola o Balón? (₡11,000)
+  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) {
+    return 11000 * cant;
+  }
+  // 4. Todo lo demás: Retro, Fan, Mujer, Player, Niño (₡9,000)
+  return 9000 * cant;
+};
 
   // 🔍 FILTRADO POR MES SELECCIONADO
   const salesFiltradas = sales.filter(s => {
