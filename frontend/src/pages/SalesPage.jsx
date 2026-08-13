@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck, FaMoneyBillWave, FaPlus, FaRedo, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
-import QuickSaleModal from '../components/QuickSaleModal'; // 👈 Importamos el nuevo componente
+import QuickSaleModal from '../components/QuickSaleModal';
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -29,7 +29,7 @@ export default function SalesPage({ user, onLogout }) {
   const [showResetModal, setShowResetModal] = useState(false);
   const [showComisionModal, setShowComisionModal] = useState(false);
 
-  // 🏆 ESTADO: Guardamos la data del vendedor al que le sacaremos comisión
+  // Estado para guardar datos de comisión dividida
   const [vendedorComision, setVendedorComision] = useState(null);
 
   const [loadingCedula, setLoadingCedula] = useState(false);
@@ -37,9 +37,9 @@ export default function SalesPage({ user, onLogout }) {
   const [resetting, setResetting] = useState(false);
   const [submittingComision, setSubmittingComision] = useState(false);
   
-  // 🏆 ESTADOS DE COMISIÓN SEPARADOS
+  // 🏆 Estados separados para comisiones
   const [comisionPorChema, setComisionPorChema] = useState(600);
-  const [comisionPorTacos, setComisionPorTacos] = useState(3000); 
+  const [comisionPorTacos, setComisionPorTacos] = useState(3000);
 
   const displayName = user?.firstName || user?.username || user?.email || 'Steven Corrales';
 
@@ -62,16 +62,15 @@ export default function SalesPage({ user, onLogout }) {
     ]
   });
 
-  const subTotalChemasCalc = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.precioTotal) || 0), 0);
-  const totalCantidadChemas = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.cantidad) || 0), 0);
+  const subTotalPrendasCalc = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.precioTotal) || 0), 0);
+  const totalCantidadPrendas = quickForm.productos.reduce((acc, curr) => acc + (Number(curr.cantidad) || 0), 0);
   const costoEnvioCalc = quickForm.requiereEnvio ? (Number(quickForm.costoEnvio) || 0) : 0;
-  const granTotalConEnvio = subTotalChemasCalc + costoEnvioCalc;
+  const granTotalConEnvio = subTotalPrendasCalc + costoEnvioCalc;
 
-  // 🧮 CÁLCULO DE TOTALES PARA EL HEADER DEL RANKING
-  // Usamos la nueva propiedad totalChemas y totalTacos si viene del backend, sino usamos totalPrendas por retrocompatibilidad
-  const totalChemasVendidas = ranking.reduce((acc, curr) => acc + (curr.totalChemas !== undefined ? curr.totalChemas : (curr.totalPrendas || 0)), 0);
+  // 🏆 LÓGICA DE SEPARACIÓN GLOBAL PARA EL ENCABEZADO
+  const totalChemasVendidas = ranking.reduce((acc, curr) => acc + (curr.totalChemas || 0), 0);
   const totalTacosVendidos = ranking.reduce((acc, curr) => acc + (curr.totalTacos || 0), 0);
-  
+
   const totalAbonosGlobal = apartadosActivos.reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
   const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0) + totalAbonosGlobal;
 
@@ -147,12 +146,12 @@ export default function SalesPage({ user, onLogout }) {
       if (res.ok) {
         let data = await res.json();
         
-        // 🛡️ Lógica de respaldo temporal si el backend aún no divide entre Tacos y Chemas
+        // 🛡️ Lógica de protección: Si el backend aún no envía la separación, lo simulamos para no romper el sitio
         data = data.map(emp => {
           if (emp.totalTacos === undefined || emp.totalChemas === undefined) {
              return {
                ...emp,
-               totalTacos: 0, // Mientras no venga del backend, lo iniciamos en 0
+               totalTacos: 0, 
                totalChemas: emp.totalPrendas || 0 
              }
           }
@@ -190,17 +189,17 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
-  // 🏆 LÓGICA SEPARADA PARA EL REGISTRO DE COMISIÓN
+  // 🏆 LÓGICA DE REGISTRO SEPARADO (CHEMAS VS TACOS)
   const handleRegistrarComision = async () => {
     const nombreVendedor = vendedorComision?.nombre || 'Vendedor';
     const cantChemas = vendedorComision?.cantidadChemas || 0;
     const cantTacos = vendedorComision?.cantidadTacos || 0;
 
-    const montoTotalChemas = cantChemas * (Number(comisionPorChema) || 0);
-    const montoTotalTacos = cantTacos * (Number(comisionPorTacos) || 0);
-    const montoGranTotal = montoTotalChemas + montoTotalTacos;
-
-    if (montoGranTotal <= 0) {
+    const montoChemas = cantChemas * (Number(comisionPorChema) || 0);
+    const montoTacos = cantTacos * (Number(comisionPorTacos) || 0);
+    const montoTotalComision = montoChemas + montoTacos;
+    
+    if (montoTotalComision <= 0) {
       return toast.warning("El monto calculado de comisión debe ser mayor a 0.");
     }
 
@@ -212,13 +211,13 @@ export default function SalesPage({ user, onLogout }) {
         body: JSON.stringify({
           categoria: 'Salarios',
           descripcion: `Comisión de ${nombreVendedor} (${cantChemas} chemas x ₡${comisionPorChema} | ${cantTacos} tacos x ₡${comisionPorTacos})`,
-          monto: montoGranTotal,
+          monto: montoTotalComision,
           fecha: new Date().toISOString()
         })
       });
 
       if (res.ok) {
-        toast.success(`💸 Comisión total de ₡${montoGranTotal.toLocaleString()} registrada para ${nombreVendedor}.`);
+        toast.success(`💸 Comisión total de ₡${montoTotalComision.toLocaleString()} registrada para ${nombreVendedor}.`);
         setShowComisionModal(false);
         setVendedorComision(null);
       } else {
@@ -239,7 +238,7 @@ export default function SalesPage({ user, onLogout }) {
   };
 
   const handleRemoveProducto = (index) => {
-    if (quickForm.productos.length === 1) return toast.warning("Debe haber al menos una chema en la venta.");
+    if (quickForm.productos.length === 1) return toast.warning("Debe haber al menos una prenda en la venta.");
     setQuickForm(prev => ({
       ...prev,
       productos: prev.productos.filter((_, i) => i !== index)
@@ -330,12 +329,12 @@ export default function SalesPage({ user, onLogout }) {
         cedula: quickForm.cedula,
         nombre: quickForm.nombre,
         numero: quickForm.numero,
-        totalPago: subTotalChemasCalc,
+        totalPago: subTotalPrendasCalc,
         costoEnvio: quickForm.requiereEnvio ? costoEnvioCalc : 0,           
         direccionEnvio: quickForm.requiereEnvio ? quickForm.direccionEnvio : '', 
         montoTotal: granTotalConEnvio,
         tallaVendida: quickForm.productos[0]?.talla || 'L',
-        cantidad: totalCantidadChemas,
+        cantidad: totalCantidadPrendas,
         productoNombre: resumenChemas,
         productos: quickForm.productos,
         vendedor: quickForm.vendedorAsignado,
@@ -415,6 +414,7 @@ export default function SalesPage({ user, onLogout }) {
             <p className="text-gray-400 text-xs mt-1">Monitoreo de rendimiento del equipo y total de ventas registradas.</p>
           </div>
 
+          {/* 🏆 TARJETAS GLOBALES CON SEPARACIÓN */}
           <div className="flex gap-4 w-full md:w-auto">
             <div className="bg-[#111] border border-gray-800 p-4 rounded-xl flex-1 md:w-44 text-center shadow-lg">
               <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block">Prendas Movidas</span>
@@ -455,7 +455,6 @@ export default function SalesPage({ user, onLogout }) {
 
               const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;
 
-              // Extraemos valores seguros para el modal
               const numChemas = emp.totalChemas || 0;
               const numTacos = emp.totalTacos || 0;
 
@@ -491,6 +490,8 @@ export default function SalesPage({ user, onLogout }) {
                         <span className="text-gray-400 flex items-center gap-2"><FaCashRegister className="text-gray-600"/> Transacciones:</span>
                         <span className="font-bold text-white">{emp.totalVentas}</span>
                       </div>
+                      
+                      {/* 🏆 RENGLONES SEPARADOS PARA CHEMAS Y TACOS */}
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
                         <span className="font-black text-[#D4AF37] text-sm">{numChemas} unds</span>
@@ -499,6 +500,7 @@ export default function SalesPage({ user, onLogout }) {
                         <span className="text-gray-400 flex items-center gap-2"><span className="text-gray-600">👟</span> Tacos movidos:</span>
                         <span className="font-black text-[#D4AF37] text-sm">{numTacos} prs</span>
                       </div>
+
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 flex items-center gap-2"><FaTruck className="text-gray-600"/> Envíos cobrados:</span>
                         <span className="font-bold text-blue-400">₡{emp.enviosGenerados?.toLocaleString() || 0}</span>
@@ -537,7 +539,7 @@ export default function SalesPage({ user, onLogout }) {
 
       </div>
 
-      {/* 🏆 MODAL DE REGISTRO DE COMISIÓN DOBLE (CHEMAS Y TACOS) */}
+      {/* 🏆 MODAL DE REGISTRO DE COMISIÓN SEPARADO (CHEMAS VS TACOS) */}
       {showComisionModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
@@ -549,7 +551,7 @@ export default function SalesPage({ user, onLogout }) {
               Comisión para: <span className="text-amber-600">{vendedorComision?.nombre || 'Vendedor'}</span>
             </h3>
             <p className="text-xs text-gray-600 font-medium mb-4 px-2">
-              Se calculará la comisión multiplicando las ventas de chemas y tacos por sus respectivos montos unitarios.
+              Se calculará la comisión multiplicando las ventas por sus respectivos montos unitarios.
             </p>
 
             <div className="bg-gray-50 p-4 rounded-xl border text-left mb-6 space-y-4">
@@ -586,7 +588,7 @@ export default function SalesPage({ user, onLogout }) {
                 />
               </div>
 
-              {/* Resumen Totales */}
+              {/* Totalizador */}
               <div className="flex justify-between items-center pt-3 border-t border-gray-200 font-black">
                 <span className="text-gray-600 uppercase text-[10px]">Total a registrar:</span>
                 <span className="text-green-600 text-lg">
@@ -653,6 +655,7 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
+      {/* 🚀 COMPONENTE DEL MODAL DE VENTA RÁPIDA EXTRAÍDO */}
       <QuickSaleModal 
         showQuickSaleModal={showQuickSaleModal}
         setShowQuickSaleModal={setShowQuickSaleModal}
@@ -664,7 +667,7 @@ export default function SalesPage({ user, onLogout }) {
         catalogo={catalogo}
         VENDEDORES={VENDEDORES}
         displayName={displayName}
-        totalCantidadChemas={totalCantidadChemas}
+        totalCantidadChemas={totalCantidadPrendas}
         granTotalConEnvio={granTotalConEnvio}
         handleProductoChange={handleProductoChange}
         handleRemoveProducto={handleRemoveProducto}

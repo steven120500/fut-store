@@ -64,36 +64,33 @@ export default function BalancePage({ user }) {
     }
   };
   
-// 🧮 LÓGICA DE COSTOS POR PRODUCTO
-const calcularCostoItem = (prod) => {
-  const tipo = (prod.type || '').toLowerCase();
-  const nombre = (prod.nombre || '').toLowerCase();
-  const cant = Number(prod.cantidad) || 1;
-
-  // 1. Es Nacional? (₡15,000)
-  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
-    return 15000 * cant;
-  }
-  // 2. Es Tacos? (₡20,000)
-  if (tipo.includes('tacos') || nombre.includes('tacos')) {
-    return 20000 * cant;
-  }
-  // 3. Es Bola o Balón? (₡11,000)
-  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) {
-    return 11000 * cant;
-  }
-  // 4. Todo lo demás: Retro, Fan, Mujer, Player, Niño (₡9,000)
-  return 9000 * cant;
-};
-
-// Función auxiliar para determinar la categoría en texto para el PDF y desgloses
+// 🧮 LÓGICA DE COSTOS POR PRODUCTO (MEJORADA PARA DETECTAR TACOS AUTOMÁTICAMENTE)
 const getCategoriaCosto = (prod) => {
   const tipo = (prod.type || '').toLowerCase();
   const nombre = (prod.nombre || '').toLowerCase();
-  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) return 'nacionales';
-  if (tipo.includes('tacos') || nombre.includes('tacos')) return 'tacos';
-  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) return 'balones';
+  const talla = (prod.talla || '').toLowerCase(); // 👈 Verificamos la talla por si acaso
+
+  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
+    return 'nacionales';
+  }
+  // 👟 Si el tipo, nombre o la talla incluye "us", es 100% un taco
+  if (tipo.includes('tacos') || nombre.includes('tacos') || talla.includes('us')) {
+    return 'tacos';
+  }
+  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) {
+    return 'balones';
+  }
   return 'generales';
+};
+
+const calcularCostoItem = (prod) => {
+  const cat = getCategoriaCosto(prod);
+  const cant = Number(prod.cantidad) || 1;
+
+  if (cat === 'nacionales') return 15000 * cant;
+  if (cat === 'tacos') return 20000 * cant; // 👈 Regla estricta de 20,000 para Tacos
+  if (cat === 'balones') return 11000 * cant;
+  return 9000 * cant;
 };
 
   // 🔍 FILTRADO POR MES SELECCIONADO
@@ -140,10 +137,23 @@ const getCategoriaCosto = (prod) => {
         else totalInversionGenerales += costoUnitario;
       });
     } else {
+      // 🛡️ REGLA DE RESPALDO: Analiza las ventas del catálogo que no usan carrito
       const cant = Number(sale.cantidad) || 1;
-      const costoM = 9000 * cant;
-      costoTotalChemas += costoM;
-      totalInversionGenerales += costoM;
+      const objFallback = {
+        type: sale.type || '',
+        nombre: sale.productoNombre || '',
+        talla: sale.tallaVendida || '',
+        cantidad: cant
+      };
+
+      const costoUnitario = calcularCostoItem(objFallback);
+      const cat = getCategoriaCosto(objFallback);
+
+      costoTotalChemas += costoUnitario;
+      if (cat === 'nacionales') totalInversionNacionales += costoUnitario;
+      else if (cat === 'tacos') totalInversionTacos += costoUnitario;
+      else if (cat === 'balones') totalInversionBalones += costoUnitario;
+      else totalInversionGenerales += costoUnitario;
     }
   });
 
@@ -405,7 +415,7 @@ const getCategoriaCosto = (prod) => {
                 <span className="text-[10px] text-gray-500 block mt-3">Total cobrado en ventas + envíos</span>
               </div>
 
-              {/* 2. COSTO MERCADERÍA + ENVÍOS (¡REDISEÑADO!) */}
+              {/* 2. COSTO MERCADERÍA + ENVÍOS */}
               <div className="bg-[#111] p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block mb-1">Costo Mercadería + Envíos</span>
