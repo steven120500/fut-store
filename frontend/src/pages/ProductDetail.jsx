@@ -59,7 +59,7 @@ export default function ProductDetail({
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false); 
 
-  // 🏆 ESTADOS ACTUALIZADOS PARA REGISTRO DE VENTAS
+  // ESTADOS ACTUALIZADOS PARA REGISTRO DE VENTAS
   const [isRegisteringSale, setIsRegisteringSale] = useState(false);
   const [loadingCedula, setLoadingCedula] = useState(false); 
   const [saleForm, setSaleForm] = useState({
@@ -450,7 +450,7 @@ export default function ProductDetail({
   const currentSrc = localImages[idx]?.src || PLACEHOLDER_IMG;
   const currentType = isEditing ? editedType : product.type;
   
-  // Utilizamos la función blindada para saber qué tallas pintar
+  // Usamos la función blindada para reconocer los Tacos
   const tallasVisibles = getTallasByTipo(currentType);
   
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
@@ -559,6 +559,7 @@ export default function ProductDetail({
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="text-xs font-bold text-gray-500">TIPO</label>
+                              {/* 🏆 AQUÍ ESTÁ EL CAMBIO: Añadido 'Tacos' para que aparezca en el menú de edición */}
                               <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
                                   {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','Tacos'].map(t => <option key={t}>{t}</option>)}
                               </select>
@@ -589,7 +590,7 @@ export default function ProductDetail({
                       </div>
                   </div>
                   
-                  {/* Cuadrícula dinámica para editar inventario */}
+                  {/* Inventario por talla alineado perfectamente */}
                   <div className="bg-white p-4 rounded border mt-3">
                     <p className="text-xs font-bold mb-3 uppercase text-center text-gray-800">Inventario por Talla</p>
                     
@@ -771,7 +772,7 @@ export default function ProductDetail({
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
                 <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><FaTrash size={24} /></div>
-                <h3 className="text-lg font-bold mb-2 text-black">¿Eliminar producto?</h3>
+                <h3 className="text-lg font-bold mb-2 text-black">¿Eliminar producto viejo?</h3>
                 <p className="text-gray-500 text-xs mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-2">
                   <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm text-black">Cancelar</button>
