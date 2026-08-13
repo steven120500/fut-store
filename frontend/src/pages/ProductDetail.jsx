@@ -49,6 +49,7 @@ export default function ProductDetail({
   const [idx, setIdx] = useState(0); 
   const [showDecisionModal, setShowDecisionModal] = useState(false);
 
+  // Estados para Modales Locales
   const [showLogin, setShowLogin] = useState(false);
   const [showRegisterUserModal, setShowRegisterUserModal] = useState(false);
   const [showMedidas, setShowMedidas] = useState(false);
@@ -58,11 +59,19 @@ export default function ProductDetail({
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [showConfirmSave, setShowConfirmSave] = useState(false); 
 
+  // 🏆 ESTADOS ACTUALIZADOS PARA REGISTRO DE VENTAS
   const [isRegisteringSale, setIsRegisteringSale] = useState(false);
   const [loadingCedula, setLoadingCedula] = useState(false); 
   const [saleForm, setSaleForm] = useState({
-    cedula: '', nombre: '', numero: '', totalPago: 0, costoEnvio: 0, 
-    requiereEnvio: false, direccionEnvio: '', tallaVendida: '', cantidadVendida: 1
+    cedula: '',
+    nombre: '',
+    numero: '',
+    totalPago: 0,
+    costoEnvio: 0, 
+    requiereEnvio: false, 
+    direccionEnvio: '',   
+    tallaVendida: '',
+    cantidadVendida: 1
   });
 
   const [editedName, setEditedName] = useState('');
@@ -100,7 +109,9 @@ export default function ProductDetail({
 
   useEffect(() => {
     const handleUnload = () => {
-      if (isEditing) navigator.sendBeacon(`${API_BASE}/api/products/${id}/unlock`);
+      if (isEditing) {
+        navigator.sendBeacon(`${API_BASE}/api/products/${id}/unlock`);
+      }
     };
     window.addEventListener("beforeunload", handleUnload);
     return () => {
@@ -121,6 +132,9 @@ export default function ProductDetail({
     setSaleForm(prev => ({
       ...prev,
       totalPago: data.discountPrice || data.price || 0,
+      costoEnvio: 0,
+      requiereEnvio: false,
+      direccionEnvio: '',
       tallaVendida: selectedSize || 'L',
       cantidadVendida: 1
     }));
@@ -142,17 +156,21 @@ export default function ProductDetail({
     setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/products/${id}/lock`, {
-        method: "POST", headers: { "Content-Type": "application/json", "x-user": displayName },
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user": displayName },
       });
       const data = await res.json();
       if (!res.ok) {
         toast.error(`🔒 ${data.lockedBy || 'Alguien'} ya está editando este producto.`);
-        setLoadingAction(false); return false;
+        setLoadingAction(false);
+        return false;
       }
-      setLoadingAction(false); return true;
+      setLoadingAction(false);
+      return true;
     } catch (error) {
-      toast.error("Error al conectar.");
-      setLoadingAction(false); return false;
+      toast.error("Error al conectar con el servidor.");
+      setLoadingAction(false);
+      return false;
     }
   };
 
@@ -160,14 +178,19 @@ export default function ProductDetail({
     if (!id) return;
     try {
       await fetch(`${API_BASE}/api/products/${id}/unlock`, {
-        method: "POST", headers: { "Content-Type": "application/json", "x-user": displayName },
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-user": displayName },
       });
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error desbloqueando el producto", error);
+    }
   };
 
   const handleEditClick = async () => {
     const hasLock = await lockProduct();
-    if (hasLock) setIsEditing(true);
+    if (hasLock) {
+      setIsEditing(true);
+    }
   };
 
   const handleCancelEditClick = () => {
@@ -221,20 +244,29 @@ export default function ProductDetail({
     const precioBase = product?.discountPrice || product?.price || 0;
 
     setSaleForm(prev => ({
-      ...prev, tallaVendida: finalSizeStr, cantidadVendida: finalQty, totalPago: precioBase * finalQty
+      ...prev,
+      tallaVendida: finalSizeStr,
+      cantidadVendida: finalQty,
+      totalPago: precioBase * finalQty
     }));
+
     setIsRegisteringSale(true);
   };
 
   const handleQuantityChange = (val) => {
     const newQty = Math.max(1, parseInt(val, 10) || 1);
     const precioBase = product?.discountPrice || product?.price || 0;
-    setSaleForm(prev => ({ ...prev, cantidadVendida: newQty, totalPago: precioBase * newQty }));
+    setSaleForm(prev => ({
+      ...prev,
+      cantidadVendida: newQty,
+      totalPago: precioBase * newQty
+    }));
   };
 
   const handleCedulaChange = async (e) => {
     const cedulaInput = e.target.value;
     setSaleForm({ ...saleForm, cedula: cedulaInput });
+    
     const cleanCedula = cedulaInput.replace(/\D/g, '');
     if (cleanCedula.length === 9) {
       setLoadingCedula(true);
@@ -244,10 +276,12 @@ export default function ProductDetail({
           const data = await res.json();
           if (data && data.nombre) {
             setSaleForm(prev => ({ ...prev, nombre: data.nombre }));
-            toast.success("Cliente encontrado");
+            toast.success("Cliente encontrado en el registro");
           }
         }
-      } catch (error) {} finally {
+      } catch (error) {
+        console.error("No se pudo obtener el nombre de la cédula:", error);
+      } finally {
         setLoadingCedula(false);
       }
     }
@@ -276,7 +310,9 @@ export default function ProductDetail({
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        if (res.status === 409) throw new Error(`Producto bloqueado por ${errorData.lockedBy || 'otro usuario'}`);
+        if (res.status === 409) {
+          throw new Error(`Producto bloqueado por ${errorData.lockedBy || 'otro usuario'}`);
+        }
         throw new Error("Error al actualizar");
       }
       const updated = await res.json();
@@ -296,7 +332,9 @@ export default function ProductDetail({
 
   const handleRegisterSaleSubmit = async (e) => {
     e.preventDefault();
-    if (!saleForm.cedula || !saleForm.nombre || !saleForm.numero) return toast.warning("Por favor completa los datos del cliente.");
+    if (!saleForm.cedula || !saleForm.nombre || !saleForm.numero) {
+      return toast.warning("Por favor completa los datos del cliente.");
+    }
 
     const subtotalPrenda = Number(saleForm.totalPago) || 0;
     const montoEnvio = Number(saleForm.costoEnvio) || 0;
@@ -307,22 +345,32 @@ export default function ProductDetail({
     setLoadingAction(true);
     try {
       const salePayload = {
-        cedula: saleForm.cedula, nombre: saleForm.nombre, numero: saleForm.numero,
-        totalPago: subtotalPrenda, costoEnvio: saleForm.requiereEnvio ? montoEnvio : 0,    
+        cedula: saleForm.cedula,
+        nombre: saleForm.nombre,
+        numero: saleForm.numero,
+        totalPago: subtotalPrenda,
+        costoEnvio: saleForm.requiereEnvio ? montoEnvio : 0,    
         direccionEnvio: saleForm.requiereEnvio ? saleForm.direccionEnvio : '',
-        montoTotal: granTotal, tallaVendida: talla, cantidad: cant,
-        productoId: id, productoNombre: editedName, vendedor: displayName, fecha: new Date().toISOString()
+        montoTotal: granTotal,     
+        tallaVendida: talla,
+        cantidad: cant,
+        productoId: id,
+        productoNombre: editedName,
+        vendedor: displayName,
+        fecha: new Date().toISOString()
       };
 
       await fetch(`${API_BASE}/api/sales`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-user': displayName }, body: JSON.stringify(salePayload),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
+        body: JSON.stringify(salePayload),
       });
 
       let finalStock = { ...editedStock };
       const oldStockSize = parseInt(product?.stock?.[talla] ?? 0, 10);
       const currentEditedStockSize = parseInt(editedStock?.[talla] ?? 0, 10);
+
       const tallasVisiblesActuales = getTallasByTipo(editedType);
-      
       if (tallasVisiblesActuales.includes(talla) && oldStockSize === currentEditedStockSize) {
         finalStock[talla] = Math.max(0, currentEditedStockSize - cant);
         setEditedStock(finalStock);
@@ -341,14 +389,16 @@ export default function ProductDetail({
     setLoadingAction(true);
     try {
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json', 'x-user': displayName },
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
       });
       if (!res.ok) throw new Error("Error al eliminar");
       toast.success("Producto eliminado");
       if (onUpdate) onUpdate(null, id);
       navigate('/', { replace: true });
     } catch (err) {
-      toast.error(err.message); setShowConfirmDelete(false);
+      toast.error(err.message);
+      setShowConfirmDelete(false);
     } finally {
       setLoadingAction(false);
     }
@@ -361,7 +411,9 @@ export default function ProductDetail({
     reader.onload = () => {
       setLocalImages(prev => {
         const copy = [...prev];
-        if (copy.length === 1 && copy[0].src === PLACEHOLDER_IMG) return [{ src: reader.result, isNew: true }];
+        if (copy.length === 1 && copy[0].src === PLACEHOLDER_IMG) {
+           return [{ src: reader.result, isNew: true }];
+        }
         if (index >= copy.length) copy.push({ src: reader.result, isNew: true });
         else copy[index] = { src: reader.result, isNew: true };
         return copy;
@@ -374,7 +426,8 @@ export default function ProductDetail({
   const handleImageRemove = (index) => {
     const newImages = localImages.filter((_, i) => i !== index);
     if (newImages.length === 0) newImages.push({ src: PLACEHOLDER_IMG, isNew: false });
-    setLocalImages(newImages); setIdx(0);
+    setLocalImages(newImages);
+    setIdx(0);
   };
 
   const handleBuyWhatsApp = () => {
@@ -397,11 +450,12 @@ export default function ProductDetail({
   const currentSrc = localImages[idx]?.src || PLACEHOLDER_IMG;
   const currentType = isEditing ? editedType : product.type;
   
-  // Usamos la función blindada
+  // Utilizamos la función blindada para saber qué tallas pintar
   const tallasVisibles = getTallasByTipo(currentType);
   
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
   const inventoryChanges = getInventoryChanges();
+
   const subTotalChema = Number(saleForm.totalPago) || 0;
   const costoDeEnvio = saleForm.requiereEnvio ? (Number(saleForm.costoEnvio) || 0) : 0;
   const totalConEnvio = subTotalChema + costoDeEnvio;
@@ -409,10 +463,41 @@ export default function ProductDetail({
   return (
     <>
       <TopBanner/>
-      {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={() => window.location.reload()} onRegisterClick={() => { setShowLogin(false); setTimeout(() => setShowRegisterUserModal(true), 100); }} />}
-      {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-      {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={product.type || "Todos"} />}
-      <Header user={user} onLoginClick={() => setShowLogin(true)} onLogout={onLogout} isSuperUser={isSuperUser} canSeeHistory={canSeeHistory} setShowRegisterUserModal={setShowRegisterUserModal} setShowUserListModal={setShowUserListModal} setShowHistoryModal={setShowHistoryModal} onMedidasClick={() => setShowMedidas(true)} onLogoClick={() => navigate('/')} /> 
+      
+      {showLogin && (
+        <LoginModal 
+          isOpen={showLogin} 
+          onClose={() => setShowLogin(false)} 
+          onLoginSuccess={() => window.location.reload()} 
+          onRegisterClick={() => {
+            setShowLogin(false);
+            setTimeout(() => setShowRegisterUserModal(true), 100);
+          }} 
+        />
+      )}
+      {showRegisterUserModal && (
+        <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />
+      )}
+      {showMedidas && (
+        <Medidas 
+          open={showMedidas} 
+          onClose={() => setShowMedidas(false)} 
+          currentType={product.type || "Todos"} 
+        />
+      )}
+
+      <Header 
+        user={user}
+        onLoginClick={() => setShowLogin(true)} 
+        onLogout={onLogout}
+        isSuperUser={isSuperUser}
+        canSeeHistory={canSeeHistory}
+        setShowRegisterUserModal={setShowRegisterUserModal}
+        setShowUserListModal={setShowUserListModal}
+        setShowHistoryModal={setShowHistoryModal}
+        onMedidasClick={() => setShowMedidas(true)}
+        onLogoClick={() => navigate('/')}
+      /> 
 
       <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
         <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
@@ -424,7 +509,13 @@ export default function ProductDetail({
           <div className="space-y-4">
             <div className="relative aspect-square bg-white rounded-2xl overflow-hidden border border-gray-100 flex items-center justify-center shadow-sm group">
               <AnimatePresence mode="wait">
-                <motion.img key={currentSrc} src={currentSrc} onError={(e) => { e.target.src = PLACEHOLDER_IMG; e.target.onerror = null; }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full object-contain p-2" />
+                <motion.img
+                  key={currentSrc}
+                  src={currentSrc}
+                  onError={(e) => { e.target.src = PLACEHOLDER_IMG; e.target.onerror = null; }}
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="w-full h-full object-contain p-2"
+                />
               </AnimatePresence>
               {!isEditing && localImages.length > 1 && (
                 <>
@@ -437,7 +528,9 @@ export default function ProductDetail({
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {localImages.map((img, i) => (
                   <div key={i} className="relative flex-shrink-0">
-                    <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG} className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} />
+                    <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
+                      className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} 
+                    />
                     {isEditing && <button onClick={() => handleImageRemove(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"><FaTimes /></button>}
                   </div>
                 ))}
@@ -496,6 +589,7 @@ export default function ProductDetail({
                       </div>
                   </div>
                   
+                  {/* Cuadrícula dinámica para editar inventario */}
                   <div className="bg-white p-4 rounded border mt-3">
                     <p className="text-xs font-bold mb-3 uppercase text-center text-gray-800">Inventario por Talla</p>
                     
@@ -547,7 +641,7 @@ export default function ProductDetail({
                     <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
                       <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
                       <p className="text-xs font-bold leading-relaxed">
-                        VERSIÓN PLAYER: Se recomienda elegir una talla más de la habitual para un ajuste óptimo.
+                        VERSIÓN PLAYER (Corte Ajustado): Se recomienda elegir una talla más de la habitual para un ajuste óptimo.
                       </p>
                     </div>
                   )}
@@ -556,7 +650,7 @@ export default function ProductDetail({
                     <div className="mb-4 flex items-center gap-3 bg-pink-50 border border-pink-200 p-3 rounded-lg text-pink-900 shadow-sm">
                       <FaExclamationTriangle className="flex-shrink-0 text-pink-400" />
                       <p className="text-xs font-bold leading-relaxed">
-                        VERSIÓN MUJER: Diseño sileteado con cintura definida. pedir una talla más si prefieres un ajuste holgado.
+                        VERSIÓN MUJER (Corte Estilizado): Diseño sileteado con cintura definida. pedir una talla más si prefieres un ajuste holgado.
                       </p>
                     </div>
                   )}
@@ -612,28 +706,63 @@ export default function ProductDetail({
           </div>
         </div>
         
-        {/* MODAL DECISIÓN Y MODALES DE ACCIONES... */}
+        {/* MODAL DECISIÓN */}
         <AnimatePresence>
           {showDecisionModal && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"
+              >
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-black">
                   <FaShoppingCart size={30} />
                 </div>
                 <h3 className="text-xl font-black italic uppercase mb-2 text-black">¡Agregado al carrito!</h3>
                 <p className="text-gray-500 text-sm mb-6">¿Qué te gustaría hacer ahora?</p>
+                
                 <div className="flex flex-col gap-3">
-                  <button onClick={() => navigate('/checkout')} className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition">FINALIZAR COMPRA</button>
-                  <button onClick={() => { setShowDecisionModal(false); navigate('/'); }} className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition">SEGUIR VIENDO</button>
+                  <button 
+                    onClick={() => navigate('/checkout')} 
+                    className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition"
+                  >
+                    FINALIZAR COMPRA
+                  </button>
+                  <button 
+                    onClick={() => { setShowDecisionModal(false); navigate('/'); }} 
+                    className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition"
+                  >
+                    SEGUIR VIENDO
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* 🏆 MODAL DE VENTA/GUARDAR SEPARADO */}
         <AnimatePresence>
           {showConfirmSave && (
-            <SaleModal isRegisteringSale={isRegisteringSale} setIsRegisteringSale={setIsRegisteringSale} inventoryChanges={inventoryChanges} handleOpenSaleForm={handleOpenSaleForm} handleSave={handleSave} loadingAction={loadingAction} setShowConfirmSave={setShowConfirmSave} handleRegisterSaleSubmit={handleRegisterSaleSubmit} displayName={displayName} saleForm={saleForm} setSaleForm={setSaleForm} loadingCedula={loadingCedula} tallasVisibles={tallasVisibles} handleQuantityChange={handleQuantityChange} handleCedulaChange={handleCedulaChange} totalConEnvio={totalConEnvio} />
+            <SaleModal 
+              isRegisteringSale={isRegisteringSale}
+              setIsRegisteringSale={setIsRegisteringSale}
+              inventoryChanges={inventoryChanges}
+              handleOpenSaleForm={handleOpenSaleForm}
+              handleSave={handleSave}
+              loadingAction={loadingAction}
+              setShowConfirmSave={setShowConfirmSave}
+              handleRegisterSaleSubmit={handleRegisterSaleSubmit}
+              displayName={displayName}
+              saleForm={saleForm}
+              setSaleForm={setSaleForm}
+              loadingCedula={loadingCedula}
+              tallasVisibles={tallasVisibles}
+              handleQuantityChange={handleQuantityChange}
+              handleCedulaChange={handleCedulaChange}
+              totalConEnvio={totalConEnvio}
+            />
           )}
         </AnimatePresence>
         

@@ -97,9 +97,9 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     };
   }, []);
 
-  // 🔹 Agregar Balón y Tacos al listado de tipos
+  // 🏆 AQUÍ ESTÁ LA CORRECCIÓN: Tallas con COMAS
   const tallas = useMemo(() => {
-    const TACO_SIZES = ['7 US (40)', '7.5 US (40.5)', '8 US (41)', '8.5 US (42)', '9 US (42.5)', '9.5 US (43)', '10 US (44)', '10.5 US (44.5)', '11 US (45)', '11.5 US (45.5)', '12 US (46)'];
+    const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
     const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: TACO_SIZES };
     return tipos[type] || [];
   }, [type]);
@@ -326,16 +326,17 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </span>
         </label>
 
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        {/* 🏆 AQUÍ ESTÁ LA CORRECCIÓN: Cuadritos rectos y dinámicos */}
+        <div className={`grid gap-3 mb-6 ${type === 'Tacos' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-4 sm:grid-cols-5'}`}>
           {tallas.map((size) => (
-            <label key={size} className="text-center">
-              <span className="block mb-1 text-sm font-medium">{size}</span>
+            <label key={size} className="text-center flex flex-col justify-end h-full">
+              <span className="block mb-1.5 text-[10px] font-bold text-gray-600 leading-tight min-h-[28px] flex items-end justify-center">{size}</span>
               <input
                 type="number"
                 min="0"
                 value={stock[size] ?? ""}
                 onChange={(e) => handleInvChange(size, e.target.value)}
-                className="w-full px-2 py-1 border border-gray-300 rounded text-center"
+                className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center bg-gray-50 focus:border-black outline-none"
                 inputMode="numeric"
               />
             </label>

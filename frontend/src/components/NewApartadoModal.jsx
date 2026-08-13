@@ -130,8 +130,8 @@ export default function NewApartadoModal({
                   const productoVinculado = prod.productoObj;
                   const tallasDisponibles = productoVinculado && productoVinculado.stock 
                     ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
-                    // 👈 Añadidas las tallas de Tacos a la lista de respaldo
-                    : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5', '7 US (40)', '7.5 US (40.5)', '8 US (41)', '8.5 US (42)', '9 US (42.5)', '9.5 US (43)', '10 US (44)', '10.5 US (44.5)', '11 US (45)', '11.5 US (45.5)', '12 US (46)'];
+                    // 🏆 AQUÍ ESTÁ CORREGIDO: Todo con comas
+                    : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5', '7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
 
                   return (
                     <div key={prod.id} className="border border-gray-200 rounded-2xl p-4 bg-gray-50/85 shadow-sm relative z-0">
@@ -259,7 +259,6 @@ export default function NewApartadoModal({
                                 <option value="Retro">Retro</option>
                                 <option value="Mujer">Mujer</option>
                                 <option value="Niño">Niño</option>
-                                {/* 👈 AÑADIDO: Tacos como opción para pedidos manuales */}
                                 <option value="Tacos">Tacos</option>
                               </select>
                             </div>
