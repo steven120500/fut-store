@@ -74,7 +74,7 @@ const calcularCostoItem = (prod) => {
   if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
     return 15000 * cant;
   }
-  // 2. Es Tacos? (₡20,000) 👈 ¡AQUÍ ESTÁ LA NUEVA REGLA PARA LOS TACOS!
+  // 2. Es Tacos? (₡20,000)
   if (tipo.includes('tacos') || nombre.includes('tacos')) {
     return 20000 * cant;
   }
@@ -86,7 +86,7 @@ const calcularCostoItem = (prod) => {
   return 9000 * cant;
 };
 
-// Función auxiliar para determinar la categoría en texto para el PDF
+// Función auxiliar para determinar la categoría en texto para el PDF y desgloses
 const getCategoriaCosto = (prod) => {
   const tipo = (prod.type || '').toLowerCase();
   const nombre = (prod.nombre || '').toLowerCase();
@@ -337,6 +337,9 @@ const getCategoriaCosto = (prod) => {
     toast.success("📄 Reporte PDF descargado con éxito");
   };
 
+  // Cálculo de Chemas vs Tacos para la vista rápida
+  const costoSoloChemas = costoTotalChemas - totalInversionTacos;
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
@@ -382,7 +385,6 @@ const getCategoriaCosto = (prod) => {
           <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
             <FaChartLine /> Balance General y Rendimiento
           </h1>
-          
         </div>
 
         {loading ? (
@@ -403,15 +405,27 @@ const getCategoriaCosto = (prod) => {
                 <span className="text-[10px] text-gray-500 block mt-3">Total cobrado en ventas + envíos</span>
               </div>
 
-              {/* 2. COSTO MERCADERÍA + ENVÍOS */}
+              {/* 2. COSTO MERCADERÍA + ENVÍOS (¡REDISEÑADO!) */}
               <div className="bg-[#111] p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block mb-1">Costo Mercadería + Envíos</span>
                   <span className="text-2xl font-black text-amber-500">₡{(costoTotalChemas + totalEnviosCobrados).toLocaleString()}</span>
                 </div>
-                <div className="text-[10px] text-gray-500 mt-3 flex justify-between">
-                  <span>Prendas: ₡{costoTotalChemas.toLocaleString()}</span>
-                  <span>Envíos: ₡{totalEnviosCobrados.toLocaleString()}</span>
+                
+                {/* 🏆 LISTA VERTICAL ORDENADA: CHEMAS - TACOS - ENVÍOS */}
+                <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-800/80">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">👕 Chemas</span>
+                    <span className="text-[11px] font-bold text-gray-300">₡{costoSoloChemas.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">👟 Tacos</span>
+                    <span className="text-[11px] font-bold text-gray-300">₡{totalInversionTacos.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">🚚 Envíos</span>
+                    <span className="text-[11px] font-bold text-blue-400">₡{totalEnviosCobrados.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
 
