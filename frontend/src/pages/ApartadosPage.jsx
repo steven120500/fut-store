@@ -31,7 +31,7 @@ export default function ApartadosPage({ user }) {
   const [apartadoSeleccionado, setApartadoSeleccionado] = useState(null);
   const [apartadoToDelete, setApartadoToDelete] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
-  
+
   const [filtroBusqueda, setFiltroBusqueda] = useState('');
   const [productosStock, setProductosStock] = useState([]);
   const [activeDropdownIndex, setActiveDropdownIndex] = useState(null); 
@@ -40,7 +40,7 @@ export default function ApartadosPage({ user }) {
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const employeeDropdownRef = useRef(null);
   const listaEmpleados = [
-    "LaR Delfiow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
+    "LaR Delflow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
     "Dylan Gomez", "Steven Corrales", "Keylor Gómez"
   ];
 
@@ -77,7 +77,7 @@ export default function ApartadosPage({ user }) {
       }
     ]
   });
-  
+
   const [buscandoCedula, setBuscandoCedula] = useState(false); 
 
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function ApartadosPage({ user }) {
   const handleCedulaChange = async (e) => {
     const cedulaInput = e.target.value;
     setForm(prev => ({ ...prev, cedula: cedulaInput }));
-    
+
     const cleanCedula = cedulaInput.replace(/\D/g, '');
     if (cleanCedula.length === 9) {
       setBuscandoCedula(true);
@@ -175,7 +175,7 @@ export default function ApartadosPage({ user }) {
   const seleccionarProductoDelStock = (index, itemCat) => {
     const nuevos = [...form.productos];
     const precioFinal = itemCat.discountPrice ? itemCat.discountPrice : (itemCat.price || 15000);
-    
+
     let tallasDisponibles = itemCat.stock ? Object.keys(itemCat.stock).filter(k => Number(itemCat.stock[k]) > 0) : [];
     let tallaAUsar = tallasDisponibles.length > 0 ? tallasDisponibles[0] : (nuevos[index].talla || 'L');
 
@@ -184,7 +184,7 @@ export default function ApartadosPage({ user }) {
     nuevos[index].precioItem = precioFinal * (Number(nuevos[index].cantidad) || 1);
     nuevos[index].talla = tallaAUsar;
     nuevos[index].type = itemCat.type || 'Camiseta';
-    
+
     setForm({ ...form, productos: nuevos });
     setActiveDropdownIndex(null);
   };
@@ -254,7 +254,7 @@ export default function ApartadosPage({ user }) {
         setApartados([...apartados, data.apartado]);
         setShowAddModal(false);
         toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado.`);
-        
+
         setForm({ 
           vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '',
           requiereEnvio: false, direccionEnvio: '', costoEnvio: 0,
@@ -286,7 +286,7 @@ export default function ApartadosPage({ user }) {
       console.error("Error cambiando estado", error);
     }
   };
-  
+
   const confirmarBorrado = (id) => {
     setApartadoToDelete(id);
     setShowDeleteModal(true);
@@ -310,7 +310,7 @@ export default function ApartadosPage({ user }) {
   };
 
   const confirmarEntrega = (apartado) => { setApartadoSeleccionado(apartado); setShowDeliverModal(true); };
-  
+
   const ejecutarEntrega = async () => {
     const id = apartadoSeleccionado._id || apartadoSeleccionado.id;
     try {
@@ -329,12 +329,38 @@ export default function ApartadosPage({ user }) {
     }
   };
 
-  // 📄 EXPORTAR PDF CON DISEÑO FUTSTORE (SÚPER SEGURO)
+  // 🧮 LÓGICA DE CONTEO INTELIGENTE (TACOS VS CHEMAS)
+  const contarArticulos = (apartadosArr) => {
+    let chemas = 0;
+    let tacos = 0;
+    
+    apartadosArr.forEach(ap => {
+      (ap.productos || []).forEach(p => {
+        const tipo = (p.type || '').toLowerCase();
+        const nombre = (p.nombre || p.busqueda || p.descripcionManual || '').toLowerCase();
+        const version = (p.version || '').toLowerCase();
+        const talla = (p.talla || '').toLowerCase();
+        
+        const cant = Number(p.cantidad) || 1;
+
+        // Condición para detectar tacos en productos nuevos o viejos
+        if (tipo.includes('tacos') || nombre.includes('tacos') || version.includes('tacos') || talla.includes('us')) {
+          tacos += cant;
+        } else {
+          chemas += cant;
+        }
+      });
+    });
+    
+    return { chemas, tacos };
+  };
+
+  // 📄 EXPORTAR PDF CON DISEÑO FUTSTORE Y TOTALES DESGLOSADOS
   const generarPDFPedidos = async () => {
     if (pendientes.length === 0) {
       return toast.warning("No hay pedidos pendientes para exportar.");
     }
-    
+
     const hayPedidosEspeciales = pendientes.some(ap => ap.productos.some(prod => prod.tipoPedido === 'nuevo'));
     if (!hayPedidosEspeciales) {
       return toast.warning("No hay 'Pedidos Especiales' en estado pendiente. (Las de stock no se exportan)");
@@ -347,13 +373,19 @@ export default function ApartadosPage({ user }) {
       const productosAplanados = [];
       for (const ap of pendientes) {
         for (const prod of ap.productos) {
-          
+
           if (prod.tipoPedido === 'stock') continue; 
 
           let genero = "Men";
           const versionLower = prod.version?.toLowerCase() || '';
-          if (versionLower.includes("mujer")) genero = "Women";
-          if (versionLower.includes("niño") || versionLower.includes("kid")) genero = "Kids";
+          const tallaLower = prod.talla?.toLowerCase() || '';
+          const tipoLower = (prod.type || '').toLowerCase();
+          
+          const isTaco = versionLower.includes('tacos') || tallaLower.includes('us') || tipoLower.includes('tacos');
+
+          if (isTaco) genero = "Calzado";
+          else if (versionLower.includes("mujer")) genero = "Women";
+          else if (versionLower.includes("niño") || versionLower.includes("kid")) genero = "Kids";
 
           productosAplanados.push({
             imagen1: prod.imagen1 || ap.imagen, 
@@ -374,11 +406,11 @@ export default function ApartadosPage({ user }) {
       const pageWidth = doc.internal.pageSize.getWidth();
 
       // ⬛ ENCABEZADO NEGRO ESTILO FUTSTORE
-      doc.setFillColor(17, 17, 17); // #111111
+      doc.setFillColor(17, 17, 17);
       doc.rect(0, 0, pageWidth, 42, 'F');
 
       // 🟡 LÍNEA DORADA DE ACENTO
-      doc.setFillColor(212, 175, 55); // #D4AF37
+      doc.setFillColor(212, 175, 55); 
       doc.rect(0, 42, pageWidth, 3, 'F');
 
       // TÍTULOS
@@ -392,9 +424,8 @@ export default function ApartadosPage({ user }) {
       doc.setTextColor(200, 200, 200);
       doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CR')}`, 14, 30);
 
-      // 🚨 INYECCIÓN DIRECTA DE IMÁGENES AL OBJETO ROW (A PRUEBA DE FALLOS DE ÍNDICE)
       const rows = productosAplanados.map(p => [
-        { content: '', imagen1: p.imagen1, imagen2: p.imagen2 }, // Celda enriquecida
+        { content: '', imagen1: p.imagen1, imagen2: p.imagen2 }, 
         p.nombre,
         p.genero,
         p.version,
@@ -407,7 +438,7 @@ export default function ApartadosPage({ user }) {
 
       autoTable(doc, {
         startY: 55,
-        head: [['Fotos', 'Nombre Producto', 'Genero', 'Versión', 'Talla', 'Dorsal Nombre', 'Dorsal Numero', 'Parche', 'Unidades']],
+        head: [['Fotos', 'Nombre Producto', 'Categoria', 'Versión', 'Talla', 'Dorsal Nombre', 'Dorsal Numero', 'Parche', 'Unidades']],
         body: rows,
         theme: 'grid',
         headStyles: { 
@@ -419,7 +450,7 @@ export default function ApartadosPage({ user }) {
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
         columnStyles: { 0: { cellWidth: 50, minCellHeight: 35 }, 1: { cellWidth: 40 } }, 
-        
+
         didDrawCell: function (data) {
           if (data.column.index === 0 && data.cell.section === 'body') {
             const rawCell = data.cell.raw || {};
@@ -452,6 +483,20 @@ export default function ApartadosPage({ user }) {
         }
       });
 
+      // 🏆 TOTALES AL FINAL DEL PDF
+      const finalY = doc.lastAutoTable.finalY + 15;
+      const totalesPedidos = contarArticulos(pendientes);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Resumen a solicitar al proveedor:`, 14, finalY);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`👕 Camisetas / Ropa: ${totalesPedidos.chemas} unds`, 14, finalY + 7);
+      doc.text(`👟 Zapatos / Tacos: ${totalesPedidos.tacos} prs`, 14, finalY + 14);
+
       doc.save(`Pedidos_Especiales_${new Date().toLocaleDateString('es-CR').replace(/\//g, '-')}.pdf`);
       toast.success("PDF generado exitosamente 🎉");
     } catch (error) {
@@ -471,10 +516,15 @@ export default function ApartadosPage({ user }) {
   const enCamino = apartadosFiltrados.filter(ap => ap.estado === 'EN_CAMINO');
   const paraEntregar = apartadosFiltrados.filter(ap => ap.estado === 'PARA_ENTREGAR');
 
+  // Cálculos para el UI visual
+  const conteoPendientes = contarArticulos(pendientes);
+  const conteoCamino = contarArticulos(enCamino);
+  const conteoEntregar = contarArticulos(paraEntregar);
+
   return (
     <div className="min-h-screen bg-black text-white pt-32 pb-16 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* BOTÓN VOLVER */}
         <button 
           onClick={() => navigate(-1)} 
@@ -489,9 +539,9 @@ export default function ApartadosPage({ user }) {
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
               <FaBoxOpen /> Tablero de Apartados
             </h1>
-            
+
           </div>
-          
+
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <div className="flex items-center gap-2 bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 w-full sm:w-auto shadow-inner">
               <FaSearch className="text-gray-500" size={14} />
@@ -515,12 +565,18 @@ export default function ApartadosPage({ user }) {
 
         {/* TABLERO KANBAN */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          
+
           <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
             <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
-              </h2>
+              <div>
+                <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                  <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
+                </h2>
+                <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                   <span>👕 {conteoPendientes.chemas}</span>
+                   <span>👟 {conteoPendientes.tacos}</span>
+                </div>
+              </div>
               <button 
                 onClick={generarPDFPedidos}
                 disabled={isExporting}
@@ -529,7 +585,7 @@ export default function ApartadosPage({ user }) {
                 <FaFilePdf size={12} /> {isExporting ? 'Generando...' : 'Exportar'}
               </button>
             </div>
-            
+
             <div className="space-y-3">
               {pendientes.length === 0 && <p className="text-xs text-white text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
               {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
@@ -541,6 +597,10 @@ export default function ApartadosPage({ user }) {
               <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
                 <FaTruck className="text-amber-500" /> En Proceso / Camino ({enCamino.length})
               </h2>
+              <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                 <span>👕 {conteoCamino.chemas}</span>
+                 <span>👟 {conteoCamino.tacos}</span>
+              </div>
             </div>
             <div className="space-y-3">
               {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
@@ -553,6 +613,10 @@ export default function ApartadosPage({ user }) {
               <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
                 <FaCheck className="text-green-500" /> Para Entregar ({paraEntregar.length})
               </h2>
+              <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                 <span>👕 {conteoEntregar.chemas}</span>
+                 <span>👟 {conteoEntregar.tacos}</span>
+              </div>
             </div>
             <div className="space-y-3">
               {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
@@ -592,17 +656,17 @@ export default function ApartadosPage({ user }) {
       {showDeliverModal && apartadoSeleccionado && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
-            
+
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
               <FaCheck size={24} />
             </div>
 
             <h3 className="font-black uppercase text-lg tracking-tight mb-2">Entregar Pedido</h3>
-            
+
             <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left border border-gray-100">
               <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Cliente</p>
               <p className="font-black text-sm mb-3">{apartadoSeleccionado.cliente}</p>
-              
+
               <div className="border-t border-dashed pt-3 flex justify-between items-center">
                 <span className="text-[11px] font-black uppercase text-red-500">Cobrar Faltante:</span>
                 <span className="text-xl font-black text-red-600">₡{apartadoSeleccionado.faltante.toLocaleString()}</span>
@@ -625,7 +689,7 @@ export default function ApartadosPage({ user }) {
       {showDeleteModal && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
-            
+
             <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
               <FaTrash size={24} />
             </div>
@@ -650,7 +714,7 @@ export default function ApartadosPage({ user }) {
 // 🃏 TARJETA INDIVIDUAL
 function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   let imgSrc1 = null;
   if (data.imagen && typeof data.imagen !== 'string') imgSrc1 = URL.createObjectURL(data.imagen);
   else if (data.imagen) imgSrc1 = data.imagen; 
@@ -661,11 +725,11 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
 
   const primerProducto = data.productos[0];
   const nombrePrincipal = primerProducto.tipoPedido === 'stock' ? primerProducto.busqueda : primerProducto.descripcionManual;
-  const masChemas = data.productos.length > 1 ? ` +${data.productos.length - 1}` : '';
+  const masArticulos = data.productos.length > 1 ? ` +${data.productos.length - 1} más` : '';
 
   return (
     <div className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg hover:border-gray-500 transition relative overflow-hidden group">
-      
+
       <button 
         onClick={onDelete}
         className="absolute top-3 right-3 text-red-500/50 hover:text-red-500 hover:bg-red-500/10 p-1.5 rounded-md transition cursor-pointer"
@@ -696,7 +760,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
 
         <div className="flex-1 min-w-0 pr-2 pl-1">
           <p className="text-xs font-bold text-white truncate leading-tight">
-            {nombrePrincipal} <span className="text-gray-400">{masChemas}</span>
+            {nombrePrincipal} <span className="text-gray-400">{masArticulos}</span>
           </p>
           <p className="text-[10px] text-gray-400 mt-1 truncate">Cliente: <span className="text-gray-200">{data.cliente}</span></p>
         </div>
@@ -731,7 +795,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
                 </span>
                 <span className="text-[9px] font-bold text-gray-400">Talla: <span className="text-white">{prod.talla}</span> x{prod.cantidad}</span>
               </div>
-              
+
               <p className="font-bold text-gray-300 text-[10px] leading-tight">
                 {prod.tipoPedido === 'stock' ? prod.busqueda : prod.descripcionManual}
               </p>
@@ -780,7 +844,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
           <p className="text-xs text-red-400 font-black">₡{data.faltante.toLocaleString()}</p>
         </div>
       </div>
-      
+
       <button 
         onClick={accion}
         className={`mt-3 w-full py-2.5 rounded-lg text-[11px] font-black uppercase flex items-center justify-center gap-2 transition cursor-pointer ${colorBtn}`}

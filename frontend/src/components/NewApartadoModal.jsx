@@ -27,6 +27,9 @@ export default function NewApartadoModal({
 }) {
   if (!showAddModal) return null;
 
+  // Lista de tallas predeterminada para pedidos especiales de Tacos
+  const TALLAS_TACOS = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+
   return (
     <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
       {/* Usamos my-8 para que tenga margen arriba y abajo al hacer scroll */}
@@ -110,14 +113,20 @@ export default function NewApartadoModal({
             {/* PRODUCTOS */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <h4 className="text-[11px] font-black uppercase text-gray-700">Chemas del Pedido ({form.productos.length})</h4>
+                <h4 className="text-[11px] font-black uppercase text-gray-700">Artículos del Pedido ({form.productos.length})</h4>
                 <button type="button" onClick={agregarOtraChema} className="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition cursor-pointer flex items-center gap-1">
-                  <FaPlus /> Agregar Otra
+                  <FaPlus /> Agregar Otro
                 </button>
               </div>
 
               <div className="space-y-4" ref={searchRef}>
                 {form.productos.map((prod, index) => {
+                  
+                  // 🏆 VALIDACIÓN: ¿ES UN TACO?
+                  const isTaco = prod.tipoPedido === 'nuevo' 
+                    ? prod.version === 'Tacos' 
+                    : (prod.type || '').toLowerCase().includes('tacos') || (prod.busqueda || '').toLowerCase().includes('tacos');
+
                   const queryText = (prod.busqueda || "").trim().toLowerCase();
                   const sugerencias = queryText.length === 0
                     ? productosStock 
@@ -130,7 +139,6 @@ export default function NewApartadoModal({
                   const productoVinculado = prod.productoObj;
                   const tallasDisponibles = productoVinculado && productoVinculado.stock 
                     ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
-                    // 🏆 AQUÍ ESTÁ CORREGIDO: Todo con comas
                     : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5', '7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
 
                   return (
@@ -231,25 +239,28 @@ export default function NewApartadoModal({
                       ) : (
                         <div className="mb-4 space-y-3">
                           <textarea 
-                            required rows="2" placeholder="Describe la chema (Ej: Barcelona 2009 Visitante...)" 
+                            required rows="2" placeholder={isTaco ? "Describe los zapatos (Ej: Nike Mercurial Azules...)" : "Describe la chema (Ej: Barcelona 2009 Visitante...)"}
                             value={prod.descripcionManual} onChange={e => actualizarProducto(index, 'descripcionManual', e.target.value)}
                             className="w-full border border-gray-300 p-2.5 rounded-xl text-xs font-bold outline-none focus:border-black resize-none bg-white"
                           ></textarea>
                           
-                          <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
-                            <div>
-                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Nombre Dorsal</label>
-                              <input type="text" placeholder="Ej: MESSI" value={prod.nombreCamiseta} onChange={e => actualizarProducto(index, 'nombreCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none uppercase bg-white focus:border-black" />
+                          {/* 🚫 SE OCULTAN LOS NOMBRES Y NÚMEROS SI ES TACO */}
+                          {!isTaco && (
+                            <div className="grid grid-cols-2 gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-sm">
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Nombre Dorsal</label>
+                                <input type="text" placeholder="Ej: MESSI" value={prod.nombreCamiseta} onChange={e => actualizarProducto(index, 'nombreCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none uppercase bg-white focus:border-black" />
+                              </div>
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
+                                <input type="text" placeholder="Ej: 10 o N/A" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white focus:border-black" />
+                              </div>
                             </div>
-                            <div>
-                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Número Dorsal</label>
-                              <input type="text" placeholder="Ej: 10 o N/A" value={prod.numeroCamiseta} onChange={e => actualizarProducto(index, 'numeroCamiseta', e.target.value)} className="w-full border border-gray-200 p-2 rounded-lg text-xs font-bold outline-none bg-white focus:border-black" />
-                            </div>
-                          </div>
+                          )}
 
-                          <div className="grid grid-cols-2 gap-3 mb-3">
+                          <div className={`grid ${isTaco ? 'grid-cols-1' : 'grid-cols-2'} gap-3 mb-3`}>
                             <div>
-                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Versión</label>
+                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 block">Categoría / Versión</label>
                               <select 
                                 value={prod.version} onChange={e => actualizarProducto(index, 'version', e.target.value)}
                                 className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-black bg-white"
@@ -259,18 +270,21 @@ export default function NewApartadoModal({
                                 <option value="Retro">Retro</option>
                                 <option value="Mujer">Mujer</option>
                                 <option value="Niño">Niño</option>
-                                <option value="Tacos">Tacos</option>
+                                <option value="Tacos">Tacos / Zapatos</option>
                               </select>
                             </div>
                             
-                            <div>
-                              <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaTags size={10}/> Parches (Opcional)</label>
-                              <input 
-                                type="text" placeholder="Ej: Champions..." 
-                                value={prod.parches} onChange={e => actualizarProducto(index, 'parches', e.target.value)}
-                                className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-black" 
-                              />
-                            </div>
+                            {/* 🚫 SE OCULTAN LOS PARCHES SI ES TACO */}
+                            {!isTaco && (
+                              <div>
+                                <label className="text-[9px] font-bold text-gray-500 uppercase mb-1 flex items-center gap-1"><FaTags size={10}/> Parches (Opcional)</label>
+                                <input 
+                                  type="text" placeholder="Ej: Champions..." 
+                                  value={prod.parches} onChange={e => actualizarProducto(index, 'parches', e.target.value)}
+                                  className="w-full border border-gray-300 p-2 rounded-xl text-xs font-bold outline-none focus:border-black" 
+                                />
+                              </div>
+                            )}
                           </div>
 
                           {/* SISTEMA DE DOBLE FOTO PARA ESTE PRODUCTO */}
@@ -307,7 +321,17 @@ export default function NewApartadoModal({
                                 tallasDisponibles.map(t => <option key={t} value={t}>{t}</option>)
                               )}
                             </select>
+                          ) : isTaco ? (
+                            // 🏆 SELECTOR ESPECIAL SÓLO PARA PEDIDOS DE TACOS
+                            <select 
+                              value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value)}
+                              className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-bold outline-none focus:border-black bg-white h-8"
+                            >
+                              <option value="">Selec...</option>
+                              {TALLAS_TACOS.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
                           ) : (
+                            // INPUT NORMAL PARA CAMISETAS ESPECIALES
                             <input 
                               type="text" value={prod.talla} onChange={e => actualizarProducto(index, 'talla', e.target.value.toUpperCase())}
                               placeholder="Ej: L" className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-bold outline-none focus:border-black bg-white h-8 text-center"
@@ -403,7 +427,7 @@ export default function NewApartadoModal({
               <div className="flex justify-between items-center mb-3">
                 <div>
                   <p className="text-[10px] font-black uppercase text-green-800 tracking-wider">Total Pedido:</p>
-                  <p className="text-[9px] font-bold text-green-600">{form.productos.reduce((sum, p) => sum + Number(p.cantidad), 0)} chemas en total</p>
+                  <p className="text-[9px] font-bold text-green-600">{form.productos.reduce((sum, p) => sum + Number(p.cantidad), 0)} artículos en total</p>
                 </div>
                 <p className="text-xl font-black text-green-700">₡{totalCalculado.toLocaleString()}</p>
               </div>
