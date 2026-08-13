@@ -129,7 +129,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 🔄 RUTA DE MIGRACIÓN AUTOMÁTICA: Une las ventas anteriores de Alonso Lobo a Bety al cargar el ranking
+// 🔄 RUTA DE RANKING ACTUALIZADA: Devuelve Tacos y Chemas separados
 router.get('/ranking', async (req, res) => {
   try {
     // Actualiza de forma masiva en la BD cualquier registro viejo de Alonso Lobo para pasarlo a Bety
@@ -138,7 +138,33 @@ router.get('/ranking', async (req, res) => {
       { $set: { vendedor: "Bety" } }
     );
 
+    // 🏆 AGREGACIÓN MEJORADA: Filtra dentro del array de productos para sumar tacos vs lo demás
     const ranking = await Sale.aggregate([
+      {
+        $project: {
+          vendedor: 1,
+          totalPago: 1,
+          costoEnvio: 1,
+          montoTotal: 1,
+          cantidad: 1,
+          // Calculamos cuántos tacos hay en esta venta revisando el array 'productos'
+          tacosVendidos: {
+            $sum: {
+              $map: {
+                input: { $ifNull: ["$productos", []] },
+                as: "prod",
+                in: {
+                  $cond: [
+                    { $regexMatch: { input: { $ifNull: ["$$prod.type", "$$prod.nombre"] }, regex: /taco/i } },
+                    { $convert: { input: "$$prod.cantidad", to: "int", onError: 0, onNull: 0 } },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
       {
         $group: {
           _id: "$vendedor",
@@ -146,7 +172,15 @@ router.get('/ranking', async (req, res) => {
           totalPrendas: { $sum: "$cantidad" },       
           dineroGenerado: { $sum: "$totalPago" },    
           enviosGenerados: { $sum: "$costoEnvio" },  
-          montoTotal: { $sum: "$montoTotal" }        
+          montoTotal: { $sum: "$montoTotal" },
+          // Sumatorias separadas
+          totalTacos: { $sum: "$tacosVendidos" },
+        }
+      },
+      {
+        // 🧮 Agregamos el campo calculado de chemas
+        $addFields: {
+          totalChemas: { $subtract: ["$totalPrendas", "$totalTacos"] }
         }
       },
       { $sort: { totalPrendas: -1, dineroGenerado: -1 } } 

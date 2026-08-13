@@ -3,23 +3,17 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const tipos = [
   "Player", "Fan", "Mujer", "Niño", "Retro",
-  "Abrigos", "Nacional", "Balón", "Tacos", "Ofertas", // 👈 AÑADIDO: Tacos
-  "Mundial", // 🏆 Mapeado oficial en la barra de navegación
-  "NBA", "MLB", "Todos",
+  "Abrigos", "Nacional", "Balón", "Tacos", "Ofertas",
+  "Mundial", "NBA", "MLB", "Todos",
 ];
 
-const tallas = [
-  "16", "18", "20", "22", "24", "26", "28",
-  "S", "M", "L", "XL", "XXL", "3XL", "4XL",
-  // 👈 AÑADIDAS: Tallas de Tacos (Solo la parte americana para no hacer enorme el botón)
-  "7 US", "7.5 US", "8 US", "8.5 US", "9 US", "9.5 US", "10 US", "10.5 US", "11 US", "11.5 US", "12 US"
-];
+// 🗂️ Tallas agrupadas por categoría
+const TALLAS_ADULTO = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
+const TALLAS_NINO = ["16", "18", "20", "22", "24", "26", "28"];
+const TALLAS_TACOS = ["7 US", "7.5 US", "8 US", "8.5 US", "9 US", "9.5 US", "10 US", "10.5 US", "11 US", "11.5 US", "12 US"];
 
-// Aquí traducimos lo que aparece pequeñito entre paréntesis
+// Equivalencias de Tacos para el texto chiquito
 const tallasCRC = {
-  "16": "2", "18": "4", "20": "6", "22": "8",
-  "24": "10", "26": "12", "28": "14",
-  // 👈 AÑADIDAS: Equivalencias en talla Europea para que se vea en gris chiquito
   "7 US": "40", "7.5 US": "40.5", "8 US": "41", "8.5 US": "42", "9 US": "42.5", 
   "9.5 US": "43", "10 US": "44", "10.5 US": "44.5", "11 US": "45", "11.5 US": "45.5", "12 US": "46"
 };
@@ -43,25 +37,20 @@ export default function FilterBar({
 
   const isDisponibles = window.__verDisponiblesActivo === true;
 
-  // 🏆 SINCRONIZACIÓN EXTERNA: Si desde afuera (App.jsx) se activa el modo Mundial,
-  // reiniciamos el texto local para que la barra de búsqueda no cause limpiezas accidentales.
   useEffect(() => {
     if (filterType === "Mundial") {
       setLocalSearch("");
     }
   }, [filterType]);
 
-  // Debounce controlado para la caja de texto
   useEffect(() => {
     if (localSearch.trim() === "") {
       if (searchTerm !== "") setSearchTerm(""); 
       return;
     }
-
     const timeout = setTimeout(() => {
       setSearchTerm(localSearch.trim());
     }, 150); 
-
     return () => clearTimeout(timeout);
   }, [localSearch, searchTerm, setSearchTerm]);
 
@@ -88,6 +77,61 @@ export default function FilterBar({
     setFilterType(t === "Todos" ? "" : t);
     setShowTipos(false);
   };
+
+  // Función para manejar clics en tallas
+  const toggleSize = (t, isTaco = false) => {
+    // Si es taco, armamos el nombre largo con comas para que empate exacto con la base de datos
+    let valueToFilter = t;
+    if (isTaco && tallasCRC[t]) {
+      const numOriginal = t.replace(' US', ''); 
+      const numConComa = numOriginal.replace('.', ','); 
+      const eqConComa = tallasCRC[t].replace('.', ','); 
+      valueToFilter = `${numConComa} US (${eqConComa})`;
+    }
+
+    setFilterSizes(filterSizes.includes(valueToFilter) 
+      ? filterSizes.filter((s) => s !== valueToFilter) 
+      : [...filterSizes, valueToFilter]
+    );
+  };
+
+  const renderSizeGroup = (title, sizesArray, isTaco = false) => (
+    <div className="mb-4 last:mb-0">
+      <div className="text-[10px] font-black uppercase text-gray-400 mb-2 border-b border-gray-100 pb-1 flex items-center justify-between">
+        {title}
+        {filterSizes.some(s => sizesArray.some(sa => s.includes(sa.replace('.', ',')))) && (
+          <span className="w-1.5 h-1.5 rounded-full bg-black"></span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {sizesArray.map((t) => {
+          // Revisamos si la talla está activa (comprobando con comas para Tacos)
+          const isTacoMatch = isTaco && tallasCRC[t];
+          const valToCheck = isTacoMatch ? t.replace('.', ',') : t;
+          const isSelected = filterSizes.some(f => f.includes(valToCheck));
+
+          return (
+            <div
+              key={t}
+              className={`text-center py-2 px-1 text-xs rounded-lg cursor-pointer transition-all border ${
+                isSelected 
+                  ? "bg-black text-white border-black font-bold shadow-md transform scale-[0.98]"
+                  : "bg-gray-50 text-gray-600 border-gray-200 hover:border-black hover:bg-gray-100"
+              }`}
+              onClick={() => toggleSize(t, isTaco)}
+            >
+              <span className={isTaco ? "font-bold" : ""}>{t}</span>
+              {isTaco && tallasCRC[t] && (
+                <span className={`block text-[9px] mt-0.5 ${isSelected ? "text-gray-300" : "text-gray-400"}`}>
+                  ({tallasCRC[t]})
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
     <div className="mb-6 mt-6 w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
@@ -145,7 +189,7 @@ export default function FilterBar({
             </AnimatePresence>
           </div>
 
-          {/* Tallas */}
+          {/* Tallas (Mejorado con categorías) */}
           <div className="relative" ref={tallasRef}>
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -161,29 +205,12 @@ export default function FilterBar({
               {showTallas && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                  className="absolute mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0"
+                  className="absolute mt-2 w-56 bg-white border border-gray-100 rounded-xl shadow-2xl z-50 overflow-hidden right-0 md:left-0"
                 >
-                  <div className="max-h-60 overflow-y-auto p-2 grid grid-cols-2 gap-1">
-                    {tallas.map((t) => (
-                      <div
-                        key={t}
-                        className={`text-center py-2 text-xs rounded cursor-pointer transition-all border ${
-                          filterSizes.some(f => f.includes(t)) // 👈 Ajuste: Coincidencia flexible para Tacos
-                            ? "bg-black text-white border-black font-bold shadow-md"
-                            : "bg-gray-50 text-gray-600 border-transparent hover:border-gray-300 hover:bg-gray-100"
-                        }`}
-                        onClick={() => {
-                          // 👇 Lógica especial para tacos: Si eligen "8 US", que en el filtro incluya el texto completo "8 US (41)"
-                          const fullSizeText = tallasCRC[t] ? `${t} (${tallasCRC[t]})` : t;
-                          setFilterSizes(filterSizes.includes(fullSizeText) 
-                            ? filterSizes.filter((s) => s !== fullSizeText) 
-                            : [...filterSizes, fullSizeText]
-                          );
-                        }}
-                      >
-                        {t} {tallasCRC[t] ? <span className="text-[10px] opacity-70">({tallasCRC[t]})</span> : ""}
-                      </div>
-                    ))}
+                  <div className="max-h-[350px] overflow-y-auto p-4 custom-scrollbar">
+                    {renderSizeGroup("Adulto", TALLAS_ADULTO)}
+                    {renderSizeGroup("Niño", TALLAS_NINO)}
+                    {renderSizeGroup("Tacos / Zapatos", TALLAS_TACOS, true)}
                   </div>
                 </motion.div>
               )}

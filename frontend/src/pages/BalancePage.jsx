@@ -86,6 +86,16 @@ const calcularCostoItem = (prod) => {
   return 9000 * cant;
 };
 
+// Función auxiliar para determinar la categoría en texto para el PDF
+const getCategoriaCosto = (prod) => {
+  const tipo = (prod.type || '').toLowerCase();
+  const nombre = (prod.nombre || '').toLowerCase();
+  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) return 'nacionales';
+  if (tipo.includes('tacos') || nombre.includes('tacos')) return 'tacos';
+  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) return 'balones';
+  return 'generales';
+};
+
   // 🔍 FILTRADO POR MES SELECCIONADO
   const salesFiltradas = sales.filter(s => {
     if (!s.fecha) return false;
@@ -109,16 +119,31 @@ const calcularCostoItem = (prod) => {
   const ingresoBrutoTotal = salesFiltradas.reduce((sum, s) => sum + (Number(s.montoTotal) || 0), 0) + totalAbonosMes;
   const totalEnviosCobrados = salesFiltradas.reduce((sum, s) => sum + (Number(s.costoEnvio) || 0), 0);
   
-  // Costo total de mercadería vendida
+  // Costo total de mercadería vendida y desglose
   let costoTotalChemas = 0;
+  
+  let totalInversionNacionales = 0;
+  let totalInversionTacos = 0;
+  let totalInversionBalones = 0;
+  let totalInversionGenerales = 0;
+
   salesFiltradas.forEach(sale => {
     if (sale.productos && sale.productos.length > 0) {
       sale.productos.forEach(p => {
-        costoTotalChemas += calcularCostoItem(p);
+        const costoUnitario = calcularCostoItem(p);
+        const cat = getCategoriaCosto(p);
+
+        costoTotalChemas += costoUnitario;
+        if (cat === 'nacionales') totalInversionNacionales += costoUnitario;
+        else if (cat === 'tacos') totalInversionTacos += costoUnitario;
+        else if (cat === 'balones') totalInversionBalones += costoUnitario;
+        else totalInversionGenerales += costoUnitario;
       });
     } else {
       const cant = Number(sale.cantidad) || 1;
-      costoTotalChemas += (9000 * cant);
+      const costoM = 9000 * cant;
+      costoTotalChemas += costoM;
+      totalInversionGenerales += costoM;
     }
   });
 
@@ -194,11 +219,11 @@ const calcularCostoItem = (prod) => {
     const pageWidth = doc.internal.pageSize.getWidth();
 
     // ⬛ ENCABEZADO NEGRO ESTILO FUTSTORE
-    doc.setFillColor(17, 17, 17); // #111111
+    doc.setFillColor(17, 17, 17); 
     doc.rect(0, 0, pageWidth, 42, 'F');
 
     // 🟡 LÍNEA DORADA DE ACENTO
-    doc.setFillColor(212, 175, 55); // #D4AF37
+    doc.setFillColor(212, 175, 55); 
     doc.rect(0, 42, pageWidth, 3, 'F');
 
     // TÍTULO Y DATOS DEL REPORTE
@@ -219,7 +244,6 @@ const calcularCostoItem = (prod) => {
     doc.setFontSize(13);
     doc.text("RESUMEN EJECUTIVO DEL MES", 14, 58);
 
-    // Función helper para dibujar las cajas del reporte
     const drawMetricBox = (x, y, w, h, title, value, isAccent = false) => {
       doc.setFillColor(isAccent ? 240 : 248, isAccent ? 253 : 249, isAccent ? 244 : 250);
       doc.setDrawColor(isAccent ? 34 : 220, isAccent ? 197 : 220, isAccent ? 94 : 220);
@@ -237,25 +261,35 @@ const calcularCostoItem = (prod) => {
 
     const boxW = (pageWidth - 36) / 2;
     drawMetricBox(14, 64, boxW, 24, "Ingreso Bruto Total", ingresoBrutoTotal);
-    drawMetricBox(18 + boxW, 64, boxW, 24, "Costo Chemas + Envíos", costoTotalChemas + totalEnviosCobrados);
+    drawMetricBox(18 + boxW, 64, boxW, 24, "Costo Mercadería + Envíos", costoTotalChemas + totalEnviosCobrados);
     drawMetricBox(14, 93, boxW, 24, "Gastos Operativos", totalGastosManuales);
     drawMetricBox(18 + boxW, 93, boxW, 24, "Balance Neto (Utilidad)", balanceNeto, true);
 
-    // DESGLOSE DETALLADO
+    // DESGLOSE DETALLADO DE INVERSIÓN
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(50, 50, 50);
-    doc.text("Desglose de Costos de Ventas:", 14, 128);
+    doc.text("Desglose de Inversión en Mercadería y Logística:", 14, 128);
+    
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`• Costo de Mercadería (Chemas vendidas): CRC ${costoTotalChemas.toLocaleString()}`, 18, 136);
-    doc.text(`• Costo de Envíos Cobrados/Generados: CRC ${totalEnviosCobrados.toLocaleString()}`, 18, 143);
+    
+    let lineY = 136;
+    doc.text(`• Costo de Camisetas (Retro, Player, Fan, Niños): CRC ${totalInversionGenerales.toLocaleString()}`, 18, lineY);
+    lineY += 7;
+    doc.text(`• Costo de Zapatos / Tacos: CRC ${totalInversionTacos.toLocaleString()}`, 18, lineY);
+    lineY += 7;
+    doc.text(`• Costo de Ediciones Nacionales: CRC ${totalInversionNacionales.toLocaleString()}`, 18, lineY);
+    lineY += 7;
+    doc.text(`• Costo de Balones: CRC ${totalInversionBalones.toLocaleString()}`, 18, lineY);
+    lineY += 7;
+    doc.text(`• Costo de Envíos Cubiertos: CRC ${totalEnviosCobrados.toLocaleString()}`, 18, lineY);
 
     // 📋 TABLA DE GASTOS OPERATIVOS
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
-    doc.text("DETALLE DE GASTOS OPERATIVOS", 14, 160);
+    doc.text("DETALLE DE GASTOS OPERATIVOS", 14, lineY + 15);
 
     if (expensesFiltrados.length > 0) {
       const rows = expensesFiltrados.map(exp => [
@@ -266,15 +300,14 @@ const calcularCostoItem = (prod) => {
         `CRC ${Number(exp.monto).toLocaleString()}`
       ]);
 
-      // 👈 AQUÍ ESTABA EL ERROR: autoTable(doc, {...}) es la forma correcta
       autoTable(doc, {
-        startY: 165,
+        startY: lineY + 20,
         head: [['FECHA', 'CATEGORÍA', 'DESCRIPCIÓN', 'REGISTRADO POR', 'MONTO']],
         body: rows,
         theme: 'grid',
         headStyles: { 
           fillColor: [17, 17, 17], 
-          textColor: [212, 175, 55], // Dorado
+          textColor: [212, 175, 55], 
           fontStyle: 'bold',
           fontSize: 8.5
         },
@@ -288,7 +321,7 @@ const calcularCostoItem = (prod) => {
       doc.setFont("helvetica", "italic");
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
-      doc.text("No se registraron gastos operativos adicionales en este período.", 14, 170);
+      doc.text("No se registraron gastos operativos adicionales en este período.", 14, lineY + 25);
     }
 
     // PIE DE PÁGINA
@@ -373,11 +406,11 @@ const calcularCostoItem = (prod) => {
               {/* 2. COSTO MERCADERÍA + ENVÍOS */}
               <div className="bg-[#111] p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col justify-between">
                 <div>
-                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block mb-1">Costo Chemas + Envíos</span>
+                  <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block mb-1">Costo Mercadería + Envíos</span>
                   <span className="text-2xl font-black text-amber-500">₡{(costoTotalChemas + totalEnviosCobrados).toLocaleString()}</span>
                 </div>
                 <div className="text-[10px] text-gray-500 mt-3 flex justify-between">
-                  <span>Chemas: ₡{costoTotalChemas.toLocaleString()}</span>
+                  <span>Prendas: ₡{costoTotalChemas.toLocaleString()}</span>
                   <span>Envíos: ₡{totalEnviosCobrados.toLocaleString()}</span>
                 </div>
               </div>

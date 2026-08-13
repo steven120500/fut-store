@@ -252,12 +252,34 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  const totalChemas = sales.reduce((sum, item) => sum + (item.cantidad || 1), 0);
+  // 🏆 LÓGICA DE SEPARACIÓN TACOS VS CHEMAS EN LOS REPORTES
   const totalDineroEnvios = sales.reduce((sum, item) => sum + (item.costoEnvio || 0), 0);
   
   // CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
   const totalAbonosActivos = apartadosActivos.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
   const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0) + totalAbonosActivos;
+
+  // Calculamos los tacos buscando si "tacos" está en el nombre o tipo del producto dentro de la venta
+  let countTacos = 0;
+  let countPrendasGlobal = 0;
+
+  sales.forEach(s => {
+    countPrendasGlobal += (s.cantidad || 1);
+    if (s.productos && s.productos.length > 0) {
+      s.productos.forEach(p => {
+        if ((p.type || '').toLowerCase().includes('tacos') || (p.nombre || '').toLowerCase().includes('tacos')) {
+          countTacos += (Number(p.cantidad) || 1);
+        }
+      });
+    } else {
+      // Por si fue una venta vieja antes de usar el array
+      if ((s.productoNombre || '').toLowerCase().includes('tacos')) {
+        countTacos += (Number(s.cantidad) || 1);
+      }
+    }
+  });
+
+  const countChemas = countPrendasGlobal - countTacos;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
@@ -307,7 +329,8 @@ export default function DailyReportPage({ user, onLogout }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* 🏆 ENCABEZADO DE TARJETAS ACTUALIZADO PARA INCLUIR TACOS */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
               <FaCashRegister className="text-gray-400"/> Ventas
@@ -319,7 +342,14 @@ export default function DailyReportPage({ user, onLogout }) {
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
               <FaTshirt className="text-[#D4AF37]"/> Chemas
             </span>
-            <span className="text-2xl font-black text-[#D4AF37]">{totalChemas} <span className="text-xs font-normal text-gray-500">unds</span></span>
+            <span className="text-2xl font-black text-[#D4AF37]">{countChemas} <span className="text-xs font-normal text-gray-500">unds</span></span>
+          </div>
+
+          <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
+            <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
+              <span className="text-gray-300">👟</span> Tacos
+            </span>
+            <span className="text-2xl font-black text-gray-300">{countTacos} <span className="text-xs font-normal text-gray-500">prs</span></span>
           </div>
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
@@ -331,7 +361,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
           <div className="bg-[#111] border border-green-500/50 p-5 rounded-2xl shadow-[0_0_20px_rgba(34,197,94,0.1)] col-span-2 md:col-span-1">
             <span className="text-[10px] text-green-400 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaMoneyBillWave /> Gran Total Caja
+              <FaMoneyBillWave /> Total Caja
             </span>
             <span className="text-2xl md:text-3xl font-black text-green-500">₡{granTotalCaja.toLocaleString()}</span>
           </div>
@@ -354,9 +384,9 @@ export default function DailyReportPage({ user, onLogout }) {
                     <th className="p-4">Fecha / Vendedor</th>
                     <th className="p-4">Cliente / Cédula / Tel</th>
                     <th className="p-4">Dirección</th> {/* 👈 COLUMNA AÑADIDA A LA TABLA */}
-                    <th className="p-4">Detalle Chemas</th>
+                    <th className="p-4">Detalle Prendas</th>
                     <th className="p-4 text-center">Cant.</th>
-                    <th className="p-4 text-right">Chemas</th>
+                    <th className="p-4 text-right">Prendas</th>
                     <th className="p-4 text-right">Envío</th>
                     <th className="p-4 text-right">Total (Caja)</th>
                     <th className="p-4 text-center">Acción</th> 
