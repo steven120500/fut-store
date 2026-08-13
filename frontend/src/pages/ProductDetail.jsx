@@ -18,6 +18,7 @@ const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
 const TALLAS_BALON  = ['3', '4', '5'];
+// 👈 NUEVO: Arreglo de Tallas para Tacos
 const TALLAS_TACOS  = ['7 US (40)', '7.5 US (40.5)', '8 US (41)', '8.5 US (42)', '9 US (42.5)', '9.5 US (43)', '10 US (44)', '10.5 US (44.5)', '11 US (45)', '11.5 US (45.5)', '12 US (46)'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 const PLACEHOLDER_IMG = "https://via.placeholder.com/600x600?text=No+Image";
@@ -192,6 +193,7 @@ export default function ProductDetail({
 
   const getInventoryChanges = () => {
     const changes = [];
+    // 👈 NUEVO: Añadida la lógica de Tacos
     const tallas = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Tacos' ? TALLAS_TACOS : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO));
     tallas.forEach((size) => {
       const oldStock = parseInt(product?.stock?.[size] ?? 0, 10);
@@ -208,6 +210,7 @@ export default function ProductDetail({
     let totalQty = 0;
 
     if (product && editedStock) {
+      // 👈 NUEVO: Añadida la lógica de Tacos
       const tallas = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Tacos' ? TALLAS_TACOS : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO));
       for (const t of tallas) {
         const oldQty = parseInt(product?.stock?.[t] ?? 0, 10);
@@ -360,6 +363,7 @@ export default function ProductDetail({
       const oldStockSize = parseInt(product?.stock?.[talla] ?? 0, 10);
       const currentEditedStockSize = parseInt(editedStock?.[talla] ?? 0, 10);
 
+      // 👈 NUEVO: Añadida la lógica de Tacos
       const tallasVisiblesActuales = editedType === 'Balón' ? TALLAS_BALON : (editedType === 'Tacos' ? TALLAS_TACOS : (editedType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO));
       if (tallasVisiblesActuales.includes(talla) && oldStockSize === currentEditedStockSize) {
         finalStock[talla] = Math.max(0, currentEditedStockSize - cant);
@@ -439,6 +443,7 @@ export default function ProductDetail({
 
   const currentSrc = localImages[idx]?.src || PLACEHOLDER_IMG;
   const currentType = isEditing ? editedType : product.type;
+  // 👈 NUEVO: Añadida la lógica de Tacos
   const tallasVisibles = currentType === 'Balón' ? TALLAS_BALON : (currentType === 'Tacos' ? TALLAS_TACOS : (currentType === 'Niño' ? TALLAS_NINO : TALLAS_ADULTO));
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
   const inventoryChanges = getInventoryChanges();
@@ -547,6 +552,7 @@ export default function ProductDetail({
                           <div>
                               <label className="text-xs font-bold text-gray-500">TIPO</label>
                               <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
+                                  {/* 👈 NUEVO: Añadido Tacos al dropdown de edición */}
                                   {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','Tacos'].map(t => <option key={t}>{t}</option>)}
                               </select>
                           </div>
@@ -575,20 +581,13 @@ export default function ProductDetail({
                           </div>
                       </div>
                   </div>
-                  
-                  {/* 👇 SECCIÓN DE INVENTARIO MEJORADA 👇 */}
-                  <div className="bg-white p-4 rounded border mt-3">
-                    <p className="text-xs font-bold mb-3 uppercase text-center text-gray-800">Inventario por Talla</p>
-                    
-                    {/* Hacemos la cuadrícula dinámica: Si son Tacos (textos largos) usamos 3 o 4 columnas, sino 4 o 5. */}
-                    <div className={`grid gap-3 ${editedType === 'Tacos' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-4 sm:grid-cols-5'}`}>
+                  <div className="bg-white p-4 rounded border">
+                    <p className="text-xs font-bold mb-2 uppercase text-center">Inventario por Talla</p>
+                    <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                       {tallasVisibles.map(t => (
-                        <div key={t} className="flex flex-col justify-end h-full">
-                          {/* El span tiene flex y justify-center para centrar textos que puedan ocupar 1 o 2 líneas, y min-h para que todos midan igual */}
-                          <span className="text-[10px] text-gray-500 font-bold mb-1.5 text-center leading-tight flex items-end justify-center min-h-[28px]">
-                            {t}
-                          </span>
-                          <input type="number" className="w-full border border-gray-300 text-center p-1.5 rounded-lg text-sm focus:border-black outline-none bg-gray-50 transition-colors" 
+                        <div key={t} className="flex flex-col items-center">
+                          <span className="text-[10px] text-gray-500 font-bold">{t}</span>
+                          <input type="number" className="w-full border text-center p-1 rounded text-sm focus:border-black outline-none" 
                                 value={editedStock[t] ?? 0} 
                                 onWheel={(e) => e.target.blur()}
                                 onChange={(e) => setEditedStock(prev => ({ ...prev, [t]: e.target.value }))} />
@@ -596,7 +595,6 @@ export default function ProductDetail({
                       ))}
                     </div>
                   </div>
-
                   <div className="flex gap-3 pt-4 border-t">
                     <button onClick={() => { setIsRegisteringSale(false); setShowConfirmSave(true); }} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
                         {loadingAction ? 'Guardando...' : 'GUARDAR CAMBIOS'}
