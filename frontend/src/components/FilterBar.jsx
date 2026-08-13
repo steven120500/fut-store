@@ -3,19 +3,25 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const tipos = [
   "Player", "Fan", "Mujer", "Niño", "Retro",
-  "Abrigos", "Nacional", "Balón", "Ofertas",
+  "Abrigos", "Nacional", "Balón", "Tacos", "Ofertas", // 👈 AÑADIDO: Tacos
   "Mundial", // 🏆 Mapeado oficial en la barra de navegación
   "NBA", "MLB", "Todos",
 ];
 
 const tallas = [
   "16", "18", "20", "22", "24", "26", "28",
-  "S", "M", "L", "XL", "XXL", "3XL", "4XL"
+  "S", "M", "L", "XL", "XXL", "3XL", "4XL",
+  // 👈 AÑADIDAS: Tallas de Tacos (Solo la parte americana para no hacer enorme el botón)
+  "7 US", "7.5 US", "8 US", "8.5 US", "9 US", "9.5 US", "10 US", "10.5 US", "11 US", "11.5 US", "12 US"
 ];
 
+// Aquí traducimos lo que aparece pequeñito entre paréntesis
 const tallasCRC = {
   "16": "2", "18": "4", "20": "6", "22": "8",
-  "24": "10", "26": "12", "28": "14"
+  "24": "10", "26": "12", "28": "14",
+  // 👈 AÑADIDAS: Equivalencias en talla Europea para que se vea en gris chiquito
+  "7 US": "40", "7.5 US": "40.5", "8 US": "41", "8.5 US": "42", "9 US": "42.5", 
+  "9.5 US": "43", "10 US": "44", "10.5 US": "44.5", "11 US": "45", "11.5 US": "45.5", "12 US": "46"
 };
 
 const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
@@ -162,12 +168,17 @@ export default function FilterBar({
                       <div
                         key={t}
                         className={`text-center py-2 text-xs rounded cursor-pointer transition-all border ${
-                          filterSizes.includes(t)
+                          filterSizes.some(f => f.includes(t)) // 👈 Ajuste: Coincidencia flexible para Tacos
                             ? "bg-black text-white border-black font-bold shadow-md"
                             : "bg-gray-50 text-gray-600 border-transparent hover:border-gray-300 hover:bg-gray-100"
                         }`}
                         onClick={() => {
-                          setFilterSizes(filterSizes.includes(t) ? filterSizes.filter((s) => s !== t) : [...filterSizes, t]);
+                          // 👇 Lógica especial para tacos: Si eligen "8 US", que en el filtro incluya el texto completo "8 US (41)"
+                          const fullSizeText = tallasCRC[t] ? `${t} (${tallasCRC[t]})` : t;
+                          setFilterSizes(filterSizes.includes(fullSizeText) 
+                            ? filterSizes.filter((s) => s !== fullSizeText) 
+                            : [...filterSizes, fullSizeText]
+                          );
                         }}
                       >
                         {t} {tallasCRC[t] ? <span className="text-[10px] opacity-70">({tallasCRC[t]})</span> : ""}

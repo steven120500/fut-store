@@ -79,7 +79,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [discountPrice, setDiscountPrice] = useState("");
   const [type, setType] = useState("Player");
   const [isNew, setIsNew] = useState(false);
-  const [isMundial, setIsMundial] = useState(false); // 🏆 NUEVO: Estado para el Checkbox del Mundial
+  const [isMundial, setIsMundial] = useState(false);
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -97,9 +97,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     };
   }, []);
 
-  // 🔹 Agregar Balón al listado de tipos
+  // 🔹 Agregar Balón y Tacos al listado de tipos
   const tallas = useMemo(() => {
-    const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"] };
+    const TACO_SIZES = ['7 US (40)', '7.5 US (40.5)', '8 US (41)', '8.5 US (42)', '9 US (42.5)', '9.5 US (43)', '10 US (44)', '10.5 US (44.5)', '11 US (45)', '11.5 US (45.5)', '12 US (46)'];
+    const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: TACO_SIZES };
     return tipos[type] || [];
   }, [type]);
 
@@ -187,7 +188,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       formData.append("type", type.trim());
       formData.append("stock", JSON.stringify(stockFinal));
       formData.append("isNew", isNew ? "true" : "false");
-      formData.append("isMundial", isMundial ? "true" : "false"); // 🏆 NUEVO: Enviamos el campo al backend
+      formData.append("isMundial", isMundial ? "true" : "false"); 
 
       for (let i = 0; i < images.length; i++) {
         const blob = images[i].blob || (await srcToBlob(images[i].src));
@@ -222,7 +223,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       className="mt-28 mb-24 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6"
     >
       <div className="pt-12 pb-24 relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
-        {/* Botón cerrar */}
         <button
           onClick={onCancel}
           className="absolute fondo-plateado top-6 right-2 text-white bg-black rounded p-1"
@@ -232,12 +232,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
 
         <h2 className="text-lg font-semibold mb-4">Agregar producto</h2>
 
-        {/* Info imágenes */}
         <p className="text-gray-500 mb-2">
           Arrastrá y soltá hasta {MAX_IMAGES} imagen(es) o hacé clic para seleccionar (se convertirán a WebP)
         </p>
 
-        {/* Previews */}
         <div className="flex gap-2 justify-center flex-wrap mb-3">
           {images.map((img, i) => (
             <div key={`preview-${i}`} className="relative">
@@ -253,7 +251,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </div>
 
-        {/* Input imagen */}
         {images.length < MAX_IMAGES && (
           <div className="mb-4">
             <button
@@ -273,7 +270,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </div>
         )}
 
-        {/* Campos básicos */}
         <input
           type="text"
           placeholder="Nombre del producto"
@@ -303,12 +299,11 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           onChange={(e) => setType(e.target.value)}
           className="w-full px-4 py-2 border border-gray-300 rounded mb-4"
         >
-          {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"] }).map((t) => (
+          {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
         </select>
 
-        {/* Checkbox NUEVO */}
         <label className="flex items-center gap-2 mb-2 select-none">
           <input
             type="checkbox"
@@ -320,7 +315,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </span>
         </label>
 
-        {/* 🏆 NUEVO: Checkbox ASIGNAR MUNDIAL */}
         <label className="flex items-center gap-2 mb-4 select-none">
           <input
             type="checkbox"
@@ -332,7 +326,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </span>
         </label>
 
-        {/* Stock */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           {tallas.map((size) => (
             <label key={size} className="text-center">
@@ -349,7 +342,6 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           ))}
         </div>
 
-        {/* Botones */}
         <div className="flex gap-2">
           <button
             type="button"
