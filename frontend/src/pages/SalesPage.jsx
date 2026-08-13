@@ -20,16 +20,14 @@ export default function SalesPage({ user, onLogout }) {
   const navigate = useNavigate();
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const [catalogo, setCatalogo] = useState([]);
   const [apartadosActivos, setApartadosActivos] = useState([]);
+  const [todasLasVentas, setTodasLasVentas] = useState([]); // 👈 ESTADO NUEVO: para contar tacos con precisión
 
-  // Estados de modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showComisionModal, setShowComisionModal] = useState(false);
 
-  // Estado para guardar datos de comisión dividida
   const [vendedorComision, setVendedorComision] = useState(null);
 
   const [loadingCedula, setLoadingCedula] = useState(false);
@@ -37,7 +35,6 @@ export default function SalesPage({ user, onLogout }) {
   const [resetting, setResetting] = useState(false);
   const [submittingComision, setSubmittingComision] = useState(false);
   
-  // 🏆 Estados separados para comisiones
   const [comisionPorChema, setComisionPorChema] = useState(600);
   const [comisionPorTacos, setComisionPorTacos] = useState(3000);
 
@@ -67,19 +64,13 @@ export default function SalesPage({ user, onLogout }) {
   const costoEnvioCalc = quickForm.requiereEnvio ? (Number(quickForm.costoEnvio) || 0) : 0;
   const granTotalConEnvio = subTotalPrendasCalc + costoEnvioCalc;
 
-  // 🏆 LÓGICA DE SEPARACIÓN GLOBAL PARA EL ENCABEZADO
-  const totalChemasVendidas = ranking.reduce((acc, curr) => acc + (curr.totalChemas || 0), 0);
-  const totalTacosVendidos = ranking.reduce((acc, curr) => acc + (curr.totalTacos || 0), 0);
-
-  const totalAbonosGlobal = apartadosActivos.reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
-  const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0) + totalAbonosGlobal;
-
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
 
   useEffect(() => {
     fetchRankingData();
     fetchCatalogoProductos();
     fetchApartadosActivos();
+    fetchAllSalesList(); // 👈 Llamamos a todas las ventas para el cálculo exacto
   }, []);
 
   const fetchApartadosActivos = async () => {
@@ -100,18 +91,29 @@ export default function SalesPage({ user, onLogout }) {
       if (res.ok) {
         const data = await res.json();
         let listaProductos = Array.isArray(data) ? data : (data.items || data.products || []);
-
         listaProductos.sort((a, b) => {
           const fechaA = new Date(a.createdAt || 0);
           const fechaB = new Date(b.createdAt || 0);
           if (fechaB - fechaA !== 0) return fechaB - fechaA;
           return String(b._id || b.id || '').localeCompare(String(a._id || a.id || ''));
         });
-
         setCatalogo(listaProductos);
       }
     } catch (error) {
       console.error("No se pudo conectar con el catálogo:", error);
+    }
+  };
+
+  // 🛡️ NUEVO: Traer todas las ventas para calcular exacto en el frontend
+  const fetchAllSalesList = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/sales`);
+      if (res.ok) {
+        const data = await res.json();
+        setTodasLasVentas(data);
+      }
+    } catch (error) {
+      console.error("Error al cargar ventas:", error);
     }
   };
 
@@ -144,20 +146,7 @@ export default function SalesPage({ user, onLogout }) {
     try {
       const res = await fetch(`${API_BASE}/api/sales/ranking`);
       if (res.ok) {
-        let data = await res.json();
-        
-        // 🛡️ Lógica de protección: Si el backend aún no envía la separación, lo simulamos para no romper el sitio
-        data = data.map(emp => {
-          if (emp.totalTacos === undefined || emp.totalChemas === undefined) {
-             return {
-               ...emp,
-               totalTacos: 0, 
-               totalChemas: emp.totalPrendas || 0 
-             }
-          }
-          return emp;
-        });
-
+        const data = await res.json();
         setRanking(data);
       }
     } catch (error) {
@@ -165,6 +154,41 @@ export default function SalesPage({ user, onLogout }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🏆 LÓGICA DE DETECCIÓN DE TACOS POR VENDEDOR (Frontend Power)
+  const getPrendasVendedor = (nombreVendedor) => {
+    let tacos = 0;
+    let totalVendidas = 0;
+
+    const ventasDelVendedor = todasLasVentas.filter(s => 
+      s.vendedor?.toLowerCase() === nombreVendedor?.toLowerCase() || 
+      (nombreVendedor === 'Bety' && s.vendedor?.toLowerCase().includes('alonso'))
+    );
+
+    ventasDelVendedor.forEach(sale => {
+      totalVendidas += (Number(sale.cantidad) || 1);
+      
+      if (sale.productos && sale.productos.length > 0) {
+        sale.productos.forEach(p => {
+          const tipo = (p.type || '').toLowerCase();
+          const nombre = (p.nombre || '').toLowerCase();
+          const talla = (p.talla || '').toLowerCase();
+          
+          if (tipo.includes('tacos') || nombre.includes('tacos') || talla.includes('us')) {
+            tacos += (Number(p.cantidad) || 1);
+          }
+        });
+      } else {
+        const nombreS = (sale.productoNombre || '').toLowerCase();
+        const tallasS = (sale.tallaVendida || '').toLowerCase();
+        if (nombreS.includes('tacos') || tallasS.includes('us')) {
+          tacos += (Number(sale.cantidad) || 1);
+        }
+      }
+    });
+
+    return { totalTacos: tacos, totalChemas: totalVendidas - tacos, totalGenerales: totalVendidas };
   };
 
   const confirmResetMonthlySales = async () => {
@@ -179,6 +203,7 @@ export default function SalesPage({ user, onLogout }) {
         toast.success("🔄 ¡Ventas reseteadas con éxito para el nuevo mes!");
         setShowResetModal(false);
         fetchRankingData(); 
+        fetchAllSalesList();
       } else {
         throw new Error("No se pudo resetear");
       }
@@ -189,7 +214,6 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
-  // 🏆 LÓGICA DE REGISTRO SEPARADO (CHEMAS VS TACOS)
   const handleRegistrarComision = async () => {
     const nombreVendedor = vendedorComision?.nombre || 'Vendedor';
     const cantChemas = vendedorComision?.cantidadChemas || 0;
@@ -362,6 +386,7 @@ export default function SalesPage({ user, onLogout }) {
         });
         fetchRankingData(); 
         fetchCatalogoProductos(); 
+        fetchAllSalesList();
       } else {
         throw new Error("Error al guardar");
       }
@@ -372,12 +397,24 @@ export default function SalesPage({ user, onLogout }) {
     }
   };
 
+  // 🧮 CÁLCULO TOTAL GLOBAL USANDO LA FUNCIÓN NUEVA
+  let globalChemas = 0;
+  let globalTacos = 0;
+  
+  ranking.forEach(emp => {
+    const conteo = getPrendasVendedor(emp._id);
+    globalChemas += conteo.totalChemas;
+    globalTacos += conteo.totalTacos;
+  });
+
+  const totalAbonosGlobal = apartadosActivos.reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
+  const totalDineroIngresado = ranking.reduce((acc, curr) => acc + (curr.montoTotal || 0), 0) + totalAbonosGlobal;
+
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
 
       <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
 
-        {/* NAVEGACIÓN Y BOTONES SUPERIORES */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
@@ -405,7 +442,6 @@ export default function SalesPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* ENCABEZADO */}
         <div className="border-b border-gray-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
@@ -414,16 +450,15 @@ export default function SalesPage({ user, onLogout }) {
             <p className="text-gray-400 text-xs mt-1">Monitoreo de rendimiento del equipo y total de ventas registradas.</p>
           </div>
 
-          {/* 🏆 TARJETAS GLOBALES CON SEPARACIÓN */}
           <div className="flex gap-4 w-full md:w-auto">
             <div className="bg-[#111] border border-gray-800 p-4 rounded-xl flex-1 md:w-44 text-center shadow-lg">
               <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block">Prendas Movidas</span>
               <span className="text-2xl font-black text-white mt-1 block">
-                {totalChemasVendidas + totalTacosVendidos} <span className="text-xs text-[#D4AF37] font-normal">unds</span>
+                {globalChemas + globalTacos} <span className="text-xs text-[#D4AF37] font-normal">unds</span>
               </span>
               <div className="flex justify-center gap-3 mt-1 text-[10px] text-gray-500 font-bold">
-                 <span>👕 {totalChemasVendidas}</span>
-                 <span>👟 {totalTacosVendidos}</span>
+                 <span>👕 {globalChemas}</span>
+                 <span>👟 {globalTacos}</span>
               </div>
             </div>
             <div className="bg-[#111] border border-[#D4AF37]/40 p-4 rounded-xl flex-1 md:w-52 text-center shadow-[0_0_15px_rgba(212,175,55,0.08)]">
@@ -433,7 +468,6 @@ export default function SalesPage({ user, onLogout }) {
           </div>
         </div>
 
-        {/* RANKING */}
         {loading ? (
           <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
             Calculando el ranking del equipo...
@@ -455,8 +489,8 @@ export default function SalesPage({ user, onLogout }) {
 
               const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;
 
-              const numChemas = emp.totalChemas || 0;
-              const numTacos = emp.totalTacos || 0;
+              // 🏆 CÁLCULO PRECISO DEL VENDEDOR ACTUAL
+              const statsVendedor = getPrendasVendedor(emp._id);
 
               return (
                 <div 
@@ -491,14 +525,13 @@ export default function SalesPage({ user, onLogout }) {
                         <span className="font-bold text-white">{emp.totalVentas}</span>
                       </div>
                       
-                      {/* 🏆 RENGLONES SEPARADOS PARA CHEMAS Y TACOS */}
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
-                        <span className="font-black text-[#D4AF37] text-sm">{numChemas} unds</span>
+                        <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalChemas} unds</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-400 flex items-center gap-2"><span className="text-gray-600">👟</span> Tacos movidos:</span>
-                        <span className="font-black text-[#D4AF37] text-sm">{numTacos} prs</span>
+                        <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalTacos} prs</span>
                       </div>
 
                       <div className="flex justify-between items-center">
@@ -520,8 +553,8 @@ export default function SalesPage({ user, onLogout }) {
                         onClick={() => {
                           setVendedorComision({ 
                             nombre: emp._id, 
-                            cantidadChemas: numChemas,
-                            cantidadTacos: numTacos
+                            cantidadChemas: statsVendedor.totalChemas,
+                            cantidadTacos: statsVendedor.totalTacos
                           });
                           setShowComisionModal(true);
                         }}
@@ -539,7 +572,6 @@ export default function SalesPage({ user, onLogout }) {
 
       </div>
 
-      {/* 🏆 MODAL DE REGISTRO DE COMISIÓN SEPARADO (CHEMAS VS TACOS) */}
       {showComisionModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
@@ -556,7 +588,6 @@ export default function SalesPage({ user, onLogout }) {
 
             <div className="bg-gray-50 p-4 rounded-xl border text-left mb-6 space-y-4">
               
-              {/* Sección Chemas */}
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><FaTshirt className="text-gray-400"/> Comisión Chemas</label>
@@ -572,7 +603,6 @@ export default function SalesPage({ user, onLogout }) {
                 />
               </div>
 
-              {/* Sección Tacos */}
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase flex items-center gap-1"><span className="text-gray-400">👟</span> Comisión Tacos</label>
@@ -588,7 +618,6 @@ export default function SalesPage({ user, onLogout }) {
                 />
               </div>
 
-              {/* Totalizador */}
               <div className="flex justify-between items-center pt-3 border-t border-gray-200 font-black">
                 <span className="text-gray-600 uppercase text-[10px]">Total a registrar:</span>
                 <span className="text-green-600 text-lg">
@@ -621,7 +650,6 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
-      {/* MODAL DE RESETEO */}
       {showResetModal && (
         <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
           <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
@@ -655,7 +683,6 @@ export default function SalesPage({ user, onLogout }) {
         </div>
       )}
 
-      {/* 🚀 COMPONENTE DEL MODAL DE VENTA RÁPIDA EXTRAÍDO */}
       <QuickSaleModal 
         showQuickSaleModal={showQuickSaleModal}
         setShowQuickSaleModal={setShowQuickSaleModal}
