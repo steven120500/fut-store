@@ -14,7 +14,10 @@ const upload = multer({ storage });
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const KID_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
 const BALL_SIZES = ['3', '4', '5'];
-const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES]);
+// 👟 NUEVO: Tallas de tacos con comas para que coincidan con todo el sistema
+const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+
+const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES, ...TACO_SIZES]);
 
 function whoDidIt(req) {
   return (
@@ -91,7 +94,6 @@ router.get('/all-pos', async (req, res) => {
     console.log('📡 GET /api/products/all-pos - Solicitando catálogo completo para POS...');
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
     
-    // Traemos absolutamente todos los productos ordenados del más reciente al más viejo
     const items = await Product.find({}).select(projection).sort({ createdAt: -1 }).lean();
     
     res.json({
