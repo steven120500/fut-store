@@ -78,60 +78,69 @@ export default function FilterBar({
     setShowTipos(false);
   };
 
-  // Función para manejar clics en tallas
-  const toggleSize = (t, isTaco = false) => {
-    // Si es taco, armamos el nombre largo con comas para que empate exacto con la base de datos
-    let valueToFilter = t;
+  // 🛠️ HELPER PARA OBTENER EL VALOR EXACTO ALMACENADO (Soluciona el error del 3XL y Tacos)
+  const getStoredValue = (t, isTaco) => {
     if (isTaco && tallasCRC[t]) {
       const numOriginal = t.replace(' US', ''); 
       const numConComa = numOriginal.replace('.', ','); 
       const eqConComa = tallasCRC[t].replace('.', ','); 
-      valueToFilter = `${numConComa} US (${eqConComa})`;
+      return `${numConComa} US (${eqConComa})`;
     }
+    return t;
+  };
 
+  // Función para manejar clics en tallas
+  const toggleSize = (t, isTaco = false) => {
+    const valueToFilter = getStoredValue(t, isTaco);
+    
+    // Agrega o quita la talla de forma exacta
     setFilterSizes(filterSizes.includes(valueToFilter) 
       ? filterSizes.filter((s) => s !== valueToFilter) 
       : [...filterSizes, valueToFilter]
     );
   };
 
-  const renderSizeGroup = (title, sizesArray, isTaco = false) => (
-    <div className="mb-4 last:mb-0">
-      <div className="text-[10px] font-black uppercase text-gray-400 mb-2 border-b border-gray-100 pb-1 flex items-center justify-between">
-        {title}
-        {filterSizes.some(s => sizesArray.some(sa => s.includes(sa.replace('.', ',')))) && (
-          <span className="w-1.5 h-1.5 rounded-full bg-black"></span>
-        )}
-      </div>
-      <div className="grid grid-cols-2 gap-1.5">
-        {sizesArray.map((t) => {
-          // Revisamos si la talla está activa (comprobando con comas para Tacos)
-          const isTacoMatch = isTaco && tallasCRC[t];
-          const valToCheck = isTacoMatch ? t.replace('.', ',') : t;
-          const isSelected = filterSizes.some(f => f.includes(valToCheck));
+  const renderSizeGroup = (title, sizesArray, isTaco = false) => {
+    // Revisa si alguna talla exacta de este grupo está seleccionada para poner el puntito negro
+    const hasAnySelected = sizesArray.some(t => filterSizes.includes(getStoredValue(t, isTaco)));
 
-          return (
-            <div
-              key={t}
-              className={`text-center py-2 px-1 text-xs rounded-lg cursor-pointer transition-all border ${
-                isSelected 
-                  ? "bg-black text-white border-black font-bold shadow-md transform scale-[0.98]"
-                  : "bg-gray-50 text-gray-600 border-gray-200 hover:border-black hover:bg-gray-100"
-              }`}
-              onClick={() => toggleSize(t, isTaco)}
-            >
-              <span className={isTaco ? "font-bold" : ""}>{t}</span>
-              {isTaco && tallasCRC[t] && (
-                <span className={`block text-[9px] mt-0.5 ${isSelected ? "text-gray-300" : "text-gray-400"}`}>
-                  ({tallasCRC[t]})
-                </span>
-              )}
-            </div>
-          );
-        })}
+    return (
+      <div className="mb-4 last:mb-0">
+        <div className="text-[10px] font-black uppercase text-gray-400 mb-2 border-b border-gray-100 pb-1 flex items-center justify-between">
+          {title}
+          {hasAnySelected && (
+            <span className="w-1.5 h-1.5 rounded-full bg-black"></span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {sizesArray.map((t) => {
+            const storedVal = getStoredValue(t, isTaco);
+            // 👈 AHORA ES UNA COMPARACIÓN EXACTA (Evita que "3XL" seleccione "L" o "XL")
+            const isSelected = filterSizes.includes(storedVal);
+
+            return (
+              <div
+                key={t}
+                className={`text-center py-2 px-1 text-xs rounded-lg cursor-pointer transition-all border ${
+                  isSelected 
+                    ? "bg-black text-white border-black font-bold shadow-md transform scale-[0.98]"
+                    : "bg-gray-50 text-gray-600 border-gray-200 hover:border-black hover:bg-gray-100"
+                }`}
+                onClick={() => toggleSize(t, isTaco)}
+              >
+                <span className={isTaco ? "font-bold" : ""}>{t}</span>
+                {isTaco && tallasCRC[t] && (
+                  <span className={`block text-[9px] mt-0.5 ${isSelected ? "text-gray-300" : "text-gray-400"}`}>
+                    ({tallasCRC[t]})
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="mb-6 mt-6 w-full sticky top-[60px] z-40 bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200">
@@ -223,7 +232,7 @@ export default function FilterBar({
               initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={handleClear}
-              className="px-4 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-gray-800 shadow-md transition-colors"
+              className="px-4 py-2 rounded-full bg-black text-white text-xs font-bold hover:bg-gray-800 shadow-md transition-colors cursor-pointer"
             >
               Limpiar
             </motion.button>
