@@ -142,7 +142,7 @@ export default function Bienvenido() {
                 className={`object-contain relative z-10 ${
                   // 🔥 TUS MEDIDAS INTACTAS
                   slides[index].eventName === "filtrarTacos"
-                  ? "h-60 md:h-auto md:w-[110%] md:max-w-none" 
+                  ? "h-66 md:h-auto md:w-[110%] md:max-w-none" 
                     : "max-h-full max-w-full"
                 }`}
               />
