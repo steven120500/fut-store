@@ -185,7 +185,7 @@ export default function Bienvenido() {
         {slides.map((_, i) => (
           <div 
             key={i} 
-            className="h-1.5 md:h-2 w-full bg-white/10 rounded-full overflow-hidden cursor-pointer backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]" 
+            className="h-1.5 md:h-2 w-full bg-gray-900 rounded-full overflow-hidden cursor-pointer backdrop-blur-md shadow-[inset_0_1px_2px_rgba(0,0,0,0.3)]" 
             onClick={() => setIndex(i)}
           >
             {i === index ? (
