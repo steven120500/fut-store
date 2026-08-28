@@ -91,7 +91,9 @@ export default function App() {
         filtrarFan: "Fan",
         filtrarNacional: "Nacional",
         filtrarOfertas: "Ofertas",
-        filtrarMundial: "Mundial" 
+        filtrarMundial: "Mundial", 
+        filtrarTacos: "Tacos"
+
       };
 
       const newFilter = typeMap[e.type];
@@ -107,7 +109,9 @@ export default function App() {
       }
     };
 
-    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial"];
+    
+
+    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial", "filtrarTacos"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
 
     return () => {
