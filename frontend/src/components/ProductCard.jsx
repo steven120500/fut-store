@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-// 🔽 Helper para Cloudinary (Igual que siempre)
+// 🔽 Helper para Cloudinary
 const cldUrl = (url, w, h) => {
   if (!url || typeof url !== "string") return url;
   if (!url.includes("res.cloudinary.com")) return url;
@@ -15,19 +15,16 @@ const cldUrl = (url, w, h) => {
 // 🛡️ HELPER INTELIGENTE: Busca el stock ignorando la diferencia entre puntos y comas
 const getStockDisponible = (stockObj, tallaBuscada) => {
   if (!stockObj) return null;
-  
-  // 1. Si coincide exactamente (búsqueda rápida)
+
   if (stockObj[tallaBuscada] !== undefined && stockObj[tallaBuscada] !== null) {
     return Number(stockObj[tallaBuscada]);
   }
-  
-  // 2. Normalización flexible (cambia comas por puntos en ambas partes)
+
   const normBuscada = String(tallaBuscada).replace(/,/g, '.').trim().toLowerCase();
-  
   const keyReal = Object.keys(stockObj).find(k => 
     k.replace(/,/g, '.').trim().toLowerCase() === normBuscada
   );
-  
+
   return keyReal !== undefined && stockObj[keyReal] !== null ? Number(stockObj[keyReal]) : null;
 };
 
@@ -46,7 +43,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
         )
       : product.imageSrc || null;
 
-  // 2. IMAGEN SECUNDARIA (Trasera/Hover) - Solo si existe una segunda foto
+  // 2. IMAGEN SECUNDARIA (Trasera/Hover)
   const imgHover =
     Array.isArray(product.images) && product.images.length > 1
       ? cldUrl(
@@ -75,7 +72,6 @@ export default function ProductCard({ product, onClick, canEdit }) {
 
   const ALL_SIZES = isBalon ? tallasBalon : isTacos ? tallasTacos : isNiño ? tallasNino : tallasAdulto;
 
-  // 🏆 Aplicamos el Helper Inteligente para extraer el stock
   const stockEntries = ALL_SIZES.map((size) => [
     size,
     getStockDisponible(product.stock, size),
@@ -92,24 +88,18 @@ export default function ProductCard({ product, onClick, canEdit }) {
   const totalStock = stockEntries.reduce((acc, [_, qty]) => acc + (Number(qty) || 0), 0);
   const isOutOfStock = totalStock <= 0;
 
-  // Estilos Plateados
   const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
 
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer w-full border border-gray-100"
+      // 🔥 BLOQUEO 1: h-full y flex-col para que la tarjeta sea estructuralmente rígida
+      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer w-full h-full flex flex-col border border-gray-100"
       onClick={() => onClick(product)}
     >
-
-      {/* ===========================
-          📸 SECCIÓN DE IMAGEN 
-      =========================== */}
-      <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden">
-
-        {/* --- ETIQUETAS (Se mantienen IGUAL) --- */}
-
-        {/* Agotado */}
+      {/* 📸 SECCIÓN DE IMAGEN (Protegida por aspect-[4/5]) */}
+      <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden shrink-0">
+        
         {isOutOfStock && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <span className="text-white font-bold uppercase tracking-widest border-2 border-white text-xs px-4 py-2 sm:text-lg">
@@ -118,20 +108,17 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         )}
 
-        {/* Nuevo */}
         {!isOutOfStock && isNew && (
           <div className="sticker-new z-20">
             <span>Nuevo</span>
           </div>
         )}
 
-          {/* 🌟 Etiqueta OFERTA (Solo si no está agotado) */}
-          {!isOutOfStock && hasDiscount && (
+        {!isOutOfStock && hasDiscount && (
           <span
             className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden shadow-lg"
             style={{
-              background:
-                "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
+              background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
               boxShadow: "0 0 15px rgba(255,0,0,0.7)",
             }}
           >
@@ -144,8 +131,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
                 left: "-100%",
                 width: "50%",
                 height: "100%",
-                background:
-                  "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
+                background: "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
                 transform: "skewX(-20deg)",
                 animation: "shineMove 5s infinite",
               }}
@@ -153,9 +139,6 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </span>
         )}
 
-        {/* --- IMÁGENES CON EFECTO SWAP Y ZOOM --- */}
-
-        {/* 1. Imagen Principal (Siempre está, pero se desvanece si hay segunda foto) */}
         {imgMain ? (
           <img
             src={imgMain}
@@ -171,7 +154,6 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         )}
 
-        {/* 2. Imagen Hover (Aparece encima si existe) */}
         {imgHover && !isOutOfStock && (
           <img
             src={imgHover}
@@ -182,41 +164,37 @@ export default function ProductCard({ product, onClick, canEdit }) {
         )}
       </div>
 
-      {/* ===========================
-          📝 INFORMACIÓN 
-      =========================== */}
-      <div className="flex flex-col h-auto">
-
-        {/* Barra Plateada de Tipo */}
+      {/* 📝 INFORMACIÓN (Estructura Flex Rígida) */}
+      <div className="flex flex-col flex-grow">
         {type && (
           <div 
-            className="w-full text-center py-1 text-[10px] font-bold uppercase tracking-widest shadow-sm z-10 relative"
+            className="w-full text-center py-1 text-[10px] font-bold uppercase tracking-widest shadow-sm z-10 relative shrink-0"
             style={{ background: silverGradient, color: "#333" }}
           >
             {type}
           </div>
         )}
 
-        <div className="p-3 sm:p-4 flex flex-col justify-between flex-grow gap-2">
-          {/* Nombre */}
-          <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight min-h-[2.5em] group-hover:text-black transition-colors">
+        <div className="p-3 sm:p-4 flex flex-col flex-grow">
+          {/* 🔥 BLOQUEO 2: Altura exacta y fija para el título (h-[2.5rem] sm:h-[2.75rem]) */}
+          <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight h-[2.5rem] sm:h-[2.75rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
             {product.name}
           </h3>
 
-          {/* Precio */}
-          <div className="flex items-end justify-end mt-1">
+          {/* 🔥 BLOQUEO 3: mt-auto empuja el precio siempre hasta el fondo del contenedor */}
+          <div className="flex items-end justify-end mt-auto pt-2">
             <div className="text-right flex flex-col items-end">
               {hasDiscount ? (
                 <>
                   <span className="text-[10px] sm:text-xs text-gray-400 line-through decoration-red-400">
                     ₡{Number(product.price).toLocaleString("de-DE")}
                   </span>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-red-600">
+                  <span className="text-sm sm:text-base md:text-lg font-bold text-red-600 leading-none mt-0.5">
                     ₡{Number(product.discountPrice).toLocaleString("de-DE")}
                   </span>
                 </>
               ) : (
-                <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900">
+                <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900 leading-none">
                   ₡{Number(product.price).toLocaleString("de-DE")}
                 </span>
               )}
@@ -224,9 +202,9 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         </div>
 
-        {/* Info Admin */}
+        {/* 🔥 BLOQUEO 4: Caja de Admin con altura estática (h-[56px]) para evitar cambios en la grilla */}
         {canEdit && (
-          <div className="bg-gray-50 px-3 py-2 border-t border-gray-100 text-[10px] space-y-1">
+          <div className="bg-gray-50 px-3 py-2 border-t border-gray-100 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden">
              {isOutOfStock ? (
                <p className="text-red-600 font-bold text-center">🔴 SIN STOCK</p>
              ) : (
