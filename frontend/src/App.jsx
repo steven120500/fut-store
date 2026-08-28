@@ -92,7 +92,8 @@ export default function App() {
         filtrarNacional: "Nacional",
         filtrarOfertas: "Ofertas",
         filtrarMundial: "Mundial", 
-        filtrarTacos: "Tacos"
+        filtrarTacos: "Tacos",
+        filtrarNuevos: "Nuevos"
       };
 
       const newFilter = typeMap[e.type];
@@ -108,7 +109,7 @@ export default function App() {
       }
     };
 
-    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial", "filtrarTacos"];
+    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial", "filtrarTacos", "filtrarNuevos"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
 
     return () => {
@@ -144,7 +145,7 @@ export default function App() {
     const p = opts.page ?? page;
     const q = (opts.q ?? searchTerm).trim();
     const currentActualFilter = (opts.type ?? filterType).trim();
-    const tp = currentActualFilter === "Mundial" ? "" : currentActualFilter;
+    const tp = (currentActualFilter === "Mundial" || currentActualFilter === "Nuevos") ? "" : currentActualFilter;
     const currentSizes = opts.sizes ?? filterSizes; 
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
@@ -269,6 +270,7 @@ export default function App() {
 
       if (filterType === "Mundial") return matchesSearch && product.isMundial === true;
       if (filterType === "Ofertas") return matchesSearch && isOffer;
+      if (filterType === "Nuevos") return matchesSearch;
       if (window.__verDisponiblesActivo) {
         const noDiscount = !Number.isFinite(dp) || dp <= 0 || dp >= price;
         return matchesSearch && hasStock && noDiscount;
