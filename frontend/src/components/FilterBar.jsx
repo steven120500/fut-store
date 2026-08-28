@@ -10,7 +10,7 @@ const tipos = [
 // 🗂️ Tallas agrupadas por categoría
 const TALLAS_ADULTO = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
 const TALLAS_NINO = ["16", "18", "20", "22", "24", "26", "28"];
-const TALLAS_TACOS = ["7 US", "7.5 US", "8 US", "8.5 US", "9 US", "9.5 US", "10 US", "10.5 US", "11 US", "11.5 US", "12 US"];
+const TALLAS_TACOS = ["7 US", "7.5 US", "8 US", "8.5 US", "9 US", "9.5 US", "10 US", "10.5 US", "11 US", "11.5 US", "12 US", "12,5 US", "13 US"];
 
 // Equivalencias de Tacos para el texto chiquito
 const tallasCRC = {

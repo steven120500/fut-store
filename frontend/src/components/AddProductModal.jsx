@@ -99,7 +99,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
 
   // 🏆 AQUÍ ESTÁ LA CORRECCIÓN: Tallas con COMAS
   const tallas = useMemo(() => {
-    const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+    const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)', '12,5 US (46,5)', '13 US (47)'];
     const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: TACO_SIZES };
     return tipos[type] || [];
   }, [type]);

@@ -23,7 +23,7 @@ const TACO_SIZES = [
   '9,5 US (43)', '9.5 US (43)', 
   '10 US (44)', '10,5 US (44,5)', '10.5 US (44.5)', 
   '11 US (45)', '11,5 US (45,5)', '11.5 US (45.5)', 
-  '12 US (46)'
+  '12 US (46)', '12,5 US (46,5)', '13 US (47)'
 ];
 
 const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES, ...TACO_SIZES]);

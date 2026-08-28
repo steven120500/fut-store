@@ -6,7 +6,7 @@ const ADULT_SIZES = ["S", "M", "L", "XL", "XXL", "3XL", "4XL"];
 const KID_SIZES = ["16", "18", "20", "22", "24", "26", "28"];
 const BALL_SIZES = ["3", "4", "5"]; // ⚽ Tallas de balones
 // 👟 NUEVO: Tallas de tacos combinadas (US / EU) - ¡CON COMAS!
-const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)', '12,5 US (46,5)', '13 US (47)'];
 
 // 🔹 Unificamos todas las tallas válidas (INCLUYENDO TACOS)
 const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES, ...TACO_SIZES]);

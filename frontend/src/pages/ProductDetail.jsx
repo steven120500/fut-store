@@ -19,7 +19,7 @@ const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
 const TALLAS_BALON  = ['3', '4', '5'];
 // 👟 Tallas de Tacos SIEMPRE con COMAS
-const TALLAS_TACOS  = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+const TALLAS_TACOS  = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)', '12,5 US (46,5)', '13 US (47)'];
 const ACCEPTED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
 const PLACEHOLDER_IMG = "https://via.placeholder.com/600x600?text=No+Image";
 
