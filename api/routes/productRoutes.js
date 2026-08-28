@@ -94,6 +94,7 @@ router.get('/all-pos', async (req, res) => {
     console.log('📡 GET /api/products/all-pos - Solicitando catálogo completo para POS...');
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
     
+    // 🏆 AQUÍ AGREGAMOS EL SORT
     const items = await Product.find({}).select(projection).sort({ createdAt: -1 }).lean();
     
     res.json({
@@ -133,6 +134,7 @@ router.get('/', async (req, res) => {
 
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
 
+    // 🏆 AQUÍ AGREGAMOS EL SORT A LA PAGINACIÓN PRINCIPAL
     const [items, total] = await Promise.all([
       Product.find(find).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       Product.countDocuments(find),

@@ -21,7 +21,7 @@ import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
 import FilterBar from "./components/FilterBar";
 import LoadingOverlay from "./components/LoadingOverlay"; 
-import ProtectedRoute from "./components/ProtectedRoute"; // 👈 IMPORTACIÓN DEL GUARDIA DE RUTAS
+import ProtectedRoute from "./components/ProtectedRoute"; 
 import tallaPorTipo from "./utils/tallaPorTipo";
 import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
@@ -192,6 +192,9 @@ export default function App() {
            if (result.items) fetchedItems = [...fetchedItems, ...result.items];
          });
       }
+
+      // 🏆 ORDENAR DEL MÁS NUEVO AL MÁS VIEJO ANTES DE GUARDARLOS EN ESTADO
+      fetchedItems.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
       setProducts(fetchedItems);
       setTotal(fetchedTotal);
