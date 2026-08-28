@@ -12,6 +12,25 @@ const cldUrl = (url, w, h) => {
   );
 };
 
+// 🛡️ HELPER INTELIGENTE: Busca el stock ignorando la diferencia entre puntos y comas
+const getStockDisponible = (stockObj, tallaBuscada) => {
+  if (!stockObj) return null;
+  
+  // 1. Si coincide exactamente (búsqueda rápida)
+  if (stockObj[tallaBuscada] !== undefined && stockObj[tallaBuscada] !== null) {
+    return Number(stockObj[tallaBuscada]);
+  }
+  
+  // 2. Normalización flexible (cambia comas por puntos en ambas partes)
+  const normBuscada = String(tallaBuscada).replace(/,/g, '.').trim().toLowerCase();
+  
+  const keyReal = Object.keys(stockObj).find(k => 
+    k.replace(/,/g, '.').trim().toLowerCase() === normBuscada
+  );
+  
+  return keyReal !== undefined && stockObj[keyReal] !== null ? Number(stockObj[keyReal]) : null;
+};
+
 export default function ProductCard({ product, onClick, canEdit }) {
   const H = 700;
 
@@ -53,12 +72,13 @@ export default function ProductCard({ product, onClick, canEdit }) {
   const isNiño = typeLower === "niño";
   const isBalon = typeLower === "balón";
   const isTacos = typeLower === "tacos";
-  
+
   const ALL_SIZES = isBalon ? tallasBalon : isTacos ? tallasTacos : isNiño ? tallasNino : tallasAdulto;
 
+  // 🏆 Aplicamos el Helper Inteligente para extraer el stock
   const stockEntries = ALL_SIZES.map((size) => [
     size,
-    product.stock?.[size] ?? null,
+    getStockDisponible(product.stock, size),
   ]);
 
   const soldOutSizes = stockEntries
@@ -81,14 +101,14 @@ export default function ProductCard({ product, onClick, canEdit }) {
       className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer w-full border border-gray-100"
       onClick={() => onClick(product)}
     >
-      
+
       {/* ===========================
           📸 SECCIÓN DE IMAGEN 
       =========================== */}
       <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden">
-        
+
         {/* --- ETIQUETAS (Se mantienen IGUAL) --- */}
-        
+
         {/* Agotado */}
         {isOutOfStock && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -134,7 +154,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
         )}
 
         {/* --- IMÁGENES CON EFECTO SWAP Y ZOOM --- */}
-        
+
         {/* 1. Imagen Principal (Siempre está, pero se desvanece si hay segunda foto) */}
         {imgMain ? (
           <img
@@ -166,7 +186,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
           📝 INFORMACIÓN 
       =========================== */}
       <div className="flex flex-col h-auto">
-        
+
         {/* Barra Plateada de Tipo */}
         {type && (
           <div 

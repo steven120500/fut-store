@@ -14,8 +14,17 @@ const upload = multer({ storage });
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const KID_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
 const BALL_SIZES = ['3', '4', '5'];
-// 👟 NUEVO: Tallas de tacos con comas para que coincidan con todo el sistema
-const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
+
+// 👟 TALLAS DE TACOS (Acepta tanto formato con coma como con punto para evitar pérdidas)
+const TACO_SIZES = [
+  '7 US (40)', '7,5 US (40,5)', '7.5 US (40.5)', 
+  '8 US (41)', '8,5 US (42)', '8.5 US (42)', 
+  '9 US (42,5)', '9.5 US (42.5)', 
+  '9,5 US (43)', '9.5 US (43)', 
+  '10 US (44)', '10,5 US (44,5)', '10.5 US (44.5)', 
+  '11 US (45)', '11,5 US (45,5)', '11.5 US (45.5)', 
+  '12 US (46)'
+];
 
 const ALL_SIZES = new Set([...ADULT_SIZES, ...KID_SIZES, ...BALL_SIZES, ...TACO_SIZES]);
 
@@ -88,34 +97,29 @@ router.get('/health', async (_req, res) => {
   }
 });
 
-/** 🚀 NUEVA RUTA EXCLUSIVA PARA EL POS: Devuelve TODO el catálogo sin paginación truncada */
+/** Catálogo completo para POS */
 router.get('/all-pos', async (req, res) => {
   try {
-    console.log('📡 GET /api/products/all-pos - Solicitando catálogo completo para POS...');
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
-    
-    // 🏆 AQUÍ AGREGAMOS EL SORT
-    const items = await Product.find({}).select(projection).sort({ createdAt: -1 }).lean();
+    // 🏆 Ordenado por _id descendente (lo más nuevo siempre arriba)
+    const items = await Product.find({}).select(projection).sort({ _id: -1 }).lean();
     
     res.json({
       items: items || [],
       total: items.length
     });
   } catch (err) {
-    console.error('❌ Error en GET /api/products/all-pos:', err);
     res.status(500).json({ error: 'Error al obtener el catálogo completo' });
   }
 });
 
-/** 1. Listado paginado estándar para la tienda principal */
+/** Listado paginado estándar */
 router.get('/', async (req, res) => {
   try {
-    console.log('📡 GET /api/products - Iniciando consulta...');
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
     const q = (req.query.q || '').trim();
     const type = (req.query.type || '').trim();
-    const sizes = (req.query.sizes || '').trim();
     const mode = (req.query.mode || '').trim();
 
     const find = {};
@@ -134,9 +138,9 @@ router.get('/', async (req, res) => {
 
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
 
-    // 🏆 AQUÍ AGREGAMOS EL SORT A LA PAGINACIÓN PRINCIPAL
+    // 🏆 Ordenado por _id descendente
     const [items, total] = await Promise.all([
-      Product.find(find).select(projection).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      Product.find(find).select(projection).sort({ _id: -1 }).skip((page - 1) * limit).limit(limit).lean(),
       Product.countDocuments(find),
     ]);
 
@@ -149,7 +153,6 @@ router.get('/', async (req, res) => {
       limit,
     });
   } catch (err) {
-    console.error('❌ CRITICAL ERROR GET /api/products:', err);
     res.status(500).json({ error: 'Error al obtener los productos', details: err.message });
   }
 });
@@ -167,10 +170,7 @@ router.post('/:id/lock', async (req, res) => {
       if (product.lockedBy && product.lockedBy !== user) {
           const lockAge = now - product.lockedAt;
           if (lockAge < 600000) { 
-              return res.status(409).json({ 
-                  error: "Bloqueado", 
-                  lockedBy: product.lockedBy 
-              });
+              return res.status(409).json({ error: "Bloqueado", lockedBy: product.lockedBy });
           }
       }
 
@@ -200,24 +200,18 @@ router.post('/:id/unlock', async (req, res) => {
   }
 });
 
-/** ✅ 2. OBTENER UN SOLO PRODUCTO POR ID */
+/** Obtener producto por ID */
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
-    }
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(product);
   } catch (err) {
-    console.error('GET /api/products/:id error:', err);
-    if (err.kind === 'ObjectId') {
-        return res.status(404).json({ error: 'Producto no encontrado' });
-    }
     res.status(500).json({ error: 'Error al obtener el producto' });
   }
 });
 
-/** 3. Crear producto */
+/** Crear producto */
 router.post('/', upload.any(), async (req, res) => {
   try {
     const files = (req.files || []).filter(
@@ -274,12 +268,11 @@ router.post('/', upload.any(), async (req, res) => {
 
     res.status(201).json(product);
   } catch (err) {
-    console.error('POST /api/products error:', err);
     res.status(500).json({ error: err.message || 'Error al crear producto' });
   }
 });
 
-/** 4. Actualizar producto */
+/** Actualizar producto */
 router.put('/:id', async (req, res) => {
   try {
     const prev = await Product.findById(req.params.id).lean();
@@ -363,12 +356,11 @@ router.put('/:id', async (req, res) => {
     }
     res.json(updated);
   } catch (err) {
-    console.error('PUT /api/products/:id error:', err);
     res.status(500).json({ error: 'Error al actualizar producto' });
   }
 });
 
-/** 5. Eliminar producto */
+/** Eliminar producto */
 router.delete('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
@@ -388,7 +380,6 @@ router.delete('/:id', async (req, res) => {
     });
     res.json({ message: 'Producto eliminado' });
   } catch (err) {
-    console.error('DELETE /api/products/:id error:', err);
     res.status(500).json({ error: 'Error al eliminar producto' });
   }
 });
