@@ -93,7 +93,6 @@ export default function App() {
         filtrarOfertas: "Ofertas",
         filtrarMundial: "Mundial", 
         filtrarTacos: "Tacos"
-
       };
 
       const newFilter = typeMap[e.type];
@@ -108,8 +107,6 @@ export default function App() {
         }
       }
     };
-
-    
 
     const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial", "filtrarTacos"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
@@ -218,16 +215,22 @@ export default function App() {
     }
   }, [loading, page, searchTerm, filterType, filterSizes]);
 
+  // Solo se encarga de posicionar arriba al cargar la página por primera vez
   useEffect(() => {
     if (!loading && isFirstRun.current) {
       window.scrollTo(0, 0);
       isFirstRun.current = false;
-    } else if (!loading && pageTopRef.current) {
+    }
+  }, [loading]);
+
+  // Solo hace scroll suave cuando el usuario cambia de PÁGINA (2, 3, 4...)
+  useEffect(() => {
+    if (!loading && !isFirstRun.current && pageTopRef.current) {
       const rect = pageTopRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
     }
-  }, [loading, page, searchTerm, filterType, filterSizes]);
+  }, [page]); // 👈 Quitamos searchTerm, filterType y filterSizes de aquí
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
@@ -409,7 +412,7 @@ export default function App() {
                       </button>
                     )}
 
-                    <div className="relative w-full">
+                    <div className="relative w-full min-h-[60vh] md:min-h-[80vh]">
                       <div ref={pageTopRef} className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
                         {filteredProducts().map((product) => (
                           <ProductCard
