@@ -55,6 +55,7 @@ export default function Bienvenido() {
     setTimeout(() => setIsAnimating(false), 600);
   };
 
+  // 🛠️ Dispara el evento personalizado para el catálogo
   const handleNavigation = (eventName) => {
     window.dispatchEvent(new CustomEvent(eventName));
   };
@@ -84,21 +85,23 @@ export default function Bienvenido() {
     else if (distance < -50) prevSlide();
   };
 
+  // 🛠️ VARIABLE PARA AJUSTAR LA ALTURA DE LA CAMISETA Y EL TEXTO
+  // Un valor negativo (-40) hace que todo el bloque suba para eliminar el espacio muerto de arriba
+  const bajar = isMobile ? -40 : 0; 
+
   // 5️⃣ Motor 3D del Carrusel (Órbita)
   const getCardStyle = (index) => {
     const total = slides.length;
     const diff = (index - activeIdx + total) % total;
 
-    const scaleFactor = isMobile ? 0.8 : 1; 
+    const scaleFactor = isMobile ? 0.85 : 1; 
     const xOffset = isMobile ? 120 : 320;
     const yOffset = isMobile ? 40 : 80;
-
-    const bajar = isMobile ? 40 : 100; 
 
     if (diff === 0) {
       return { 
         x: 0, 
-        y: 0 + bajar, 
+        y: bajar, 
         scale: 1 * scaleFactor, 
         rotate: 0, 
         zIndex: 30, 
@@ -132,7 +135,7 @@ export default function Bienvenido() {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* 🖼️ FONDOS (Con capa oscura para mantener el resplandor visible) */}
+      {/* 🖼️ FONDOS */}
       <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(circle_at_center,#1a1a24_0%,#050505_70%)]">
         <img 
           src={isMobile ? "/FondoM.png" : "/FondoD.png"} 
@@ -143,39 +146,9 @@ export default function Bienvenido() {
       </div>
 
       {/* 🎠 CARRUSEL 3D Y EFECTO DE TEXTO GIGANTE */}
-      <div className="relative w-full max-w-7xl h-[60vh] lg:h-[70vh] flex items-center justify-center z-10 mt-20 lg:mt-0">
+      <div className="relative w-full max-w-7xl h-[60vh] lg:h-[70vh] flex items-center justify-center z-10 lg:mt-0">
         
-        {/* TEXTO DINÁMICO GIGANTE (FIJADO EN LA PARTE SUPERIOR) */}
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={`txt-container-${activeIdx}`}
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 1.05 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="absolute -top-26 lg:top-26 left-0 w-full flex justify-center pointer-events-none z-50"
-          >
-            {/* CAPA 1: TEXTO SÓLIDO (Z-50) */}
-            <h2 
-              className="absolute text-center font-black text-white -top-60 -mt-16 uppercase tracking-tighter leading-none -skew-x-12 z-50"
-              style={{ fontSize: isMobile ? "60px" : "150px", textShadow: "0 10px 40px rgba(0,0,0,0.5)" }}
-            >
-              {displayName}
-            </h2>
-
-            {/* CAPA 3: TEXTO CON CONTORNO (Z-60) */}
-            <h2 
-              className="absolute text-center font-black -top-60 uppercase tracking-tighter leading-none -skew-x-12 z-50 -mt-16"
-              style={{ 
-                fontSize: isMobile ? "60px" : "150px",
-                color: "transparent",
-                WebkitTextStroke: isMobile ? "1px rgba(255,255,255,0.7)" : "2px rgba(255,255,255,0.7)" 
-              }}
-            >
-              {displayName}
-            </h2>
-          </motion.div>
-        </AnimatePresence>
+        
 
         {/* IMÁGENES DEL CARRUSEL Y LUCES */}
         {slides.map((slide, i) => (
@@ -210,11 +183,11 @@ export default function Bienvenido() {
               }}
             />
 
-            {/* IMAGEN DEL PRODUCTO (Z-30) */}
+            {/* IMAGEN DEL PRODUCTO (Aumentada a 280px en móvil para llenar más el espacio visual) */}
             <img
               src={slide.image}
               alt={slide.title}
-              className="w-[240px] h-[240px] lg:w-[350px] lg:h-[350px] object-contain relative z-30"
+              className="w-[280px] h-[280px] lg:w-[350px] lg:h-[350px] object-contain relative z-30"
               draggable="false"
             />
           </motion.div>
@@ -222,7 +195,8 @@ export default function Bienvenido() {
       </div>
 
       {/* 🔘 BOTÓN CTA Y TEXTO INFERIOR */}
-      <div className="absolute bottom-12 lg:bottom-16 z-[70] flex flex-col items-center justify-center w-full">
+      {/* 🛠️ FIX: Se movió de bottom-12 a bottom-24 para cerrar el espacio hacia arriba y evitar choques con WhatsApp */}
+      <div className="absolute bottom-24 lg:bottom-16 z-[70] flex flex-col items-center justify-center w-full px-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={`info-${activeSlide.id}`}
@@ -234,18 +208,18 @@ export default function Bienvenido() {
           >
             <button
               onClick={() => handleNavigation(activeSlide.eventName)}
-              className={`flex items-center gap-3 px-8 py-3 lg:px-10 lg:py-4 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+              /* 🛠️ Botón más grande: px-12 py-4 y texto más grande */
+              className={`flex items-center gap-3 px-12 py-4 lg:px-14 lg:py-5 rounded-full font-black text-base lg:text-lg uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
                 activeSlide.isOffer
                   ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)]"
                   : "bg-white text-black border-white shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-gray-200"
               }`}
             >
               <span>{activeSlide.title}</span>
-              <FaArrowRight className="text-xs" />
+              <FaArrowRight className="text-sm lg:text-base" />
             </button>
             
-            {/* ✨ NUEVO TEXTO DEBAJO DEL BOTÓN ✨ */}
-            <p className="text-gray-400 text-xs lg:text-sm mt-6 tracking-widest font-medium uppercase">
+            <p className="text-gray-400 text-xs lg:text-sm mt-5 tracking-widest font-medium uppercase drop-shadow-md text-center">
               La élite del fútbol, en tu piel.
             </p>
 
@@ -253,12 +227,12 @@ export default function Bienvenido() {
         </AnimatePresence>
       </div>
 
-      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP */}
+      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP (Ajustado para que no estorbe el texto inferior) */}
       <a 
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 fondo-plateado text-white p-4 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 bg-green-500 text-white p-4 lg:p-5 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
       >
         <FaWhatsapp className="text-3xl" />
       </a>
