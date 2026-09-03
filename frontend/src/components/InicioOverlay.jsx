@@ -85,15 +85,7 @@ export default function InicioOverlay({ onComplete }) {
         >
           ¡Bienvenido a <span className="text-amber-400">FutStore</span>!
         </motion.h2>
-        
-        <motion.p
-          initial={{ y: 15, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
-          className="mt-4 text-gray-400 font-bold tracking-[0.25em] text-xs sm:text-base select-none"
-        >
-          LA ELITE DEL FUTBOL EN TU <span className="text-white border-b-[3px] border-amber-500 pb-1">PIEL</span>
-        </motion.p>
+      
       </div>
 
       {/* 🌟 BARRA DE CARGA */}
