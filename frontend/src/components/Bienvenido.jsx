@@ -45,7 +45,7 @@ export default function Bienvenido() {
     if (isPaused) return; 
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % slides.length);
-    }, 6000); 
+    }, 4000); 
     
     return () => clearInterval(timer);
   }, [isPaused, activeIdx]);
@@ -103,18 +103,28 @@ export default function Bienvenido() {
           ======================================================== */}
       <div className="md:hidden flex flex-col items-center justify-between w-full h-[70vh] z-20 px-6">
         
+        {/* 🔥 NUEVO ENCABEZADO MÓVIL: Logo Opaco | Línea | Texto */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col items-center text-center mt-4"
+          className="flex items-center justify-center gap-4 mt-4"
         >
-          <h1 className="text-5xl font-black text-white leading-none tracking-tighter drop-shadow-xl">
-            BIENVENIDO
-          </h1>
-          <h2 className="text-2xl font-light text-gray-200 mt-1">
-            a <span className="font-serif italic text-white font-bold">FutStore</span>
-          </h2>
+          {/* Logo opaco (Cambiar /logo.png si tu archivo se llama diferente) */}
+          <img src="/logo.png" alt="FutStore Logo" className="w-14 h-14 object-contain opacity-80" />
+
+          {/* Raya divisora fina */}
+          <div className="w-1 h-12 bg-white"></div>
+
+          {/* Texto rojo */}
+          <div className="flex flex-col text-left max-w-[150px]">
+            <h1 className="text-sm font-black text-white uppercase leading-snug tracking-widest drop-shadow-md">
+              La élite del fútbol,
+            </h1>
+            <h2 className="text-sm font-black text-white uppercase leading-snug tracking-widest drop-shadow-md">
+              en tu piel.
+            </h2>
+          </div>
         </motion.div>
 
         {/* Contenedor más pequeño para móvil */}
@@ -180,15 +190,24 @@ export default function Bienvenido() {
           transition={{ duration: 0.8 }}
           className="flex flex-col items-start text-left"
         >
-          <h1 className="text-5xl lg:text-7xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
-            BIENVENIDO
-          </h1>
-          <h2 className="text-3xl lg:text-5xl font-light text-gray-200 mt-2">
-            a <span className="font-serif italic text-white font-bold">FutStore</span>
-          </h2>
-          <p className="text-gray-400 text-base lg:text-lg font-medium mt-4 max-w-md">
-            La élite del fútbol, en tu piel. Equipate con lo mejor de esta temporada.
-          </p>
+          {/* 🔥 NUEVO ENCABEZADO DESKTOP: Logo Opaco | Línea | Texto */}
+          <div className="flex items-center gap-6">
+            {/* Logo opaco (Cambiar /logo.png si tu archivo se llama diferente) */}
+            <img src="/logo.png" alt="FutStore Logo" className="w-24 h-24 lg:w-32 lg:h-32 object-contain opacity-80" />
+
+            {/* Raya divisora fina */}
+            <div className="w-1 h-20 lg:h-24 bg-white"></div>
+
+            {/* Texto rojo */}
+            <div className="flex flex-col text-left">
+              <h1 className="text-3xl lg:text-5xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
+                La élite del<br />fútbol,
+              </h1>
+              <h2 className="text-3xl lg:text-5xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
+                en tu piel.
+              </h2>
+            </div>
+          </div>
 
           <div className="mt-8 h-16">
             <AnimatePresence mode="wait">
@@ -248,7 +267,7 @@ export default function Bienvenido() {
           key={`progress-${activeIdx}`}
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ duration: 6, ease: "linear" }}
+          transition={{ duration: 4, ease: "linear" }}
           className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
         />
       </div>
