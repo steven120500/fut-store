@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaArrowRight, FaWhatsapp } from "react-icons/fa";
 
-
 // 📦 DATOS DE PRODUCTOS
 const slides = [
   { id: 0, image: "/TacosHero.png", title: "Comprar Tacos", eventName: "filtrarTacos" },
@@ -167,11 +166,11 @@ export default function Bienvenido() {
       </div>
 
       {/* ========================================================
-          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90% Escala)
+          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90%)
           ======================================================== */}
       <div 
-        // 🔥 AQUÍ ESTÁ EL CAMBIO: Agregamos scale-90 y origin-center en lugar de style={{zoom: 0.9}}
-        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full scale-90 origin-center"
+        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full"
+        style={{ zoom: "90%" }} /* 🔥 AQUÍ ESTÁ EL CAMBIO: Forzado como string */
       >
         
         {/* Columna Izquierda: Texto y Botón Agrupados */}
@@ -238,13 +237,13 @@ export default function Bienvenido() {
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 bg-green-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-[100] bg-green-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 flex items-center justify-center cursor-pointer"
       >
         <FaWhatsapp className="text-2xl md:text-3xl" />
       </a>
 
       {/* ⏳ INDICADOR DE TIEMPO (PROGRESS BAR) */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-40">
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-[100]">
         <motion.div
           key={`progress-${activeIdx}`}
           initial={{ width: "0%" }}
