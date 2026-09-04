@@ -237,13 +237,13 @@ export default function Bienvenido() {
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-[100] bg-green-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 bg-green-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 flex items-center justify-center cursor-pointer"
       >
         <FaWhatsapp className="text-2xl md:text-3xl" />
       </a>
 
       {/* ⏳ INDICADOR DE TIEMPO (PROGRESS BAR) */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-[100]">
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-40">
         <motion.div
           key={`progress-${activeIdx}`}
           initial={{ width: "0%" }}
