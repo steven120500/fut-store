@@ -41,14 +41,17 @@ export default function Bienvenido() {
     };
   }, []);
 
-  // ⏱️ Rotación automática rápida (2 segundos)
+  // ⏱️ Rotación automática rápida (2 segundos) - Ahora sincronizada con la barra
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused) return; // Solo se pausa si el usuario mantiene el dedo presionado en celular
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % slides.length);
-    }, 2000); 
+    }, 6000); 
+    
+    // Al agregar activeIdx a las dependencias, aseguramos que si el usuario hace swipe, 
+    // el reloj y la barra de progreso se reinician perfectamente.
     return () => clearInterval(timer);
-  }, [isPaused]);
+  }, [isPaused, activeIdx]);
 
   const activeSlide = slides[activeIdx];
 
@@ -90,8 +93,7 @@ export default function Bienvenido() {
 
   return (
     <section 
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      // 🔥 Se eliminaron onMouseEnter y onMouseLeave para que nunca se detenga en Desktop
       className="relative w-full min-h-screen flex items-center justify-center overflow-hidden select-none bg-black pt-20"
     >
       {/* 🖼️ FONDO GENERAL */}
@@ -171,9 +173,12 @@ export default function Bienvenido() {
       </div>
 
       {/* ========================================================
-          💻 VERSIÓN DESKTOP (Split Screen - Sin Cambios)
+          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90% Zoom)
           ======================================================== */}
-      <div className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full">
+      <div 
+        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full"
+        style={{ zoom: 0.9 }}
+      >
         
         {/* Columna Izquierda: Texto y Botón Agrupados */}
         <motion.div 
@@ -243,6 +248,17 @@ export default function Bienvenido() {
       >
         <FaWhatsapp className="text-2xl md:text-3xl" />
       </a>
+
+      {/* ⏳ INDICADOR DE TIEMPO (PROGRESS BAR) */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-40">
+        <motion.div
+          key={`progress-${activeIdx}`}
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 6, ease: "linear" }}
+          className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+        />
+      </div>
       
     </section>
   );
