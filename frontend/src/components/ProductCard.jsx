@@ -99,7 +99,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
       
       {/* 🔥 FIX 2: Movimos el sticker NUEVO afuera de la foto y le dimos posición negativa (-top-2 -left-2) para que sobresalga */}
       {!isOutOfStock && isNew && (
-        <div className="sticker-new z-50 absolute -top-2 -left-2 scale-[0.70] sm:scale-100 origin-top-left transition-transform pointer-events-none">
+        <div className="sticker-new z-30 absolute -top-2 -left-2 scale-[0.70] sm:scale-100 origin-top-left transition-transform pointer-events-none">
           <span>Nuevo</span>
         </div>
       )}
