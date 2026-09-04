@@ -41,15 +41,13 @@ export default function Bienvenido() {
     };
   }, []);
 
-  // ⏱️ Rotación automática rápida (2 segundos) - Ahora sincronizada con la barra
+  // ⏱️ Rotación automática rápida (6 segundos) - Sincronizada con la barra
   useEffect(() => {
-    if (isPaused) return; // Solo se pausa si el usuario mantiene el dedo presionado en celular
+    if (isPaused) return; 
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % slides.length);
     }, 6000); 
     
-    // Al agregar activeIdx a las dependencias, aseguramos que si el usuario hace swipe, 
-    // el reloj y la barra de progreso se reinician perfectamente.
     return () => clearInterval(timer);
   }, [isPaused, activeIdx]);
 
@@ -93,7 +91,6 @@ export default function Bienvenido() {
 
   return (
     <section 
-      // 🔥 Se eliminaron onMouseEnter y onMouseLeave para que nunca se detenga en Desktop
       className="relative w-full min-h-screen flex items-center justify-center overflow-hidden select-none bg-black pt-20"
     >
       {/* 🖼️ FONDO GENERAL */}
@@ -103,11 +100,10 @@ export default function Bienvenido() {
       </div>
 
       {/* ========================================================
-          📱 VERSIÓN CELULAR (Texto Arriba, Imágenes Centro, Botón Abajo)
+          📱 VERSIÓN CELULAR 
           ======================================================== */}
       <div className="md:hidden flex flex-col items-center justify-between w-full h-[70vh] z-20 px-6">
         
-        {/* Título Arriba */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -122,7 +118,6 @@ export default function Bienvenido() {
           </h2>
         </motion.div>
 
-        {/* Carrusel Móvil en el Centro */}
         <div 
           className="relative w-full max-w-sm h-96 mx-auto [perspective:1000px]"
           onTouchStart={handleTouchStart}
@@ -149,7 +144,6 @@ export default function Bienvenido() {
           ))}
         </div>
 
-        {/* Botón Abajo de las imágenes */}
         <div className="mb-4 h-12">
           <AnimatePresence mode="wait">
             <motion.button
@@ -173,11 +167,11 @@ export default function Bienvenido() {
       </div>
 
       {/* ========================================================
-          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90% Zoom)
+          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90% Escala)
           ======================================================== */}
       <div 
-        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full"
-        style={{ zoom: 0.9 }}
+        // 🔥 AQUÍ ESTÁ EL CAMBIO: Agregamos scale-90 y origin-center en lugar de style={{zoom: 0.9}}
+        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full scale-90 origin-center"
       >
         
         {/* Columna Izquierda: Texto y Botón Agrupados */}
