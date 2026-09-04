@@ -195,7 +195,6 @@ export default function App() {
          });
       }
 
-      // 🏆 ORDENAR DEL MÁS NUEVO AL MÁS VIEJO ANTES DE GUARDARLOS EN ESTADO
       fetchedItems.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
       setProducts(fetchedItems);
@@ -216,7 +215,6 @@ export default function App() {
     }
   }, [loading, page, searchTerm, filterType, filterSizes]);
 
-  // Solo se encarga de posicionar arriba al cargar la página por primera vez
   useEffect(() => {
     if (!loading && isFirstRun.current) {
       window.scrollTo(0, 0);
@@ -224,14 +222,13 @@ export default function App() {
     }
   }, [loading]);
 
-  // Solo hace scroll suave cuando el usuario cambia de PÁGINA (2, 3, 4...)
   useEffect(() => {
     if (!loading && !isFirstRun.current && pageTopRef.current) {
       const rect = pageTopRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
     }
-  }, [page]); // 👈 Quitamos searchTerm, filterType y filterSizes de aquí
+  }, [page]); 
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
@@ -290,7 +287,6 @@ export default function App() {
         <Router>
           <CartDrawer />
           <Routes>
-            {/* RUTAS PÚBLICAS */}
             <Route path="/reset-password/:token" element={<ResetPassword />} />
             
             <Route 
@@ -310,59 +306,13 @@ export default function App() {
 
             <Route path="/checkout" element={<Checkout />} />
 
-            {/* 🔒 RUTAS PROTEGIDAS (Solo usuarios logueados) */}
-            <Route 
-              path="/pedidos" 
-              element={
-                <ProtectedRoute user={user}>
-                  <OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} />
-                </ProtectedRoute>
-              } 
-            /> 
-            <Route 
-              path="/historial" 
-              element={
-                <ProtectedRoute user={user}>
-                  <HistoryPage user={user} onLogout={handleLogout} />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/ventas" 
-              element={
-                <ProtectedRoute user={user}>
-                  <SalesPage user={user} onLogout={handleLogout} />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/apartados" 
-              element={
-                <ProtectedRoute user={user}>
-                  <ApartadosPage user={user} />
-                </ProtectedRoute>
-              } 
-            />
+            <Route path="/pedidos" element={<ProtectedRoute user={user}><OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} /></ProtectedRoute>} /> 
+            <Route path="/historial" element={<ProtectedRoute user={user}><HistoryPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+            <Route path="/ventas" element={<ProtectedRoute user={user}><SalesPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+            <Route path="/apartados" element={<ProtectedRoute user={user}><ApartadosPage user={user} /></ProtectedRoute>} />
+            <Route path="/reportes" element={<ProtectedRoute user={user} requireAdmin={true}><DailyReportPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+            <Route path="/balance" element={<ProtectedRoute user={user} requireAdmin={true}><BalancePage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
 
-            {/* 👑 RUTAS SÚPER PROTEGIDAS (Solo Admins) */}
-            <Route 
-              path="/reportes" 
-              element={
-                <ProtectedRoute user={user} requireAdmin={true}>
-                  <DailyReportPage user={user} onLogout={handleLogout} />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/balance" 
-              element={
-                <ProtectedRoute user={user} requireAdmin={true}>
-                  <BalancePage user={user} onLogout={handleLogout} />
-                </ProtectedRoute>
-              } 
-            />
-
-            {/* RUTA PRINCIPAL DE LA TIENDA */}
             <Route path="/" element={
               <AnimatePresence mode="wait">
                 {loading ? (
@@ -379,11 +329,8 @@ export default function App() {
                     className="bg-white min-h-screen w-full relative" 
                   >
                     {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
-
                     {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-
                     {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
-
                     {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
                     {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
                     {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
@@ -406,39 +353,62 @@ export default function App() {
 
                     <div className="h-[120px]" />
                     <Bienvenido />
-                    <FilterBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} filterType={filterType} setFilterType={setFilterType} filterSizes={filterSizes} setFilterSizes={setFilterSizes} />
-
+                    
                     {canAdd && (
                       <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50 cursor-pointer" onClick={() => setShowAddModal(true)}>
                         <FaPlus />
                       </button>
                     )}
 
-                    <div className="relative w-full min-h-[60vh] md:min-h-[80vh]">
-                      <div ref={pageTopRef} className="relative z-10 px-4 grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:gap-x-8">
-                        {filteredProducts().map((product) => (
-                          <ProductCard
-                            canEdit={canEdit}
-                            key={getPid(product)}
-                            product={product}
-                            user={user}
-                            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-                          />
-                        ))}
+                    {/* 🔥 CONTENEDOR MAESTRO */}
+                    <div className="w-full bg-white flex flex-col items-center pb-16 pt-6">
+                      
+                      {/* 🔥 1. BARRA DE FILTROS AL 100% DE ANCHO (Liberada) */}
+                      <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
+                        <FilterBar 
+                          searchTerm={searchTerm} 
+                          setSearchTerm={setSearchTerm} 
+                          filterType={filterType} 
+                          setFilterType={setFilterType} 
+                          filterSizes={filterSizes} 
+                          setFilterSizes={setFilterSizes} 
+                        />
                       </div>
+
+                      {/* 🔥 2. GRILLA DE PRODUCTOS RESTRINGIDA A 1150px (Con márgenes blancos) */}
+                      <div 
+                        className="w-full px-4 sm:px-6 md:px-8" 
+                        style={{ maxWidth: "1800px" }}
+                      >
+                        {/* La grilla de productos */}
+                        <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                          {filteredProducts().map((product) => (
+                            <ProductCard
+                              canEdit={canEdit}
+                              key={getPid(product)}
+                              product={product}
+                              user={user}
+                              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Paginación */}
+                        {pages > 1 && (
+                          <div className="mt-12 flex flex-col items-center gap-3">
+                            <nav className="flex items-center justify-center gap-2">
+                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
+                              {buildPages(page, pages).map(n => (
+                                <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                              ))}
+                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
+                            </nav>
+                          </div>
+                        )}
+                      </div>
+
                     </div>
 
-                    {pages > 1 && (
-                      <div className="mt-8 flex flex-col items-center gap-3">
-                        <nav className="flex items-center justify-center gap-2">
-                          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
-                          {buildPages(page, pages).map(n => (
-                            <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
-                          ))}
-                          <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
-                        </nav>
-                      </div>
-                    )}
                     <Footer />
                   </motion.div>
                 )}

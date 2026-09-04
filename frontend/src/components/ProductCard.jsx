@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { FaPlus } from "react-icons/fa";
 
 // 🔽 Helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -8,7 +9,8 @@ const cldUrl = (url, w, h) => {
 
   return url.replace(
     /\/upload\/(?!.*(f_auto|q_auto|w_|h_))/,
-    `/upload/f_auto,q_auto:eco,c_fill,g_auto,e_sharpen:60,w_${w},h_${h}/`
+    // 🔥 FIX: c_fill y g_north mantienen el cuello siempre visible
+    `/upload/f_auto,q_auto:eco,c_fill,g_north,e_sharpen:60,w_${w},h_${h}/`
   );
 };
 
@@ -29,7 +31,8 @@ const getStockDisponible = (stockObj, tallaBuscada) => {
 };
 
 export default function ProductCard({ product, onClick, canEdit }) {
-  const H = 700;
+  // 🔥 FIX: Aumentamos la altura a 800 para formato 4/5 (corta mucho menos abajo)
+  const H = 800;
 
   // 1. IMAGEN PRINCIPAL (Frontal)
   const imgMain =
@@ -88,17 +91,17 @@ export default function ProductCard({ product, onClick, canEdit }) {
   const totalStock = stockEntries.reduce((acc, [_, qty]) => acc + (Number(qty) || 0), 0);
   const isOutOfStock = totalStock <= 0;
 
-  const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
-
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      // 🔥 BLOQUEO 1: h-full y flex-col para que la tarjeta sea estructuralmente rígida
-      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer w-full h-full flex flex-col border border-gray-100"
+      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl w-full h-full flex flex-col md:hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100 cursor-pointer"
       onClick={() => onClick(product)}
     >
-      {/* 📸 SECCIÓN DE IMAGEN (Protegida por aspect-[4/5]) */}
-      <div className="relative w-full aspect-[4/5] bg-gray-50 overflow-hidden shrink-0">
+      {/* 📸 SECCIÓN DE IMAGEN: aspectRatio 4/5 para dar más espacio vertical */}
+      <div 
+        className="relative w-full bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center"
+        style={{ aspectRatio: "4/5" }}
+      >
         
         {isOutOfStock && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -108,42 +111,30 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         )}
 
+        {/* Separamos el sticker "Nuevo" ligeramente del borde para que respire */}
         {!isOutOfStock && isNew && (
-          <div className="sticker-new z-20">
+          <div className="sticker-new z-20 absolute top-2 left-2">
             <span>Nuevo</span>
           </div>
         )}
 
         {!isOutOfStock && hasDiscount && (
           <span
-            className="absolute top-2 right-2 text-white font-bold z-10 text-xs sm:text-sm px-3 py-1 rounded-md overflow-hidden shadow-lg"
+            className="absolute top-2 right-2 text-white font-bold z-10 text-[10px] sm:text-xs px-2.5 py-1 rounded shadow-lg tracking-wider"
             style={{
               background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
-              boxShadow: "0 0 15px rgba(255,0,0,0.7)",
             }}
           >
             OFERTA
-            <span
-              className="shine-effect"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: "-100%",
-                width: "50%",
-                height: "100%",
-                background: "linear-gradient(120deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,0.2) 100%)",
-                transform: "skewX(-20deg)",
-                animation: "shineMove 5s infinite",
-              }}
-            />
           </span>
         )}
 
+        {/* Imágenes */}
         {imgMain ? (
           <img
             src={imgMain}
             alt={product.name}
-            className={`w-full h-full object-cover object-center transition-all duration-700 ease-in-out group-hover:scale-110 ${
+            className={`w-full h-full object-cover object-top transition-all duration-700 ease-in-out md:group-hover:scale-105 ${
               imgHover && !isOutOfStock ? "group-hover:opacity-0" : "" 
             } ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
             loading="lazy"
@@ -158,72 +149,77 @@ export default function ProductCard({ product, onClick, canEdit }) {
           <img
             src={imgHover}
             alt={`${product.name} vista trasera`}
-            className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-in-out opacity-0 group-hover:opacity-100 group-hover:scale-110"
+            className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 ease-in-out opacity-0 group-hover:opacity-100 md:group-hover:scale-105"
             loading="lazy"
           />
         )}
-      </div>
 
-      {/* 📝 INFORMACIÓN (Estructura Flex Rígida) */}
-      <div className="flex flex-col flex-grow">
+        {/* 🔥 FRANJA SÓLIDA PARA EL TIPO (Letra pequeña en móvil) */}
         {type && (
-          <div 
-            className="w-full text-center py-1 text-[10px] font-bold uppercase tracking-widest shadow-sm z-10 relative shrink-0"
-            style={{ background: silverGradient, color: "#333" }}
-          >
+          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-40">
             {type}
           </div>
         )}
+      </div>
 
-        <div className="p-3 sm:p-4 flex flex-col flex-grow">
-          {/* 🔥 BLOQUEO 2: Altura exacta y fija para el título (h-[2.5rem] sm:h-[2.75rem]) */}
-          <h3 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-2 leading-tight h-[2.5rem] sm:h-[2.75rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
-            {product.name}
-          </h3>
+      {/* 📝 INFORMACIÓN */}
+      <div className="p-3 sm:p-4 flex flex-col flex-grow bg-white text-left">
+        
+        {/* Título */}
+        <h3 className="text-xs sm:text-xl font-black text-black uppercase tracking-tight line-clamp-2 leading-snug h-[2rem] sm:h-[2.2rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
+          {product.name}
+        </h3>
 
-          {/* 🔥 BLOQUEO 3: mt-auto empuja el precio siempre hasta el fondo del contenedor */}
-          <div className="flex items-end justify-end mt-auto pt-2">
-            <div className="text-right flex flex-col items-end">
-              {hasDiscount ? (
-                <>
-                  <span className="text-[10px] sm:text-xs text-gray-400 line-through decoration-red-400">
-                    ₡{Number(product.price).toLocaleString("de-DE")}
-                  </span>
-                  <span className="text-sm sm:text-base md:text-lg font-bold text-red-600 leading-none mt-0.5">
-                    ₡{Number(product.discountPrice).toLocaleString("de-DE")}
-                  </span>
-                </>
-              ) : (
-                <span className="text-sm sm:text-base md:text-lg font-bold text-gray-900 leading-none">
+        {/* Precios y Botón de "+" */}
+        <div className="flex items-end justify-between mt-auto pt-3">
+          <div className="flex flex-col items-start">
+            {hasDiscount ? (
+              <>
+                <span className="text-xs sm:text-xl text-gray-400 line-through decoration-red-400">
                   ₡{Number(product.price).toLocaleString("de-DE")}
                 </span>
-              )}
-            </div>
+                <span className="text-xs sm:text-xl font-black text-red-600 leading-none mt-0.5">
+                  ₡{Number(product.discountPrice).toLocaleString("de-DE")}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs sm:text-xl font-black text-gray-500 leading-none">
+                ₡{Number(product.price).toLocaleString("de-DE")}
+              </span>
+            )}
+          </div>
+
+          {/* Botón flotante derecho */}
+          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-50 rounded shadow-sm border border-gray-100 text-gray-400 group-hover:bg-[#1a237e] group-hover:text-white transition-colors">
+            <FaPlus className="text-[9px] sm:text-[10px]" />
           </div>
         </div>
-
-        {/* 🔥 BLOQUEO 4: Caja de Admin con altura estática (h-[56px]) para evitar cambios en la grilla */}
-        {canEdit && (
-          <div className="bg-gray-50 px-3 py-2 border-t border-gray-100 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden">
-             {isOutOfStock ? (
-               <p className="text-red-600 font-bold text-center">🔴 SIN STOCK</p>
-             ) : (
-               <>
-                {soldOutSizes.length > 0 && (
-                  <p className="text-red-600 truncate">
-                    <span className="font-bold">Agotado:</span> {soldOutSizes.join(", ")}
-                  </p>
-                )}
-                {lowStockSizes.length > 0 && (
-                  <p className="text-orange-500 truncate">
-                    <span className="font-bold">Queda 1:</span> {lowStockSizes.join(", ")}
-                  </p>
-                )}
-               </>
-             )}
-          </div>
-        )}
       </div>
+
+      {/* 🔥 CAJA ADMIN */}
+      {canEdit && (
+        <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden text-center">
+            {isOutOfStock ? (
+              <p className="text-red-600 font-bold">🔴 SIN STOCK</p>
+            ) : (
+              <>
+              {soldOutSizes.length > 0 && (
+                <p className="text-red-600 truncate">
+                  <span className="font-bold">Agotado:</span> {soldOutSizes.join(", ")}
+                </p>
+              )}
+              {lowStockSizes.length > 0 && (
+                <p className="text-orange-500 truncate">
+                  <span className="font-bold">Queda 1:</span> {lowStockSizes.join(", ")}
+                </p>
+              )}
+              {soldOutSizes.length === 0 && lowStockSizes.length === 0 && (
+                <p className="text-green-600 font-medium">✅ Stock completo</p>
+              )}
+              </>
+            )}
+        </div>
+      )}
     </motion.div>
   );
 }
