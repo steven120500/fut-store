@@ -68,12 +68,13 @@ export default function Bienvenido() {
     else if (distance < -50) prevSlide();
   };
 
+  // 🛠️ Animaciones con proporciones seguras
   const getCardStyle = (index) => {
     const total = slides.length;
     const diff = (index - activeIdx + total) % total;
 
     const scaleFactor = isMobile ? 0.85 : 1; 
-    const xOffset = isMobile ? 120 : 320;
+    const xOffset = isMobile ? 120 : 300;
     const yOffset = isMobile ? 40 : 80;
 
     if (diff === 0) return { x: 0, y: 0, scale: 1 * scaleFactor, rotate: 0, zIndex: 30, opacity: 1, filter: "brightness(1) drop-shadow(0 15px 35px rgba(255,255,255,0.4))" };
@@ -89,7 +90,7 @@ export default function Bienvenido() {
 
   return (
     <section 
-      /* 🛠️ FIX INFALIBLE: Quitamos la altura de Tailwind y usamos estilos en línea nativos */
+      /* 🛠️ FIX INFALIBLE: Volvemos a la altura estricta con calc() para que no se aplaste */
       style={{ height: "calc(100vh - 120px)", minHeight: "550px" }}
       className="relative w-full flex flex-col items-center justify-between overflow-hidden bg-black select-none font-sans"
       onTouchStart={handleTouchStart}
@@ -104,9 +105,9 @@ export default function Bienvenido() {
       </div>
 
       {/* 🎠 ÁREA CENTRAL (Camiseta y Textos Gigantes) */}
-      <div className="relative w-full max-w-7xl flex-1 flex items-center justify-center z-10 mt-8">
+      <div className="relative w-full max-w-7xl flex-1 flex items-center justify-center z-10 mt-6 lg:mt-10">
         
-        {/* TEXTO GIGANTE */}
+        {/* TEXTO GIGANTE (Fondo) */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={`txt-container-${activeIdx}`}
@@ -116,10 +117,10 @@ export default function Bienvenido() {
             transition={{ duration: 0.5, ease: "easeInOut" }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
           >
-            <h2 className="absolute text-center font-black text-white uppercase tracking-tighter leading-none -skew-x-12 z-50" style={{ fontSize: "clamp(50px, 12vw, 150px)", textShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
+            <h2 className="absolute text-center font-black text-white uppercase tracking-tighter leading-none -skew-x-12 z-50" style={{ fontSize: "clamp(50px, 10vw, 130px)", textShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
               {displayName}
             </h2>
-            <h2 className="absolute text-center font-black uppercase tracking-tighter leading-none -skew-x-12 z-[60]" style={{ fontSize: "clamp(50px, 12vw, 150px)", color: "transparent", WebkitTextStroke: isMobile ? "1px rgba(255,255,255,0.7)" : "2px rgba(255,255,255,0.7)" }}>
+            <h2 className="absolute text-center font-black uppercase tracking-tighter leading-none -skew-x-12 z-[60]" style={{ fontSize: "clamp(50px, 10vw, 130px)", color: "transparent", WebkitTextStroke: isMobile ? "1px rgba(255,255,255,0.7)" : "2px rgba(255,255,255,0.7)" }}>
               {displayName}
             </h2>
           </motion.div>
@@ -142,13 +143,14 @@ export default function Bienvenido() {
             <motion.div 
               animate={{ scale: i === activeIdx ? [1, 1.15, 1] : 1, opacity: i === activeIdx ? [0.6, 0.9, 0.6] : 0 }}
               transition={{ duration: 2.5, repeat: i === activeIdx ? Infinity : 0, ease: "easeInOut" }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] lg:w-[40vh] lg:h-[40vh] max-w-[450px] max-h-[450px] rounded-full z-[25] pointer-events-none"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220px] h-[220px] lg:w-[350px] lg:h-[350px] max-w-[400px] max-h-[400px] rounded-full z-[25] pointer-events-none"
               style={{ background: `radial-gradient(circle, rgba(${slide.glowColor}, 0.8) 0%, rgba(${slide.glowColor}, 0.3) 40%, rgba(0,0,0,0) 70%)`, filter: "blur(40px)" }}
             />
+            {/* 🛠️ Imágenes contenidas para que no se desborden en laptops */}
             <img
               src={slide.image}
               alt={slide.title}
-              className="w-auto h-[25vh] lg:h-[35vh] max-h-[250px] lg:max-h-[350px] object-contain relative z-30"
+              className="w-auto h-[25vh] lg:h-[35vh] max-h-[260px] lg:max-h-[320px] object-contain relative z-30 drop-shadow-xl"
               draggable="false"
             />
           </motion.div>
@@ -168,7 +170,7 @@ export default function Bienvenido() {
           >
             <button
               onClick={() => handleNavigation(activeSlide.eventName)}
-              className={`flex items-center gap-3 px-10 py-4 rounded-full font-black text-sm lg:text-base uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap ${
+              className={`flex items-center gap-3 px-10 py-3 lg:px-12 lg:py-4 rounded-full font-black text-sm lg:text-base uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 whitespace-nowrap ${
                 activeSlide.isOffer
                   ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)]"
                   : "bg-white text-black border-white shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-gray-200"
@@ -190,7 +192,7 @@ export default function Bienvenido() {
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-[100] bg-[#25D366] text-white p-4 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 lg:bottom-8 lg:left-8 z-[100] bg-[#25D366] text-white p-4 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
       >
         <FaWhatsapp className="text-3xl" />
       </a>
