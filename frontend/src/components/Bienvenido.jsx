@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaArrowRight, FaWhatsapp } from "react-icons/fa";
+import { FaArrowRight, FaWhatsapp, FaChevronDown } from "react-icons/fa";
 
 // 📦 DATOS DE PRODUCTOS
 const slides = [
@@ -40,7 +40,7 @@ export default function Bienvenido() {
     };
   }, []);
 
-  // ⏱️ Rotación automática rápida (6 segundos) - Sincronizada con la barra
+  // ⏱️ Rotación automática rápida (4 segundos) - Sincronizada con la barra
   useEffect(() => {
     if (isPaused) return; 
     const timer = setInterval(() => {
@@ -260,6 +260,22 @@ export default function Bienvenido() {
       >
         <FaWhatsapp className="text-2xl md:text-3xl" />
       </a>
+
+      {/* ⬇️ INDICADOR ANIMADO DE SCROLL */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 1 }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-40 opacity-70 pointer-events-none"
+      >
+        
+        <motion.div
+          animate={{ y: [0, 6, 0] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+        >
+          <FaChevronDown className="text-white text-sm" />
+        </motion.div>
+      </motion.div>
 
       {/* ⏳ INDICADOR DE TIEMPO (PROGRESS BAR) */}
       <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-40">
