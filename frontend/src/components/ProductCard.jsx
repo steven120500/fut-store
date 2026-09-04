@@ -9,7 +9,6 @@ const cldUrl = (url, w, h) => {
 
   return url.replace(
     /\/upload\/(?!.*(f_auto|q_auto|w_|h_))/,
-    // 🔥 FIX: c_fill y g_north mantienen el cuello siempre visible
     `/upload/f_auto,q_auto:eco,c_fill,g_north,e_sharpen:60,w_${w},h_${h}/`
   );
 };
@@ -31,7 +30,6 @@ const getStockDisponible = (stockObj, tallaBuscada) => {
 };
 
 export default function ProductCard({ product, onClick, canEdit }) {
-  // 🔥 FIX: Aumentamos la altura a 800 para formato 4/5 (corta mucho menos abajo)
   const H = 800;
 
   // 1. IMAGEN PRINCIPAL (Frontal)
@@ -94,12 +92,22 @@ export default function ProductCard({ product, onClick, canEdit }) {
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      className="group relative bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-xl w-full h-full flex flex-col md:hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100 cursor-pointer"
+      // 🔥 FIX 1: Quitamos "overflow-hidden" de la caja principal para que el sticker pueda salirse libremente
+      className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl w-full h-full flex flex-col md:hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100 cursor-pointer"
       onClick={() => onClick(product)}
     >
-      {/* 📸 SECCIÓN DE IMAGEN: aspectRatio 4/5 para dar más espacio vertical */}
+      
+      {/* 🔥 FIX 2: Movimos el sticker NUEVO afuera de la foto y le dimos posición negativa (-top-2 -left-2) para que sobresalga */}
+      {!isOutOfStock && isNew && (
+        <div className="sticker-new z-50 absolute -top-2 -left-2 scale-[0.70] sm:scale-100 origin-top-left transition-transform pointer-events-none">
+          <span>Nuevo</span>
+        </div>
+      )}
+
+      {/* 📸 SECCIÓN DE IMAGEN */}
       <div 
-        className="relative w-full bg-gray-50 overflow-hidden shrink-0 flex items-center justify-center"
+        // 🔥 FIX 3: Agregamos "rounded-t-xl" y "overflow-hidden" solo aquí, para que la foto no se vuelva cuadrada arriba
+        className="relative w-full bg-gray-50 rounded-t-xl overflow-hidden shrink-0 flex items-center justify-center"
         style={{ aspectRatio: "4/5" }}
       >
         
@@ -111,16 +119,9 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         )}
 
-        {/* Separamos el sticker "Nuevo" ligeramente del borde para que respire */}
-        {!isOutOfStock && isNew && (
-          <div className="sticker-new z-20 absolute top-2 left-2">
-            <span>Nuevo</span>
-          </div>
-        )}
-
         {!isOutOfStock && hasDiscount && (
           <span
-            className="absolute top-2 right-2 text-white font-bold z-10 text-[10px] sm:text-xs px-2.5 py-1 rounded shadow-lg tracking-wider"
+            className="absolute top-2 right-2 text-white font-black z-10 text-xs sm:text-xl px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-sm shadow-lg tracking-widest pointer-events-none"
             style={{
               background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
             }}
@@ -154,16 +155,16 @@ export default function ProductCard({ product, onClick, canEdit }) {
           />
         )}
 
-        {/* 🔥 FRANJA SÓLIDA PARA EL TIPO (Letra pequeña en móvil) */}
+        {/* 🔥 FRANJA SÓLIDA PARA EL TIPO */}
         {type && (
-          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-40">
+          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-40 border-none border-0">
             {type}
           </div>
         )}
       </div>
 
       {/* 📝 INFORMACIÓN */}
-      <div className="p-3 sm:p-4 flex flex-col flex-grow bg-white text-left">
+      <div className={`p-3 sm:p-4 flex flex-col flex-grow bg-white text-left ${canEdit ? "" : "rounded-b-xl"}`}>
         
         {/* Título */}
         <h3 className="text-xs sm:text-xl font-black text-black uppercase tracking-tight line-clamp-2 leading-snug h-[2rem] sm:h-[2.2rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
@@ -198,7 +199,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
 
       {/* 🔥 CAJA ADMIN */}
       {canEdit && (
-        <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden text-center">
+        <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden text-center rounded-b-xl">
             {isOutOfStock ? (
               <p className="text-red-600 font-bold">🔴 SIN STOCK</p>
             ) : (
