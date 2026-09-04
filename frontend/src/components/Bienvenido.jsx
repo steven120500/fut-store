@@ -117,8 +117,9 @@ export default function Bienvenido() {
           </h2>
         </motion.div>
 
+        {/* Contenedor más pequeño para móvil */}
         <div 
-          className="relative w-full max-w-sm h-96 mx-auto [perspective:1000px]"
+          className="relative w-full max-w-sm h-72 mx-auto [perspective:1000px]"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -135,8 +136,8 @@ export default function Bienvenido() {
                 alt={slide.title}
                 className={`w-auto object-contain transition-all duration-700 ${
                   i === activeIdx
-                    ? "max-h-[220px] drop-shadow-[0_25px_40px_rgba(0,0,0,0.95)]"
-                    : "max-h-[150px] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+                    ? "max-h-[190px] drop-shadow-[0_25px_40px_rgba(0,0,0,0.95)]"
+                    : "max-h-[120px] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
                 }`}
               />
             </div>
@@ -166,11 +167,10 @@ export default function Bienvenido() {
       </div>
 
       {/* ========================================================
-          💻 VERSIÓN DESKTOP (Split Screen - Forzado a 90%)
+          💻 VERSIÓN DESKTOP 
           ======================================================== */}
       <div 
-        className="hidden md:grid relative z-10 w-full max-w-7xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full"
-        style={{ zoom: "90%" }} /* 🔥 AQUÍ ESTÁ EL CAMBIO: Forzado como string */
+        className="hidden md:grid relative z-10 w-full max-w-6xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full pt-16 lg:pt-24"
       >
         
         {/* Columna Izquierda: Texto y Botón Agrupados */}
@@ -180,17 +180,17 @@ export default function Bienvenido() {
           transition={{ duration: 0.8 }}
           className="flex flex-col items-start text-left"
         >
-          <h1 className="text-6xl lg:text-8xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
+          <h1 className="text-5xl lg:text-7xl font-black text-white leading-none tracking-tighter drop-shadow-2xl">
             BIENVENIDO
           </h1>
-          <h2 className="text-4xl lg:text-6xl font-light text-gray-200 mt-2">
+          <h2 className="text-3xl lg:text-5xl font-light text-gray-200 mt-2">
             a <span className="font-serif italic text-white font-bold">FutStore</span>
           </h2>
-          <p className="text-gray-400 text-lg lg:text-xl font-medium mt-4 max-w-md">
+          <p className="text-gray-400 text-base lg:text-lg font-medium mt-4 max-w-md">
             La élite del fútbol, en tu piel. Equipate con lo mejor de esta temporada.
           </p>
 
-          <div className="mt-10 h-16">
+          <div className="mt-8 h-16">
             <AnimatePresence mode="wait">
               <motion.button
                 key={`btn-desk-${activeSlide.id}`}
@@ -201,7 +201,7 @@ export default function Bienvenido() {
                 transition={{ type: "spring", stiffness: 120, damping: 14 }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`flex items-center gap-3 px-8 py-4 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl border transition-all ${
+                className={`flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl border transition-all ${
                   activeSlide.isOffer
                     ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.6)]"
                     : "bg-white text-black border-white/80 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:bg-gray-200"
@@ -215,7 +215,7 @@ export default function Bienvenido() {
         </motion.div>
 
         {/* Columna Derecha: Animación de Imagen */}
-        <div className="relative flex flex-col items-center justify-center h-[500px] lg:h-[600px]">
+        <div className="relative flex flex-col items-center justify-center h-[400px] lg:h-[450px]">
           <AnimatePresence mode="wait">
             <motion.img
               key={activeSlide.id}
@@ -225,7 +225,7 @@ export default function Bienvenido() {
               animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
               exit={{ opacity: 0, scale: 0.4, y: -150, rotate: 15 }}
               transition={{ type: "spring", stiffness: 90, damping: 12 }}
-              className="max-h-[400px] lg:max-h-[500px] object-contain drop-shadow-[0_20px_40px_rgba(255,255,255,0.15)] z-20"
+              className="max-h-[300px] lg:max-h-[380px] object-contain drop-shadow-[0_20px_40px_rgba(255,255,255,0.15)] z-20"
             />
           </AnimatePresence>
         </div>
