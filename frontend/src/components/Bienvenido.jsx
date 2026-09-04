@@ -65,7 +65,7 @@ export default function Bienvenido() {
     if (isPaused || isAnimating) return;
     const timer = setInterval(() => {
       nextSlide();
-    }, 3500);
+    }, 2000);
     
     return () => clearInterval(timer);
   }, [isPaused, isAnimating, activeIdx]);

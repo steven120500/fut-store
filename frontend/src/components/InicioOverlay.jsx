@@ -28,8 +28,23 @@ export default function InicioOverlay({ onComplete }) {
       }}
       className="fixed inset-0 z-[99999] bg-black flex flex-col items-center justify-center overflow-hidden"
     >
+      {/* 🌌 FONDOS RESPONSIVOS */}
+      <img 
+        src="/FondoM.png" 
+        alt="Fondo Móvil" 
+        className="absolute inset-0 w-full h-full object-cover md:hidden z-0 opacity-50" 
+      />
+      <img 
+        src="/FondoD.png" 
+        alt="Fondo Escritorio" 
+        className="absolute inset-0 w-full h-full object-cover hidden md:block z-0 opacity-50" 
+      />
+      
+      {/* Capa oscura para no perder el contraste con los elementos 3D */}
+      <div className="absolute inset-0 bg-black/60 z-0 pointer-events-none"></div>
+
       {/* 🌀 CONTENEDOR CENTRAL DE LA ÓRBITA */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
         
         {/* Aura dorada suave de fondo */}
         <motion.div 
@@ -76,7 +91,7 @@ export default function InicioOverlay({ onComplete }) {
       </div>
 
       {/* ✍️ TEXTOS DE BIENVENIDA (Fijos en el centro de la órbita) */}
-      <div className="text-center px-6 z-10 max-w-xl relative">
+      <div className="text-center px-6 z-20 max-w-xl relative">
         <motion.h2
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -85,11 +100,10 @@ export default function InicioOverlay({ onComplete }) {
         >
           ¡Bienvenido a <span className="text-amber-400">FutStore</span>!
         </motion.h2>
-      
       </div>
 
       {/* 🌟 BARRA DE CARGA */}
-      <div className="absolute bottom-16 w-48 h-[2px] bg-neutral-900 overflow-hidden rounded-full">
+      <div className="absolute bottom-16 w-48 h-[2px] bg-neutral-900 overflow-hidden rounded-full z-20">
         <motion.div
           initial={{ x: "-100%" }}
           animate={{ x: "100%" }}
