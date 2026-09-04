@@ -85,18 +85,17 @@ export default function Bienvenido() {
     else if (distance < -50) prevSlide();
   };
 
-  // 🛠️ VARIABLE PARA AJUSTAR LA ALTURA DE LA CAMISETA Y EL TEXTO
-  // Un valor negativo (-40) hace que todo el bloque suba para eliminar el espacio muerto de arriba
-  const bajar = isMobile ? -40 : 0; 
-
   // 5️⃣ Motor 3D del Carrusel (Órbita)
   const getCardStyle = (index) => {
     const total = slides.length;
     const diff = (index - activeIdx + total) % total;
 
-    const scaleFactor = isMobile ? 0.85 : 1; 
+    const scaleFactor = isMobile ? 0.8 : 1; 
     const xOffset = isMobile ? 120 : 320;
     const yOffset = isMobile ? 40 : 80;
+    
+    // Subimos todo un poco más
+    const bajar = isMobile ? -30 : -20; 
 
     if (diff === 0) {
       return { 
@@ -148,7 +147,40 @@ export default function Bienvenido() {
       {/* 🎠 CARRUSEL 3D Y EFECTO DE TEXTO GIGANTE */}
       <div className="relative w-full max-w-7xl h-[60vh] lg:h-[70vh] flex items-center justify-center z-10 lg:mt-0">
         
-       
+        {/* TEXTO DINÁMICO GIGANTE (CENTRADO AUTOMÁTICO SIN MÁRGENES FORZADOS) */}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={`txt-container-${activeIdx}`}
+            initial={{ opacity: 0, y: isMobile ? -50 : -40, scale: 0.95 }}
+            animate={{ opacity: 1, y: isMobile ? -30 : -20, scale: 1 }}
+            exit={{ opacity: 0, y: isMobile ? -10 : 0, scale: 1.05 }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
+          >
+            {/* CAPA 1: TEXTO SÓLIDO (Z-50) */}
+            <h2 
+              className="absolute text-center font-black text-white uppercase tracking-tighter leading-none -skew-x-12 z-50"
+              style={{ 
+                fontSize: "clamp(50px, 10vw, 130px)", 
+                textShadow: "0 10px 40px rgba(0,0,0,0.5)" 
+              }}
+            >
+              {displayName}
+            </h2>
+
+            {/* CAPA 3: TEXTO CON CONTORNO (Z-60) */}
+            <h2 
+              className="absolute text-center font-black uppercase tracking-tighter leading-none -skew-x-12 z-[60]"
+              style={{ 
+                fontSize: "clamp(50px, 10vw, 130px)",
+                color: "transparent",
+                WebkitTextStroke: isMobile ? "1px rgba(255,255,255,0.7)" : "2px rgba(255,255,255,0.7)" 
+              }}
+            >
+              {displayName}
+            </h2>
+          </motion.div>
+        </AnimatePresence>
 
         {/* IMÁGENES DEL CARRUSEL Y LUCES */}
         {slides.map((slide, i) => (
@@ -176,18 +208,18 @@ export default function Bienvenido() {
                 repeat: i === activeIdx ? Infinity : 0, 
                 ease: "easeInOut" 
               }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] lg:w-[45vh] lg:h-[45vh] max-w-[450px] max-h-[450px] rounded-full z-[25] pointer-events-none"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] h-[250px] lg:w-[40vh] lg:h-[40vh] max-w-[400px] max-h-[400px] rounded-full z-[25] pointer-events-none"
               style={{
                 background: `radial-gradient(circle, rgba(${slide.glowColor}, 0.8) 0%, rgba(${slide.glowColor}, 0.3) 40%, rgba(0,0,0,0) 70%)`,
                 filter: "blur(40px)"
               }}
             />
 
-            {/* IMAGEN DEL PRODUCTO (Altura relativa a la pantalla: vh) */}
+            {/* IMAGEN DEL PRODUCTO (Ajustada para no chocar con el header) */}
             <img
               src={slide.image}
               alt={slide.title}
-              className="w-auto h-[35vh] lg:h-[42vh] max-h-[280px] lg:max-h-[350px] object-contain relative z-30"
+              className="w-auto h-[30vh] lg:h-[35vh] max-h-[250px] lg:max-h-[300px] object-contain relative z-30"
               draggable="false"
             />
           </motion.div>
@@ -195,7 +227,7 @@ export default function Bienvenido() {
       </div>
 
       {/* 🔘 BOTÓN CTA Y TEXTO INFERIOR */}
-      <div className="absolute bottom-24 lg:bottom-16 z-[70] flex flex-col items-center justify-center w-full px-4">
+      <div className="absolute bottom-20 lg:bottom-16 z-[70] flex flex-col items-center justify-center w-full px-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={`info-${activeSlide.id}`}
@@ -207,17 +239,17 @@ export default function Bienvenido() {
           >
             <button
               onClick={() => handleNavigation(activeSlide.eventName)}
-              className={`flex items-center gap-3 px-12 py-4 lg:px-14 lg:py-5 rounded-full font-black text-base lg:text-lg uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
+              className={`flex items-center gap-3 px-10 py-3 lg:px-12 lg:py-4 rounded-full font-black text-sm lg:text-base uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
                 activeSlide.isOffer
                   ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)]"
                   : "bg-white text-black border-white shadow-[0_0_30px_rgba(255,255,255,0.2)] hover:bg-gray-200"
               }`}
             >
               <span>{activeSlide.title}</span>
-              <FaArrowRight className="text-sm lg:text-base" />
+              <FaArrowRight className="text-xs lg:text-sm" />
             </button>
             
-            <p className="text-gray-400 text-xs lg:text-sm mt-5 tracking-widest font-medium uppercase drop-shadow-md text-center">
+            <p className="text-gray-400 text-xs lg:text-sm mt-4 tracking-widest font-medium uppercase drop-shadow-md text-center">
               La élite del fútbol, en tu piel.
             </p>
 
@@ -230,9 +262,9 @@ export default function Bienvenido() {
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 bg-[#25D366] text-white p-4 lg:p-5 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 bg-[#25D366] text-white p-3 lg:p-4 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
       >
-        <FaWhatsapp className="text-3xl" />
+        <FaWhatsapp className="text-2xl lg:text-3xl" />
       </a>
       
     </section>
