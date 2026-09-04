@@ -148,7 +148,7 @@ export default function Bienvenido() {
       {/* 🎠 CARRUSEL 3D Y EFECTO DE TEXTO GIGANTE */}
       <div className="relative w-full max-w-7xl h-[60vh] lg:h-[70vh] flex items-center justify-center z-10 lg:mt-0">
         
-        
+       
 
         {/* IMÁGENES DEL CARRUSEL Y LUCES */}
         {slides.map((slide, i) => (
@@ -176,18 +176,18 @@ export default function Bienvenido() {
                 repeat: i === activeIdx ? Infinity : 0, 
                 ease: "easeInOut" 
               }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] lg:w-[450px] lg:h-[450px] rounded-full z-[25] pointer-events-none"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[280px] lg:w-[45vh] lg:h-[45vh] max-w-[450px] max-h-[450px] rounded-full z-[25] pointer-events-none"
               style={{
                 background: `radial-gradient(circle, rgba(${slide.glowColor}, 0.8) 0%, rgba(${slide.glowColor}, 0.3) 40%, rgba(0,0,0,0) 70%)`,
                 filter: "blur(40px)"
               }}
             />
 
-            {/* IMAGEN DEL PRODUCTO (Aumentada a 280px en móvil para llenar más el espacio visual) */}
+            {/* IMAGEN DEL PRODUCTO (Altura relativa a la pantalla: vh) */}
             <img
               src={slide.image}
               alt={slide.title}
-              className="w-[280px] h-[280px] lg:w-[350px] lg:h-[350px] object-contain relative z-30"
+              className="w-auto h-[35vh] lg:h-[42vh] max-h-[280px] lg:max-h-[350px] object-contain relative z-30"
               draggable="false"
             />
           </motion.div>
@@ -195,7 +195,6 @@ export default function Bienvenido() {
       </div>
 
       {/* 🔘 BOTÓN CTA Y TEXTO INFERIOR */}
-      {/* 🛠️ FIX: Se movió de bottom-12 a bottom-24 para cerrar el espacio hacia arriba y evitar choques con WhatsApp */}
       <div className="absolute bottom-24 lg:bottom-16 z-[70] flex flex-col items-center justify-center w-full px-4">
         <AnimatePresence mode="wait">
           <motion.div
@@ -208,7 +207,6 @@ export default function Bienvenido() {
           >
             <button
               onClick={() => handleNavigation(activeSlide.eventName)}
-              /* 🛠️ Botón más grande: px-12 py-4 y texto más grande */
               className={`flex items-center gap-3 px-12 py-4 lg:px-14 lg:py-5 rounded-full font-black text-base lg:text-lg uppercase tracking-widest shadow-2xl border transition-all duration-300 hover:scale-105 active:scale-95 ${
                 activeSlide.isOffer
                   ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-500 shadow-[0_0_40px_rgba(239,68,68,0.4)]"
@@ -227,12 +225,12 @@ export default function Bienvenido() {
         </AnimatePresence>
       </div>
 
-      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP (Ajustado para que no estorbe el texto inferior) */}
+      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP */}
       <a 
         href="https://wa.me/50672327096" 
         target="_blank" 
         rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 bg-green-500 text-white p-4 lg:p-5 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
+        className="fixed bottom-6 left-6 lg:bottom-10 lg:left-10 z-50 bg-[#25D366] text-white p-4 lg:p-5 rounded-full shadow-[0_0_20px_rgba(37,211,102,0.5)] hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.8)] transition-all duration-300 flex items-center justify-center cursor-pointer"
       >
         <FaWhatsapp className="text-3xl" />
       </a>
