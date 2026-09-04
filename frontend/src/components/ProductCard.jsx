@@ -190,7 +190,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
 
           {/* Botón flotante derecho */}
-          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-50 rounded shadow-sm border border-gray-100 text-gray-400 group-hover:bg-[#1a237e] group-hover:text-white transition-colors">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-50 rounded shadow-sm border border-gray-100 text-gray-400 group-hover:bg-black group-hover:text-white transition-colors">
             <FaPlus className="text-[9px] sm:text-[10px]" />
           </div>
         </div>
