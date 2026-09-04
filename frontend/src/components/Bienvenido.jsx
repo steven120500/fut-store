@@ -128,34 +128,7 @@ export default function Bienvenido() {
       {/* 🎠 ÁREA CENTRAL */}
       <div className="relative w-full max-w-7xl flex-1 flex items-center justify-center z-10 mt-2 lg:mt-6">
         
-        {/* TEXTO GIGANTE (Simulando el Zoom de 70% en Laptops mediante clases) */}
-        <AnimatePresence mode="popLayout">
-          <motion.div
-            key={`txt-container-${activeIdx}`}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none z-50"
-          >
-            {/* Si es laptop usa texto de 100px (aprox 70% de 150px), si es Mac usa 150px */}
-            <h2 className="absolute text-center font-black text-white uppercase tracking-tighter leading-none -skew-x-12 z-50" 
-                style={{ 
-                  fontSize: screenZoom === "mobile" ? "50px" : (screenZoom === "laptop70" ? "100px" : "150px"), 
-                  textShadow: "0 10px 40px rgba(0,0,0,0.5)" 
-                }}>
-              {displayName}
-            </h2>
-            <h2 className="absolute text-center font-black uppercase tracking-tighter leading-none -skew-x-12 z-[60]" 
-                style={{ 
-                  fontSize: screenZoom === "mobile" ? "50px" : (screenZoom === "laptop70" ? "100px" : "150px"), 
-                  color: "transparent", 
-                  WebkitTextStroke: screenZoom === "mobile" ? "1px rgba(255,255,255,0.7)" : "2px rgba(255,255,255,0.7)" 
-                }}>
-              {displayName}
-            </h2>
-          </motion.div>
-        </AnimatePresence>
+        
 
         {/* CARRUSEL DE PRODUCTOS */}
         {slides.map((slide, i) => (
