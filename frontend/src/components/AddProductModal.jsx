@@ -97,7 +97,7 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
     };
   }, []);
 
-  // 🏆 AQUÍ ESTÁ LA CORRECCIÓN: Tallas con COMAS
+  // 🏆 Tallas con COMAS
   const tallas = useMemo(() => {
     const TACO_SIZES = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)', '12,5 US (46,5)', '13 US (47)'];
     const tipos = { ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: TACO_SIZES };
@@ -218,45 +218,48 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   };
 
   return (
+    // 🔥 FIX 1: z-[9999] garantiza que quede por encima de la barra de navegación.
     <div
       ref={modalRef}
-      className="mt-28 mb-24 fixed inset-0 z-50 bg-black/40 flex items-center justify-center py-6"
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 sm:p-6"
     >
-      <div className="pt-12 pb-24 relative bg-white p-6 rounded-lg shadow-md max-w-md w-full max-h-screen overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      {/* 🔥 FIX 2: Se eliminaron los padding enormes (pt-12, pb-24) para que la caja respire bien */}
+      <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+        
+        {/* Botón de cerrar bien posicionado arriba a la derecha */}
         <button
           onClick={onCancel}
-          className="absolute fondo-plateado top-6 right-2 text-white bg-black rounded p-1"
+          className="absolute top-4 right-4 text-black hover:text-red-600 transition-colors"
         >
-          <FaTimes size={30} />
+          <FaTimes size={24} />
         </button>
 
-        <h2 className="text-lg font-semibold mb-4">Agregar producto</h2>
+        <h2 className="text-xl font-bold mb-2">Agregar producto</h2>
 
-        <p className="text-gray-500 mb-2">
+        <p className="text-sm text-gray-500 mb-6 leading-tight">
           Arrastrá y soltá hasta {MAX_IMAGES} imagen(es) o hacé clic para seleccionar (se convertirán a WebP)
         </p>
 
-        <div className="flex gap-2 justify-center flex-wrap mb-3">
+        <div className="flex gap-2 justify-center flex-wrap mb-4">
           {images.map((img, i) => (
             <div key={`preview-${i}`} className="relative">
-              <img src={img.previewUrl} alt={`preview-${i}`} className="w-24 h-24 object-cover rounded" />
+              <img src={img.previewUrl} alt={`preview-${i}`} className="w-24 h-24 object-cover rounded shadow-md border" />
               <button
                 onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
-                className="absolute -top-1 -right-1 text-white text-xs rounded-full px-1"
-                style={{ backgroundColor: "#d4af37", color: "#000" }}
+                className="absolute -top-2 -right-2 text-white text-xs rounded-full p-1 shadow-lg bg-red-500 hover:bg-red-600"
               >
-                ✕
+                <FaTimes />
               </button>
             </div>
           ))}
         </div>
 
         {images.length < MAX_IMAGES && (
-          <div className="mb-4">
+          <div className="mb-6">
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 text-white border-dashed border-gray-300 p-2 rounded w-full text-center"
+              className="border-2 text-gray-600 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-medium py-3 rounded-lg w-full text-center transition-colors"
             >
               Seleccionar imagen
             </button>
@@ -270,96 +273,103 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
           </div>
         )}
 
-        <input
-          type="text"
-          placeholder="Nombre del producto"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
-        />
-
-        <input
-          type="text"
-          placeholder="Precio normal (₡)"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
-        />
-
-        <input
-          type="text"
-          placeholder="Precio con descuento (opcional)"
-          value={discountPrice}
-          onChange={(e) => setDiscountPrice(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-3"
-        />
-
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded mb-4"
-        >
-          {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
-        </select>
-
-        <label className="flex items-center gap-2 mb-2 select-none">
+        <div className="space-y-3 mb-6">
           <input
-            type="checkbox"
-            checked={isNew}
-            onChange={(e) => setIsNew(e.target.checked)}
+            type="text"
+            placeholder="Nombre del producto"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
           />
-          <span className="text-sm">
-            Mostrar etiqueta <strong>NUEVO</strong>
-          </span>
-        </label>
 
-        <label className="flex items-center gap-2 mb-4 select-none">
           <input
-            type="checkbox"
-            checked={isMundial}
-            onChange={(e) => setIsMundial(e.target.checked)}
+            type="text"
+            placeholder="Precio normal (Ej. 25000)"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
           />
-          <span className="text-sm text-amber-600 font-bold">
-            Asignar Colección <strong>MUNDIAL 2026</strong>
-          </span>
-        </label>
 
-        {/* 🏆 AQUÍ ESTÁ LA CORRECCIÓN: Cuadritos rectos y dinámicos */}
-        <div className={`grid gap-3 mb-6 ${type === 'Tacos' ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-4 sm:grid-cols-5'}`}>
+          <input
+            type="text"
+            placeholder="Precio con descuento (opcional)"
+            value={discountPrice}
+            onChange={(e) => setDiscountPrice(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+          />
+
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black font-semibold"
+          >
+            {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-2 mb-6 border bg-gray-50 p-4 rounded-lg">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isNew}
+              onChange={(e) => setIsNew(e.target.checked)}
+              className="w-4 h-4 text-black border-gray-300 rounded"
+            />
+            <span className="text-sm text-gray-800">
+              Mostrar etiqueta <strong>NUEVO</strong>
+            </span>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isMundial}
+              onChange={(e) => setIsMundial(e.target.checked)}
+              className="w-4 h-4 text-amber-600 border-gray-300 rounded"
+            />
+            <span className="text-sm text-amber-700 font-bold">
+              Asignar Colección MUNDIAL 2026
+            </span>
+          </label>
+        </div>
+
+        <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Inventario por talla</h3>
+        <div className={`grid gap-3 mb-8 ${type === 'Tacos' ? 'grid-cols-3' : 'grid-cols-4 sm:grid-cols-5'}`}>
           {tallas.map((size) => (
             <label key={size} className="text-center flex flex-col justify-end h-full">
-              <span className="block mb-1.5 text-[10px] font-bold text-gray-600 leading-tight min-h-[28px] flex items-end justify-center">{size}</span>
+              <span className="block mb-1 text-[11px] font-bold text-gray-600 leading-tight flex items-end justify-center">{size}</span>
               <input
                 type="number"
                 min="0"
                 value={stock[size] ?? ""}
                 onChange={(e) => handleInvChange(size, e.target.value)}
-                className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center bg-gray-50 focus:border-black outline-none"
+                className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center bg-gray-50 focus:border-black focus:bg-white outline-none font-medium"
                 inputMode="numeric"
               />
             </label>
           ))}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="flex-1 fondo-plateado text-black py-2 rounded hover:brightness-110 transition disabled:opacity-60"
+            className="flex-1 fondo-plateado font-bold text-black py-3 rounded-lg hover:brightness-105 shadow-sm transition disabled:opacity-50"
           >
-            {loading ? "Agregando..." : "Agregar producto"}
+            {loading ? "Agregando..." : "GUARDAR PRODUCTO"}
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border bg-red-600 text-white rounded"
+            className="px-6 py-3 border bg-red-50 font-bold text-red-600 hover:bg-red-100 rounded-lg transition"
           >
-            Cancelar
+            Cerrar
           </button>
         </div>
+
       </div>
     </div>
   );
