@@ -220,14 +220,13 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   return (
     <div
       ref={modalRef}
-      className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 sm:p-6"
-      // 🔥 FIX 1: style nativo para obligar al navegador a poner esto por encima del Header sin importar Tailwind
+      // 🔥 FIX 1: overflow-y-auto en el fondo negro para que todo el modal pueda scrollear si es necesario
+      className="fixed inset-0 bg-black/60 overflow-y-auto flex justify-center px-4 py-10 sm:pt-24 sm:pb-12"
       style={{ zIndex: 99999 }} 
     >
-      {/* 🔥 FIX 2: Agregamos mt-16 para empujar la caja blanca un poco hacia abajo y max-h-[85vh] para que no se salga de la pantalla en laptops pequeñas */}
-      <div className="relative bg-white p-6 sm:p-8 mt-16 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      {/* 🔥 FIX 2: my-auto lo centra verticalmente si sobra espacio, y shrink-0 evita que se aplaste */}
+      <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full h-fit my-auto shrink-0">
         
-        {/* Botón de cerrar bien posicionado arriba a la derecha */}
         <button
           onClick={onCancel}
           className="absolute top-4 right-4 text-black hover:text-red-600 transition-colors"
