@@ -218,13 +218,14 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   };
 
   return (
-    // 🔥 FIX 1: z-[9999] garantiza que quede por encima de la barra de navegación.
     <div
       ref={modalRef}
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 sm:p-6"
+      // 🔥 FIX 1: style nativo para obligar al navegador a poner esto por encima del Header sin importar Tailwind
+      style={{ zIndex: 99999 }} 
     >
-      {/* 🔥 FIX 2: Se eliminaron los padding enormes (pt-12, pb-24) para que la caja respire bien */}
-      <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
+      {/* 🔥 FIX 2: Agregamos mt-16 para empujar la caja blanca un poco hacia abajo y max-h-[85vh] para que no se salga de la pantalla en laptops pequeñas */}
+      <div className="relative bg-white p-6 sm:p-8 mt-16 rounded-lg shadow-2xl max-w-md w-full max-h-[85vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400">
         
         {/* Botón de cerrar bien posicionado arriba a la derecha */}
         <button
