@@ -179,26 +179,24 @@ export default function Bienvenido() {
       {/* ========================================================
           💻 VERSIÓN DESKTOP 
           ======================================================== */}
+     {/* ========================================================
+          💻 VERSIÓN DESKTOP 
+          ======================================================== */}
       <div 
         className="hidden md:grid relative z-10 w-full max-w-6xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full pt-16 lg:pt-24"
       >
         
-        {/* Columna Izquierda: Texto y Botón Agrupados */}
+        {/* Columna Izquierda: Texto */}
         <motion.div 
           initial={{ opacity: 0, x: -40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
           className="flex flex-col items-start text-left"
         >
-          {/* 🔥 NUEVO ENCABEZADO DESKTOP: Logo Opaco | Línea | Texto */}
+          {/* Logo Opaco | Línea | Texto */}
           <div className="flex items-center gap-6">
-            {/* Logo opaco (Cambiar /logo.png si tu archivo se llama diferente) */}
             <img src="/logo.png" alt="FutStore Logo" className="w-24 h-24 lg:w-32 lg:h-32 object-contain opacity-80" />
-
-            {/* Raya divisora fina */}
             <div className="w-1 h-20 lg:h-24 bg-white"></div>
-
-            {/* Texto rojo */}
             <div className="flex flex-col text-left">
               <h1 className="text-3xl lg:text-5xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
                 La élite del<br />fútbol,
@@ -208,8 +206,26 @@ export default function Bienvenido() {
               </h2>
             </div>
           </div>
+          {/* EL BOTÓN FUE REMOVIDO DE AQUÍ */}
+        </motion.div>
 
-          <div className="mt-8 h-16">
+        {/* Columna Derecha: Animación de Imagen y Botón */}
+        <div className="relative flex flex-col items-center justify-center h-[400px] lg:h-[450px]">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={activeSlide.id}
+              src={activeSlide.image}
+              alt={activeSlide.title}
+              initial={{ opacity: 0, scale: 0.4, y: 150, rotate: -15 }}
+              animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.4, y: -150, rotate: 15 }}
+              transition={{ type: "spring", stiffness: 90, damping: 12 }}
+              className="max-h-[300px] lg:max-h-[380px] object-contain drop-shadow-[0_20px_40px_rgba(255,255,255,0.15)] z-20"
+            />
+          </AnimatePresence>
+
+          {/* 🚀 BOTÓN MOVIDO AQUÍ A LA DERECHA */}
+          <div className="absolute bottom-4 right-0 lg:bottom-10 lg:-right-4 z-30">
             <AnimatePresence mode="wait">
               <motion.button
                 key={`btn-desk-${activeSlide.id}`}
@@ -231,26 +247,9 @@ export default function Bienvenido() {
               </motion.button>
             </AnimatePresence>
           </div>
-        </motion.div>
-
-        {/* Columna Derecha: Animación de Imagen */}
-        <div className="relative flex flex-col items-center justify-center h-[400px] lg:h-[450px]">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={activeSlide.id}
-              src={activeSlide.image}
-              alt={activeSlide.title}
-              initial={{ opacity: 0, scale: 0.4, y: 150, rotate: -15 }}
-              animate={{ opacity: 1, scale: 1, y: 0, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.4, y: -150, rotate: 15 }}
-              transition={{ type: "spring", stiffness: 90, damping: 12 }}
-              className="max-h-[300px] lg:max-h-[380px] object-contain drop-shadow-[0_20px_40px_rgba(255,255,255,0.15)] z-20"
-            />
-          </AnimatePresence>
         </div>
 
       </div>
-
       {/* 💬 BOTÓN FLOTANTE DE WHATSAPP */}
       <a 
         href="https://wa.me/50672327096" 

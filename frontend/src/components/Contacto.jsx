@@ -32,7 +32,7 @@ export default function Contacto() {
 
         {/* INSTAGRAM */}
         <motion.a
-          href="https://www.instagram.com/futstore_cr/"
+          href="https://www.instagram.com/futstore.chemas/"
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.15, y: -2 }}
