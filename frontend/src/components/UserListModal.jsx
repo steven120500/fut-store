@@ -158,17 +158,20 @@ export default function UserListModal({ open, onClose, user }) {
   };
 
   return (
-    // 🔥 FIX 1: zIndex forzado a 99999 para que siempre cubra el Header y TopBanner
+    // 🔥 FIX 1: Cambiamos items-center por items-start y agregamos pt-[130px] para evadir el Header
     <div 
-      className="fixed inset-0 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
+      className="fixed inset-0 flex items-start justify-center bg-black/75 backdrop-blur-md px-4 pt-[130px] pb-6 sm:pt-[140px]"
       style={{ zIndex: 99999 }}
     >
       
       {/* Fondo transparente clickeable para cerrar */}
       <div className="absolute inset-0" onClick={handleCerrar} />
 
-      {/* 🔥 FIX 2: mt-16 para bajarlo un poco y max-h-[85vh] para asegurar que quepa en laptops pequeñas */}
-      <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg mt-16 border border-gray-100 flex flex-col overflow-hidden max-h-[85vh] relative z-10">
+      {/* 🔥 FIX 2: maxHeight calculado dinámicamente para garantizar que no se salga por abajo */}
+      <div 
+        className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col overflow-hidden relative z-10 shrink-0"
+        style={{ maxHeight: "calc(100vh - 160px)" }}
+      >
         
         {/* Encabezado fijo */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
@@ -194,7 +197,7 @@ export default function UserListModal({ open, onClose, user }) {
         </div>
 
         {/* Lista de Usuarios */}
-        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1">
+        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1 scrollbar-thin scrollbar-thumb-gray-300">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
               <FaSpinner className="animate-spin text-black" size={28} />
