@@ -157,7 +157,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
 
         {/* 🔥 FRANJA SÓLIDA PARA EL TIPO */}
         {type && (
-          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-40 border-none border-0">
+          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-0 border-none border-0">
             {type}
           </div>
         )}
