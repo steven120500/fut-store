@@ -1,6 +1,6 @@
 import { Toaster } from "react-hot-toast";
 import React, { useEffect, useRef, useState } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useSearchParams, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 // --- IMPORTACIONES DEL CARRITO ---
@@ -49,7 +49,8 @@ function buildPages(page, pages) {
 
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
-export default function App() {
+// 🔥 1. CAMBIAMOS EL NOMBRE A MainApp PARA PODER USAR LOS HOOKS DE LA URL
+function MainApp() {
   const [products, setProducts] = useState([]);
 
   const [loading, setLoading] = useState(() => {
@@ -59,9 +60,16 @@ export default function App() {
   const [startedWithIntro] = useState(loading);
   const [isFiltering, setIsFiltering] = useState(false); 
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("");
-  const [filterSizes, setFilterSizes] = useState([]);
+  // 🔥 2. IMPORTAMOS LOS PARÁMETROS DE LA URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  // 🔥 3. INICIALIZAMOS LOS ESTADOS LEYENDO LA URL
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const [filterType, setFilterType] = useState(searchParams.get("type") || "");
+  const [filterSizes, setFilterSizes] = useState(
+    searchParams.get("sizes") ? searchParams.get("sizes").split(",") : []
+  );
 
   // Estados de Modales
   const [showAddModal, setShowAddModal] = useState(false);
@@ -82,6 +90,17 @@ export default function App() {
 
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
+
+  // 🔥 4. EFECTO PARA SINCRONIZAR LA URL CADA VEZ QUE CAMBIA UN FILTRO
+  useEffect(() => {
+    if (location.pathname === "/") {
+      const params = new URLSearchParams();
+      if (searchTerm) params.set("q", searchTerm);
+      if (filterType) params.set("type", filterType);
+      if (filterSizes && filterSizes.length > 0) params.set("sizes", filterSizes.join(","));
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchTerm, filterType, filterSizes, location.pathname, setSearchParams]);
 
   useEffect(() => {
     const handleFilterEvent = (e) => {
@@ -284,140 +303,147 @@ export default function App() {
   return (
     <CartProvider>
       <div className="w-full min-h-screen bg-white text-black antialiased">
-        <Router>
-          <CartDrawer />
-          <Routes>
-            <Route path="/reset-password/:token" element={<ResetPassword />} />
-            
-            <Route 
-              path="/product/:id" 
-              element={
-                <ProductDetail 
-                  user={user} 
-                  onUpdate={handleProductUpdate}
-                  onLoginClick={() => setShowLogin(true)}
-                  onLogout={handleLogout}
-                  setShowRegisterUserModal={setShowRegisterUserModal}
-                  setShowUserListModal={setShowUserListModal}
-                  onMedidasClick={() => setShowMedidas(true)}
-                />
-              } 
-            />
+        <CartDrawer />
+        <Routes>
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          
+          <Route 
+            path="/product/:id" 
+            element={
+              <ProductDetail 
+                user={user} 
+                onUpdate={handleProductUpdate}
+                onLoginClick={() => setShowLogin(true)}
+                onLogout={handleLogout}
+                setShowRegisterUserModal={setShowRegisterUserModal}
+                setShowUserListModal={setShowUserListModal}
+                onMedidasClick={() => setShowMedidas(true)}
+              />
+            } 
+          />
 
-            <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout" element={<Checkout />} />
 
-            <Route path="/pedidos" element={<ProtectedRoute user={user}><OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} /></ProtectedRoute>} /> 
-            <Route path="/historial" element={<ProtectedRoute user={user}><HistoryPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
-            <Route path="/ventas" element={<ProtectedRoute user={user}><SalesPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
-            <Route path="/apartados" element={<ProtectedRoute user={user}><ApartadosPage user={user} /></ProtectedRoute>} />
-            <Route path="/reportes" element={<ProtectedRoute user={user} requireAdmin={true}><DailyReportPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
-            <Route path="/balance" element={<ProtectedRoute user={user} requireAdmin={true}><BalancePage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+          <Route path="/pedidos" element={<ProtectedRoute user={user}><OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} /></ProtectedRoute>} /> 
+          <Route path="/historial" element={<ProtectedRoute user={user}><HistoryPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+          <Route path="/ventas" element={<ProtectedRoute user={user}><SalesPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+          <Route path="/apartados" element={<ProtectedRoute user={user}><ApartadosPage user={user} /></ProtectedRoute>} />
+          <Route path="/reportes" element={<ProtectedRoute user={user} requireAdmin={true}><DailyReportPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
+          <Route path="/balance" element={<ProtectedRoute user={user} requireAdmin={true}><BalancePage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
 
-            <Route path="/" element={
-              <AnimatePresence mode="wait">
-                {loading ? (
-                  <InicioOverlay key="loader-global" onComplete={() => {
-                    setLoading(false);
-                    sessionStorage.setItem("introMundial", "true"); 
-                  }} />
-                ) : (
-                  <motion.div
-                    key="main-store-content"
-                    initial={{ opacity: startedWithIntro ? 0 : 1 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, ease: "easeIn" }}
-                    className="bg-white min-h-screen w-full relative" 
-                  >
-                    {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
-                    {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
-                    {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
-                    {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
-                    {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
-                    {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
+          <Route path="/" element={
+            <AnimatePresence mode="wait">
+              {loading ? (
+                <InicioOverlay key="loader-global" onComplete={() => {
+                  setLoading(false);
+                  sessionStorage.setItem("introMundial", "true"); 
+                }} />
+              ) : (
+                <motion.div
+                  key="main-store-content"
+                  initial={{ opacity: startedWithIntro ? 0 : 1 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.6, ease: "easeIn" }}
+                  className="bg-white min-h-screen w-full relative" 
+                >
+                  {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
+                  {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
+                  {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
+                  {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
+                  {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
+                  {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
 
-                    <div className="fixed top-0 left-0 w-full z-50">
-                      <TopBanner />
-                      <Header
-                        onLoginClick={() => setShowLogin(true)}
-                        onLogout={handleLogout}
-                        onLogoClick={() => { setFilterType(""); setSearchTerm(""); setPage(1); }}
-                        onMedidasClick={() => setShowMedidas(true)}
-                        user={user}
-                        isSuperUser={isSuperUser}
-                        canSeeHistory={canSeeHistory}
-                        setShowRegisterUserModal={setShowRegisterUserModal}
-                        setShowUserListModal={setShowUserListModal}
-                        setFilterType={setFilterType}
+                  <div className="fixed top-0 left-0 w-full z-50">
+                    <TopBanner />
+                    <Header
+                      onLoginClick={() => setShowLogin(true)}
+                      onLogout={handleLogout}
+                      onLogoClick={() => { setFilterType(""); setSearchTerm(""); setFilterSizes([]); setPage(1); }}
+                      onMedidasClick={() => setShowMedidas(true)}
+                      user={user}
+                      isSuperUser={isSuperUser}
+                      canSeeHistory={canSeeHistory}
+                      setShowRegisterUserModal={setShowRegisterUserModal}
+                      setShowUserListModal={setShowUserListModal}
+                      setFilterType={setFilterType}
+                    />
+                  </div>
+
+                  <div className="h-[120px]" />
+                  <Bienvenido />
+                  
+                  {canAdd && (
+                    <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50 cursor-pointer" onClick={() => setShowAddModal(true)}>
+                      <FaPlus />
+                    </button>
+                  )}
+
+                  {/* 🔥 CONTENEDOR MAESTRO */}
+                  <div className="w-full bg-white flex flex-col items-center pb-16 pt-6">
+                    
+                    {/* 🔥 1. BARRA DE FILTROS AL 100% DE ANCHO (Liberada) */}
+                    <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
+                      <FilterBar 
+                        searchTerm={searchTerm} 
+                        setSearchTerm={setSearchTerm} 
+                        filterType={filterType} 
+                        setFilterType={setFilterType} 
+                        filterSizes={filterSizes} 
+                        setFilterSizes={setFilterSizes} 
                       />
                     </div>
 
-                    <div className="h-[120px]" />
-                    <Bienvenido />
-                    
-                    {canAdd && (
-                      <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50 cursor-pointer" onClick={() => setShowAddModal(true)}>
-                        <FaPlus />
-                      </button>
-                    )}
-
-                    {/* 🔥 CONTENEDOR MAESTRO */}
-                    <div className="w-full bg-white flex flex-col items-center pb-16 pt-6">
-                      
-                      {/* 🔥 1. BARRA DE FILTROS AL 100% DE ANCHO (Liberada) */}
-                      <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
-                        <FilterBar 
-                          searchTerm={searchTerm} 
-                          setSearchTerm={setSearchTerm} 
-                          filterType={filterType} 
-                          setFilterType={setFilterType} 
-                          filterSizes={filterSizes} 
-                          setFilterSizes={setFilterSizes} 
-                        />
+                    {/* 🔥 2. GRILLA DE PRODUCTOS RESTRINGIDA A 1150px (Con márgenes blancos) */}
+                    <div 
+                      className="w-full px-4 sm:px-6 md:px-8" 
+                      style={{ maxWidth: "1800px" }}
+                    >
+                      {/* La grilla de productos */}
+                      <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        {filteredProducts().map((product) => (
+                          <ProductCard
+                            canEdit={canEdit}
+                            key={getPid(product)}
+                            product={product}
+                            user={user}
+                            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                          />
+                        ))}
                       </div>
 
-                      {/* 🔥 2. GRILLA DE PRODUCTOS RESTRINGIDA A 1150px (Con márgenes blancos) */}
-                      <div 
-                        className="w-full px-4 sm:px-6 md:px-8" 
-                        style={{ maxWidth: "1800px" }}
-                      >
-                        {/* La grilla de productos */}
-                        <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                          {filteredProducts().map((product) => (
-                            <ProductCard
-                              canEdit={canEdit}
-                              key={getPid(product)}
-                              product={product}
-                              user={user}
-                              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-                            />
-                          ))}
+                      {/* Paginación */}
+                      {pages > 1 && (
+                        <div className="mt-12 flex flex-col items-center gap-3">
+                          <nav className="flex items-center justify-center gap-2">
+                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
+                            {buildPages(page, pages).map(n => (
+                              <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                            ))}
+                            <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
+                          </nav>
                         </div>
-
-                        {/* Paginación */}
-                        {pages > 1 && (
-                          <div className="mt-12 flex flex-col items-center gap-3">
-                            <nav className="flex items-center justify-center gap-2">
-                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
-                              {buildPages(page, pages).map(n => (
-                                <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
-                              ))}
-                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
-                            </nav>
-                          </div>
-                        )}
-                      </div>
-
+                      )}
                     </div>
 
-                    <Footer />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            } />
-          </Routes>
-        </Router>
+                  </div>
+
+                  <Footer />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          } />
+        </Routes>
         <ToastContainer />
       </div>
     </CartProvider>
+  );
+}
+
+// 🔥 5. ENVOLVEMOS TODO EN EL COMPONENTE PRINCIPAL
+export default function App() {
+  return (
+    <Router>
+      <MainApp />
+    </Router>
   );
 }
