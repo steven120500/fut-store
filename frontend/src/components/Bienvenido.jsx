@@ -17,6 +17,9 @@ export default function Bienvenido() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  // 🔥 Nuevo estado para el globo animado de WhatsApp
+  const [showWaMsg, setShowWaMsg] = useState(true);
 
   // Estados para Swipe en celular
   const [touchStart, setTouchStart] = useState(0);
@@ -49,6 +52,14 @@ export default function Bienvenido() {
     
     return () => clearInterval(timer);
   }, [isPaused, activeIdx]);
+
+  // 💬 Temporizador para que el mensaje de WhatsApp entre y salga
+  useEffect(() => {
+    const waTimer = setInterval(() => {
+      setShowWaMsg((prev) => !prev);
+    }, 6000); 
+    return () => clearInterval(waTimer);
+  }, []);
 
   const activeSlide = slides[activeIdx];
 
@@ -176,9 +187,6 @@ export default function Bienvenido() {
         </div>
       </div>
 
-      {/* ========================================================
-          💻 VERSIÓN DESKTOP 
-          ======================================================== */}
      {/* ========================================================
           💻 VERSIÓN DESKTOP 
           ======================================================== */}
@@ -250,15 +258,45 @@ export default function Bienvenido() {
         </div>
 
       </div>
-      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP */}
-      <a 
-        href="https://wa.me/50672327096" 
-        target="_blank" 
-        rel="noopener noreferrer"
-        className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 bg-green-500 text-white p-3 md:p-4 rounded-full shadow-lg hover:scale-110 transition-transform duration-200 flex items-center justify-center cursor-pointer"
-      >
-        <FaWhatsapp className="text-2xl md:text-3xl" />
-      </a>
+
+      {/* 💬 BOTÓN FLOTANTE DE WHATSAPP CON MENSAJE Y ANIMACIÓN 🔥 */}
+      <div className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 flex flex-col items-start pointer-events-none">
+        
+        <AnimatePresence>
+          {showWaMsg && (
+            <motion.div
+              initial={{ opacity: 0, y: 10, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              className="mb-3 bg-white text-black text-xs sm:text-sm font-bold px-4 py-3 rounded-2xl shadow-2xl relative max-w-[180px] text-left border border-gray-100 pointer-events-auto"
+            >
+             ¡Pedí tu chema en segundos! 🚀⚽️
+              
+              {/* Triangulito que apunta al botón */}
+              <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white transform rotate-45 border-b border-r border-gray-100"></div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <a 
+          href="https://wa.me/50672327096" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="relative flex items-center justify-center pointer-events-auto group mt-1"
+        >
+          {/* Anillo de pulso infinito para llamar la atención */}
+          <div className="absolute inset-0 bg-green-600 rounded-full animate-ping opacity-60"></div>
+          
+          {/* Resplandor borroso (glow) */}
+          <div className="absolute inset-0 bg-green-600 rounded-full blur-md opacity-50 group-hover:opacity-80 transition-opacity"></div>
+          
+          {/* El botón físico encima de las animaciones */}
+          <div className="relative bg-green-600 text-white p-3.5 md:p-4 rounded-full shadow-[0_0_15px_rgba(37,211,102,0.6)] group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+            <FaWhatsapp className="text-2xl md:text-3xl drop-shadow-md" />
+          </div>
+        </a>
+      </div>
 
       {/* ⬇️ INDICADOR ANIMADO DE SCROLL */}
       <motion.div
