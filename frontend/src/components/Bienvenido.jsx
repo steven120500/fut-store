@@ -121,18 +121,22 @@ export default function Bienvenido() {
           transition={{ duration: 0.6 }}
           className="flex items-center justify-center gap-4 mt-4"
         >
-          {/* Logo opaco (Cambiar /logo.png si tu archivo se llama diferente) */}
-          <img src="/logo.png" alt="FutStore Logo" className="w-14 h-14 object-contain opacity-80" />
+         
 
           {/* Raya divisora fina */}
           <div className="w-1 h-12 bg-white"></div>
 
-          {/* Texto rojo */}
-          <div className="flex flex-col text-left max-w-[150px]">
-            <h1 className="text-sm font-black text-white uppercase leading-snug tracking-widest drop-shadow-md">
+          <div className="flex flex-col text-left max-w-[150px] sm:max-w-[200px]">
+            <h1 
+              style={{ fontSize: "20px" }} 
+              className="font-black text-white uppercase leading-snug tracking-widest drop-shadow-md"
+            >
               La élite del fútbol,
             </h1>
-            <h2 className="text-sm font-black text-white uppercase leading-snug tracking-widest drop-shadow-md">
+            <h2 
+              style={{ fontSize: "20px" }} 
+              className="font-black text-white uppercase leading-snug tracking-widest drop-shadow-md"
+            >
               en tu piel.
             </h2>
           </div>
@@ -203,13 +207,13 @@ export default function Bienvenido() {
         >
           {/* Logo Opaco | Línea | Texto */}
           <div className="flex items-center gap-6">
-            <img src="/logo.png" alt="FutStore Logo" className="w-24 h-24 lg:w-32 lg:h-32 object-contain opacity-80" />
-            <div className="w-1 h-20 lg:h-24 bg-white"></div>
+            
+            <div className="w-1 h-32 lg:h-40 bg-white"></div>
             <div className="flex flex-col text-left">
-              <h1 className="text-3xl lg:text-5xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
+              <h1 className="text-6xl lg:text-7xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
                 La élite del<br />fútbol,
               </h1>
-              <h2 className="text-3xl lg:text-5xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
+              <h2 className="text-3xl lg:text-7xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl">
                 en tu piel.
               </h2>
             </div>

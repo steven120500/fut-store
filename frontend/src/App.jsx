@@ -371,7 +371,7 @@ function MainApp() {
                   {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
 
                   <div className="fixed top-0 left-0 w-full z-50">
-                    <TopBanner />
+                 
                     <Header
                       onLoginClick={() => setShowLogin(true)}
                       onLogout={handleLogout}
@@ -384,6 +384,7 @@ function MainApp() {
                       setShowUserListModal={setShowUserListModal}
                       setFilterType={setFilterType}
                     />
+                     <TopBanner />
                   </div>
 
                   <div className="h-[120px]" />

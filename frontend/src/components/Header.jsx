@@ -49,7 +49,7 @@ export default function Header({
   return (
     <header
       className="shadow-md fondo-plateado px-2 sm:px-10 py-2 fixed w-full 
-                 top-8 left-0 z-40 transition-all duration-300"
+                 top-0 left-0 z-40 transition-all duration-300"
       style={{ backgroundColor: "#000" }}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -64,7 +64,7 @@ export default function Header({
             title="Volver al inicio"
             className="focus:outline-none bg-transparent hover:scale-105 transition-transform cursor-pointer"
           >
-            <img src={logo} alt="FutStore Logo" className="h-14 sm:h-24 object-contain" />
+            <img src={logo} alt="FutStore Logo" className="h-20 sm:h-24 object-contain" />
           </button>
 
           <div className="flex gap-2">
