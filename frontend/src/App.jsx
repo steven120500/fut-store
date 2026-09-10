@@ -71,6 +71,11 @@ function MainApp() {
     searchParams.get("sizes") ? searchParams.get("sizes").split(",") : []
   );
 
+  // 🚀 ESTADO INTELIGENTE: Verifica si abrieron la app desde un link filtrado
+  const [pendingScroll, setPendingScroll] = useState(() => {
+    return !!(searchParams.get("q") || searchParams.get("type") || searchParams.get("sizes"));
+  });
+
   // Estados de Modales
   const [showAddModal, setShowAddModal] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -120,10 +125,11 @@ function MainApp() {
         setFilterType(newFilter);
         setPage(1); 
 
-        if (pageTopRef.current) {
-          const rect = pageTopRef.current.getBoundingClientRect();
+        const catalogo = document.getElementById("catalogo-top");
+        if (catalogo) {
+          const rect = catalogo.getBoundingClientRect();
           const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
+          window.scrollTo({ top: rect.top + scrollTop - 100, behavior: "smooth" });
         }
       }
     };
@@ -234,15 +240,27 @@ function MainApp() {
     }
   }, [loading, page, searchTerm, filterType, filterSizes]);
 
+  // 🔥 SOLUCIÓN DEFINITIVA: SCROLL LIGADO A LA CARGA DE PRODUCTOS
   useEffect(() => {
-    if (!loading && isFirstRun.current) {
-      window.scrollTo(0, 0);
+    // Si la app cargó, hay un link filtrado pendiente y los productos ya llegaron...
+    if (!loading && pendingScroll && products.length > 0) {
+      setTimeout(() => {
+        const catalogo = document.getElementById("catalogo-top");
+        if (catalogo) {
+          const rect = catalogo.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          window.scrollTo({ top: rect.top + scrollTop - 100, behavior: "smooth" });
+        }
+      }, 300); // 300ms de gracia para que se acomoden las imágenes
+      setPendingScroll(false); // Apagamos el trigger para que no lo vuelva a hacer
+    } else if (!loading && isFirstRun.current && !pendingScroll) {
+      window.scrollTo(0, 0); // Si no hay link filtrado, dejamos arriba
       isFirstRun.current = false;
     }
-  }, [loading]);
+  }, [loading, pendingScroll, products]);
 
   useEffect(() => {
-    if (!loading && !isFirstRun.current && pageTopRef.current) {
+    if (!loading && !isFirstRun.current && pageTopRef.current && !pendingScroll) {
       const rect = pageTopRef.current.getBoundingClientRect();
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
@@ -251,7 +269,6 @@ function MainApp() {
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
-    window.scrollTo(0, 0);
   }, []);
 
   const handleProductUpdate = (updatedProduct, deletedId = null) => {
@@ -378,8 +395,8 @@ function MainApp() {
                     </button>
                   )}
 
-                  {/* 🔥 CONTENEDOR MAESTRO */}
-                  <div className="w-full bg-white flex flex-col items-center pb-16 pt-6">
+                  {/* 🔥 CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
+                  <div id="catalogo-top" className="w-full bg-white flex flex-col items-center pb-16 pt-6">
                     
                     {/* 🔥 1. BARRA DE FILTROS AL 100% DE ANCHO (Liberada) */}
                     <div className="w-full px-4 sm:px-8 md:px-16 mb-8">

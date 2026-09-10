@@ -133,7 +133,7 @@ export default function Header({
               </button>
 
               {user ? (
-                <div className="mt-10 flex-grow overflow-y-auto">
+                <div className="mt-10 flex-grow overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 pb-20">
                   <div className="mb-8 border-b border-black/10 pb-6">
                     <p className="text-black/60 text-xs uppercase font-black tracking-widest mb-1">Sesión Iniciada</p>
                     <p className="text-black font-black text-3xl truncate">
@@ -195,7 +195,7 @@ export default function Header({
                   </button>
                 </div>
               ) : (
-                <div className="text-center mt-20">
+                <div className="text-center mt-20 flex-grow">
                   <div className="w-20 h-20 bg-black/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-black/10 text-black/20">
                     <FaUser size={30} />
                   </div>
@@ -211,7 +211,7 @@ export default function Header({
                 </div>
               )}
               
-              <div className="mt-auto pt-6 text-center">
+              <div className="mt-auto pt-6 text-center border-t border-black/10 pb-4">
                 <p className="text-[10px] text-black/40 font-black tracking-widest uppercase">FutStore Costa Rica © 2026</p>
               </div>
             </div>

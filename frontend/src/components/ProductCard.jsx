@@ -92,25 +92,23 @@ export default function ProductCard({ product, onClick, canEdit }) {
   return (
     <motion.div
       whileTap={{ scale: 0.98 }}
-      // 🔥 FIX 1: Quitamos "overflow-hidden" de la caja principal para que el sticker pueda salirse libremente
       className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl w-full h-full flex flex-col md:hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100 cursor-pointer"
       onClick={() => onClick(product)}
     >
-      
-      {/* 🔥 FIX 2: Movimos el sticker NUEVO afuera de la foto y le dimos posición negativa (-top-2 -left-2) para que sobresalga */}
+
+      {/* Etiqueta NUEVO */}
       {!isOutOfStock && isNew && (
-        <div className="sticker-new z-30 absolute -top-2 -left-2 scale-[0.70] sm:scale-100 origin-top-left transition-transform pointer-events-none">
+        <div className="sticker-new z-30 absolute -top-2 -left-2 scale-[0.55] sm:scale-[0.80] origin-top-left transition-transform pointer-events-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
           <span>Nuevo</span>
         </div>
       )}
 
       {/* 📸 SECCIÓN DE IMAGEN */}
       <div 
-        // 🔥 FIX 3: Agregamos "rounded-t-xl" y "overflow-hidden" solo aquí, para que la foto no se vuelva cuadrada arriba
         className="relative w-full bg-gray-50 rounded-t-xl overflow-hidden shrink-0 flex items-center justify-center"
         style={{ aspectRatio: "4/5" }}
       >
-        
+
         {isOutOfStock && (
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
             <span className="text-white font-bold uppercase tracking-widest border-2 border-white text-xs px-4 py-2 sm:text-lg">
@@ -119,11 +117,12 @@ export default function ProductCard({ product, onClick, canEdit }) {
           </div>
         )}
 
+        {/* 🔥 MEJORA: Etiqueta OFERTA redonda (rounded-full) y con reducción de escala en celular */}
         {!isOutOfStock && hasDiscount && (
           <span
-            className="absolute top-2 right-2 text-white font-black z-10 text-xs sm:text-xl px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-sm shadow-lg tracking-widest pointer-events-none"
+            className="absolute bottom-14  -right-3 text-white font-black z-10 text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-1.5 rounded-full shadow-md tracking-wider pointer-events-none transform scale-[0.75] sm:scale-100 origin-top-right transition-transform"
             style={{
-              background: "linear-gradient(90deg, #d10000 0%, #ff3030 50%, #d10000 100%)",
+              background: "linear-gradient(90deg, #d10000 0%, #ff1a1a 100%)",
             }}
           >
             OFERTA
@@ -165,7 +164,7 @@ export default function ProductCard({ product, onClick, canEdit }) {
 
       {/* 📝 INFORMACIÓN */}
       <div className={`p-3 sm:p-4 flex flex-col flex-grow bg-white text-left ${canEdit ? "" : "rounded-b-xl"}`}>
-        
+
         {/* Título */}
         <h3 className="text-xs sm:text-xl font-black text-black uppercase tracking-tight line-clamp-2 leading-snug h-[2rem] sm:h-[2.2rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
           {product.name}

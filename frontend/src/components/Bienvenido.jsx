@@ -48,7 +48,7 @@ export default function Bienvenido() {
     if (isPaused) return; 
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % slides.length);
-    }, 4000); 
+    }, 3000); 
     
     return () => clearInterval(timer);
   }, [isPaused, activeIdx]);
@@ -320,7 +320,7 @@ export default function Bienvenido() {
           key={`progress-${activeIdx}`}
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ duration: 4, ease: "linear" }}
+          transition={{ duration: 3, ease: "linear" }}
           className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
         />
       </div>
