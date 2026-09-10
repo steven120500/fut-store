@@ -49,7 +49,7 @@ export default function Header({
   return (
     <header
       className="shadow-md fondo-plateado px-2 sm:px-10 py-2 fixed w-full 
-                 top-0 left-0 z-40 transition-all duration-300"
+                 top-0 left-0 z-50 transition-all duration-300"
       style={{ backgroundColor: "#000" }}
     >
       <div className="flex items-center justify-between max-w-7xl mx-auto">
