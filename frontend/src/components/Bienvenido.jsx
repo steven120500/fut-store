@@ -266,23 +266,7 @@ export default function Bienvenido() {
       {/* 💬 BOTÓN FLOTANTE DE WHATSAPP CON MENSAJE Y ANIMACIÓN 🔥 */}
       <div className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 flex flex-col items-start pointer-events-none">
         
-        <AnimatePresence>
-          {showWaMsg && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.8 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="mb-3 bg-white text-black text-xs sm:text-sm font-bold px-4 py-3 rounded-2xl shadow-2xl relative max-w-[180px] text-left border border-gray-100 pointer-events-auto"
-            >
-             ¡Pedí tu chema en segundos! 🚀⚽️
-              
-              {/* Triangulito que apunta al botón */}
-              <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white transform rotate-45 border-b border-r border-gray-100"></div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+        
         <a 
           href="https://wa.me/50672327096" 
           target="_blank" 
