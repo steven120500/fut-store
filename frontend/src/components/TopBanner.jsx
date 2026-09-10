@@ -19,7 +19,7 @@ function TopBanner() {
   return (
     <div
       className="shadow-md text-center fondo-plateado px-1 sm:px-1 py-1 fixed w-full 
-      top-20 left-0 z-40 bg-cover bg-center bg-no-repeat mt-9 sm:mt-12"
+      top-20 left-0 z-40 bg-cover bg-center bg-no-repeat mt-9 sm:mt-10"
     >
       {messages[currentIndex]}
     </div>
