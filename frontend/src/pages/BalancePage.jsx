@@ -12,17 +12,23 @@ import autoTable from 'jspdf-autotable';
 const API_BASE = "https://fut-store.onrender.com";
 
 export default function BalancePage({ user }) {
-  const navigate = useNavigate();
+  const useNavigateInstance = useNavigate();
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [apartadosActivos, setApartadosActivos] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Filtro de mes (Por defecto mes actual YYYY-MM)
-  const mesActual = new Date().toISOString().slice(0, 7);
-  const [selectedMonth, setSelectedMonth] = useState(mesActual);
+  // 🗓️ OBTENEMOS EL MES LOCAL CORRECTO (Ej: 2026-09)
+  const getLocalMonthString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    return `${year}-${month}`;
+  };
 
-  // Estado del modal de gastos
+  const [selectedMonth, setSelectedMonth] = useState(getLocalMonthString());
+
+  // Estado del modal de gastos (incluyendo fecha personalizable según el mes seleccionado)
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
@@ -64,16 +70,15 @@ export default function BalancePage({ user }) {
     }
   };
   
-// 🧮 LÓGICA DE COSTOS POR PRODUCTO (MEJORADA PARA DETECTAR TACOS AUTOMÁTICAMENTE)
+// 🧮 LÓGICA DE COSTOS POR PRODUCTO
 const getCategoriaCosto = (prod) => {
   const tipo = (prod.type || '').toLowerCase();
   const nombre = (prod.nombre || '').toLowerCase();
-  const talla = (prod.talla || '').toLowerCase(); // 👈 Verificamos la talla por si acaso
+  const talla = (prod.talla || '').toLowerCase();
 
   if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
     return 'nacionales';
   }
-  // 👟 Si el tipo, nombre o la talla incluye "us", es 100% un taco
   if (tipo.includes('tacos') || nombre.includes('tacos') || talla.includes('us')) {
     return 'tacos';
   }
@@ -88,7 +93,7 @@ const calcularCostoItem = (prod) => {
   const cant = Number(prod.cantidad) || 1;
 
   if (cat === 'nacionales') return 15000 * cant;
-  if (cat === 'tacos') return 20000 * cant; // 👈 Regla estricta de 20,000 para Tacos
+  if (cat === 'tacos') return 20000 * cant;
   if (cat === 'balones') return 11000 * cant;
   return 9000 * cant;
 };
@@ -116,9 +121,7 @@ const calcularCostoItem = (prod) => {
   const ingresoBrutoTotal = salesFiltradas.reduce((sum, s) => sum + (Number(s.montoTotal) || 0), 0) + totalAbonosMes;
   const totalEnviosCobrados = salesFiltradas.reduce((sum, s) => sum + (Number(s.costoEnvio) || 0), 0);
   
-  // Costo total de mercadería vendida y desglose
   let costoTotalChemas = 0;
-  
   let totalInversionNacionales = 0;
   let totalInversionTacos = 0;
   let totalInversionBalones = 0;
@@ -137,7 +140,6 @@ const calcularCostoItem = (prod) => {
         else totalInversionGenerales += costoUnitario;
       });
     } else {
-      // 🛡️ REGLA DE RESPALDO: Analiza las ventas del catálogo que no usan carrito
       const cant = Number(sale.cantidad) || 1;
       const objFallback = {
         type: sale.type || '',
@@ -157,14 +159,12 @@ const calcularCostoItem = (prod) => {
     }
   });
 
-  // Gastos Operativos Manuales
   const totalGastosManuales = expensesFiltrados.reduce((sum, e) => sum + (Number(e.monto) || 0), 0);
 
-  // 💰 UTILIDADES
   const utilidadBruta = ingresoBrutoTotal - costoTotalChemas - totalEnviosCobrados;
   const balanceNeto = utilidadBruta - totalGastosManuales;
 
-  // AGREGAR GASTO MANUAL
+  // AGREGAR GASTO MANUAL (Asignando la fecha con el año y mes activo en el selector)
   const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!expenseForm.descripcion || !expenseForm.monto) {
@@ -173,18 +173,21 @@ const calcularCostoItem = (prod) => {
 
     setSubmitting(true);
     try {
+      // Creamos la fecha usando el año y mes que el usuario seleccionó en la interfaz
+      const fechaPersonalizada = `${selectedMonth}-01T12:00:00.000Z`;
+
       const res = await fetch(`${API_BASE}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-user': displayName },
         body: JSON.stringify({
           ...expenseForm,
           monto: Number(expenseForm.monto),
-          fecha: new Date().toISOString()
+          fecha: fechaPersonalizada
         })
       });
 
       if (res.ok) {
-        toast.success("💸 Gasto registrado correctamente");
+        toast.success("💸 Gasto registrado correctamente para " + selectedMonth);
         setShowAddModal(false);
         setExpenseForm({ categoria: 'Publicidad', descripcion: '', monto: '' });
         fetchData();
@@ -198,13 +201,11 @@ const calcularCostoItem = (prod) => {
     }
   };
 
-  // 🗑️ ABRE EL MODAL DE CONFIRMACIÓN
   const confirmDeleteExpense = (id) => {
     setExpenseToDelete(id);
     setShowDeleteModal(true);
   };
 
-  // 🗑️ BORRAR GASTO MANUAL CONFIRMADO
   const executeDeleteExpense = async () => {
     if (!expenseToDelete) return;
     try {
@@ -223,20 +224,16 @@ const calcularCostoItem = (prod) => {
     }
   };
 
-  // 📄 EXPORTAR REPORTE MENSUAL EN PDF
   const exportarPDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // ⬛ ENCABEZADO NEGRO ESTILO FUTSTORE
     doc.setFillColor(17, 17, 17); 
     doc.rect(0, 0, pageWidth, 42, 'F');
 
-    // 🟡 LÍNEA DORADA DE ACENTO
     doc.setFillColor(212, 175, 55); 
     doc.rect(0, 42, pageWidth, 3, 'F');
 
-    // TÍTULO Y DATOS DEL REPORTE
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(20);
@@ -248,7 +245,6 @@ const calcularCostoItem = (prod) => {
     doc.text(`Período: ${selectedMonth}   |   Generado por: ${displayName}`, 14, 30);
     doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CR')}`, 14, 36);
 
-    // 📊 SECCIÓN DE RESUMEN EJECUTIVO (TARJETAS VISUALES)
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
@@ -275,7 +271,6 @@ const calcularCostoItem = (prod) => {
     drawMetricBox(14, 93, boxW, 24, "Gastos Operativos", totalGastosManuales);
     drawMetricBox(18 + boxW, 93, boxW, 24, "Balance Neto (Utilidad)", balanceNeto, true);
 
-    // DESGLOSE DETALLADO DE INVERSIÓN
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(50, 50, 50);
@@ -295,7 +290,6 @@ const calcularCostoItem = (prod) => {
     lineY += 7;
     doc.text(`• Costo de Envíos Cubiertos: CRC ${totalEnviosCobrados.toLocaleString()}`, 18, lineY);
 
-    // 📋 TABLA DE GASTOS OPERATIVOS
     doc.setFont("helvetica", "bold");
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
@@ -334,7 +328,6 @@ const calcularCostoItem = (prod) => {
       doc.text("No se registraron gastos operativos adicionales en este período.", 14, lineY + 25);
     }
 
-    // PIE DE PÁGINA
     const pageCount = doc.internal.getNumberOfPages();
     for(let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
@@ -347,7 +340,6 @@ const calcularCostoItem = (prod) => {
     toast.success("📄 Reporte PDF descargado con éxito");
   };
 
-  // Cálculo de Chemas vs Tacos para la vista rápida
   const costoSoloChemas = costoTotalChemas - totalInversionTacos;
 
   return (
@@ -357,7 +349,7 @@ const calcularCostoItem = (prod) => {
         {/* ENCABEZADO Y VOLVER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
-            onClick={() => navigate(-1)} 
+            onClick={() => useNavigateInstance(-1)} 
             className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
@@ -422,7 +414,6 @@ const calcularCostoItem = (prod) => {
                   <span className="text-2xl font-black text-amber-500">₡{(costoTotalChemas + totalEnviosCobrados).toLocaleString()}</span>
                 </div>
                 
-                {/* 🏆 LISTA VERTICAL ORDENADA: CHEMAS - TACOS - ENVÍOS */}
                 <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-800/80">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">👕 Chemas</span>
@@ -476,7 +467,7 @@ const calcularCostoItem = (prod) => {
                   <h3 className="text-sm font-black uppercase tracking-wider text-white">
                     Historial de Gastos Operativos ({expensesFiltrados.length})
                   </h3>
-                  <p className="text-[10px] text-gray-400">Detalle de salidas de dinero manuales registradas este mes.</p>
+                  <p className="text-[10px] text-gray-400">Detalle de salidas de dinero manuales registradas para el mes de {selectedMonth}.</p>
                 </div>
                 <button 
                   onClick={() => setShowAddModal(true)}
@@ -596,8 +587,8 @@ const calcularCostoItem = (prod) => {
                   $
                 </div>
                 <div>
-                  <h3 className="font-black uppercase text-sm tracking-tight">Añadir Gasto Operativo</h3>
-                  <p className="text-[10px] text-gray-500 font-bold uppercase">Restará directamente al balance</p>
+                  <h3 className="font-black uppercase text-sm tracking-tight">Añadir Gasto a {selectedMonth}</h3>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase">Se registrará en el mes seleccionado</p>
                 </div>
               </div>
               <button 
