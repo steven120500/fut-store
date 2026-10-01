@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaArrowLeft, FaChartLine, FaPlus, FaTimes, FaTrash, 
-  FaCalendarAlt, FaFilePdf, FaMoneyBillWave, FaTshirt, FaFileInvoiceDollar, FaExclamationTriangle
+  FaCalendarAlt, FaFilePdf, FaExclamationTriangle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
@@ -12,13 +12,13 @@ import autoTable from 'jspdf-autotable';
 const API_BASE = "https://fut-store.onrender.com";
 
 export default function BalancePage({ user }) {
-  const useNavigateInstance = useNavigate();
+  const navigate = useNavigate();
   const [sales, setSales] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [apartadosActivos, setApartadosActivos] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🗓️ OBTENEMOS EL MES LOCAL CORRECTO (Ej: 2026-09)
+  // 🗓️ OBTENEMOS EL MES LOCAL CORRECTO
   const getLocalMonthString = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -28,7 +28,7 @@ export default function BalancePage({ user }) {
 
   const [selectedMonth, setSelectedMonth] = useState(getLocalMonthString());
 
-  // Estado del modal de gastos (incluyendo fecha personalizable según el mes seleccionado)
+  // Estado del modal de gastos
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [expenseForm, setExpenseForm] = useState({
@@ -164,7 +164,7 @@ const calcularCostoItem = (prod) => {
   const utilidadBruta = ingresoBrutoTotal - costoTotalChemas - totalEnviosCobrados;
   const balanceNeto = utilidadBruta - totalGastosManuales;
 
-  // AGREGAR GASTO MANUAL (Asignando la fecha con el año y mes activo en el selector)
+  // AGREGAR GASTO MANUAL
   const handleAddExpense = async (e) => {
     e.preventDefault();
     if (!expenseForm.descripcion || !expenseForm.monto) {
@@ -173,7 +173,6 @@ const calcularCostoItem = (prod) => {
 
     setSubmitting(true);
     try {
-      // Creamos la fecha usando el año y mes que el usuario seleccionó en la interfaz
       const fechaPersonalizada = `${selectedMonth}-01T12:00:00.000Z`;
 
       const res = await fetch(`${API_BASE}/api/expenses`, {
@@ -187,7 +186,7 @@ const calcularCostoItem = (prod) => {
       });
 
       if (res.ok) {
-        toast.success("💸 Gasto registrado correctamente para " + selectedMonth);
+        toast.success("💸 Gasto registrado correctamente en " + selectedMonth);
         setShowAddModal(false);
         setExpenseForm({ categoria: 'Publicidad', descripcion: '', monto: '' });
         fetchData();
@@ -349,28 +348,55 @@ const calcularCostoItem = (prod) => {
         {/* ENCABEZADO Y VOLVER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
-            onClick={() => useNavigateInstance(-1)} 
+            onClick={() => navigate(-1)} 
             className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap">
-            <div className="flex items-center gap-2 bg-black border border-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold">
+            
+            {/* 📅 NUEVO SELECTOR MENSUAL 100% COMPATIBLE CON CUALQUIER NAVEGADOR */}
+            <div className="flex items-center gap-1.5 bg-black border border-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-inner">
               <FaCalendarAlt className="text-[#D4AF37]" />
-              <input 
-                type="month" 
-                value={selectedMonth} 
-                onChange={e => setSelectedMonth(e.target.value)} 
-                className="bg-transparent text-white outline-none cursor-pointer font-mono"
-              />
+              
+              <select 
+                value={selectedMonth.split('-')[1]} 
+                onChange={e => setSelectedMonth(`${selectedMonth.split('-')[0]}-${e.target.value}`)}
+                className="bg-transparent outline-none cursor-pointer uppercase appearance-none text-center"
+              >
+                <option value="01" className="text-black">Ene</option>
+                <option value="02" className="text-black">Feb</option>
+                <option value="03" className="text-black">Mar</option>
+                <option value="04" className="text-black">Abr</option>
+                <option value="05" className="text-black">May</option>
+                <option value="06" className="text-black">Jun</option>
+                <option value="07" className="text-black">Jul</option>
+                <option value="08" className="text-black">Ago</option>
+                <option value="09" className="text-black">Sep</option>
+                <option value="10" className="text-black">Oct</option>
+                <option value="11" className="text-black">Nov</option>
+                <option value="12" className="text-black">Dic</option>
+              </select>
+              
+              <span className="text-gray-600">/</span>
+              
+              <select 
+                value={selectedMonth.split('-')[0]} 
+                onChange={e => setSelectedMonth(`${e.target.value}-${selectedMonth.split('-')[1]}`)}
+                className="bg-transparent text-[#D4AF37] outline-none cursor-pointer appearance-none"
+              >
+                <option value="2025" className="text-black">2025</option>
+                <option value="2026" className="text-black">2026</option>
+                <option value="2027" className="text-black">2027</option>
+              </select>
             </div>
             
             <button 
               onClick={exportarPDF}
               className="px-4 py-2.5 bg-white hover:bg-zinc-700 text-red-600 font-black rounded-xl transition shadow flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer border border-zinc-600"
             >
-              <FaFilePdf className="text-red-500" size={14} /> Exportar PDF
+              <FaFilePdf className="text-red-500" size={14} /> Exportar
             </button>
 
             <button 
@@ -467,7 +493,7 @@ const calcularCostoItem = (prod) => {
                   <h3 className="text-sm font-black uppercase tracking-wider text-white">
                     Historial de Gastos Operativos ({expensesFiltrados.length})
                   </h3>
-                  <p className="text-[10px] text-gray-400">Detalle de salidas de dinero manuales registradas para el mes de {selectedMonth}.</p>
+                  <p className="text-[10px] text-gray-400">Detalle de salidas de dinero manuales registradas para el mes {selectedMonth}.</p>
                 </div>
                 <button 
                   onClick={() => setShowAddModal(true)}
