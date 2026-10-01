@@ -25,8 +25,14 @@ export default function QuickSaleModal({
   if (!showQuickSaleModal) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
-      <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-lg flex flex-col my-auto relative animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500"
+      onClick={() => setShowQuickSaleModal(false)}
+    >
+      <div 
+        className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-lg flex flex-col relative animate-in zoom-in-95 duration-200 mt-10 mb-20"
+        onClick={e => e.stopPropagation()} 
+      >
         
         {/* ENCABEZADO NORMAL */}
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-[2rem]">
@@ -138,7 +144,8 @@ export default function QuickSaleModal({
               {quickForm.productos.map((prod, index) => {
                 const queryText = (prod.nombre || "").trim().toLowerCase();
 
-                const sugerencias = queryText.length === 0
+                // OPTIMIZACIÓN: Solo obtenemos todos y luego cortamos a 15
+                const resultadosFiltrados = queryText.length === 0
                   ? catalogo 
                   : catalogo.filter(cat => {
                       const nombreMatch = cat.name && cat.name.toLowerCase().includes(queryText);
@@ -146,7 +153,12 @@ export default function QuickSaleModal({
                       return nombreMatch || tipoMatch;
                     });
                 
-                const productoVinculado = prod.productoId ? catalogo.find(p => (p.id || p._id) === prod.productoId) : null;
+                // Cortamos a 15 elementos para no crashear el celular
+                const sugerencias = resultadosFiltrados.slice(0, 15);
+                const hayMasResultados = resultadosFiltrados.length > 15;
+                
+                // CORRECCIÓN: usamos productold en vez de productoId
+                const productoVinculado = prod.productold ? catalogo.find(p => (p.id || p._id) === prod.productold) : null;
                 const tallasDisponibles = productoVinculado && productoVinculado.stock 
                   ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
                   : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'];
@@ -187,8 +199,8 @@ export default function QuickSaleModal({
                       </label>
                     </div>
 
-                    {prod.tipoVenta === 'stock' && prod.productoId && (
-                      <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs">
+                    {prod.tipoVenta === 'stock' && prod.productold && (
+                      <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs mt-2">
                         <div className="flex items-center gap-2 truncate">
                           <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
                             {prod.type || 'Camiseta'}
@@ -202,73 +214,80 @@ export default function QuickSaleModal({
                     )}
 
                     {prod.tipoVenta === 'stock' ? (
-                      <div className="space-y-1.5">
+                      <div className="space-y-1.5 mt-2">
                         <div className="relative">
                           <input 
                             type="text" 
                             required 
                             value={prod.nombre} 
                             onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
-                            placeholder="Toca para ver todo el catálogo o busca..." 
+                            placeholder="Toca para ver el catálogo o busca..." 
                             className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
-                              prod.productoId ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
+                              prod.productold ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
                             }`}
                           />
                           <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
                         </div>
 
-                        {!prod.productoId && (
-                          <div className="bg-white border border-gray-300 rounded-xl shadow-inner max-h-48 overflow-y-auto divide-y divide-gray-100">
+                        {!prod.productold && (
+                          <div className="bg-white border border-gray-300 rounded-xl shadow-inner max-h-56 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 divide-y divide-gray-100">
                             {sugerencias.length === 0 ? (
                               <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
                                 No se encontraron resultados en stock.
                               </div>
                             ) : (
-                              sugerencias.map(cat => {
-                                const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
-                                const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
-                                const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
-                                const tipoCat = cat.type || 'Camiseta';
+                              <>
+                                {sugerencias.map(cat => {
+                                  const totalEnBodega = cat.stock ? Object.values(cat.stock).reduce((a, b) => a + (Number(b) || 0), 0) : 0;
+                                  const precioCat = cat.discountPrice ? cat.discountPrice : (cat.price || 15000);
+                                  const imgCat = cat.imageSrc || (cat.images?.[0]?.url || '');
+                                  const tipoCat = cat.type || 'Camiseta';
 
-                                return (
-                                  <button
-                                    key={cat.id || cat._id}
-                                    type="button"
-                                    onClick={() => handleSelectFromCatalogo(index, cat)}
-                                    className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
-                                  >
-                                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
-                                      {imgCat ? (
-                                        <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
-                                      ) : (
-                                        <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
-                                          <FaTshirt size={12} />
-                                        </div>
-                                      )}
-                                      <div className="truncate">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[8px] uppercase font-black px-1.5 py-0.2 bg-gray-200 text-gray-800 rounded">
-                                            {tipoCat}
+                                  return (
+                                    <button
+                                      key={cat.id || cat._id}
+                                      type="button"
+                                      onClick={() => handleSelectFromCatalogo(index, cat)}
+                                      className="w-full text-left p-2.5 hover:bg-gray-100 transition flex items-center justify-between group text-xs font-bold cursor-pointer bg-white text-gray-900"
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                                        {imgCat ? (
+                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                        ) : (
+                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                            <FaTshirt size={12} />
+                                          </div>
+                                        )}
+                                        <div className="truncate">
+                                          <div className="flex items-center gap-1">
+                                            <span className="text-[8px] uppercase font-black px-1.5 py-0.5 bg-gray-200 text-gray-800 rounded">
+                                              {tipoCat}
+                                            </span>
+                                          </div>
+                                          <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
+                                          <span className="text-[10px] text-gray-500 font-medium">
+                                            Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
                                           </span>
                                         </div>
-                                        <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
-                                        <span className="text-[10px] text-gray-500 font-medium">
-                                          Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
-                                        </span>
                                       </div>
-                                    </div>
-                                    <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
-                                      ₡{precioCat.toLocaleString()}
-                                    </span>
-                                  </button>
-                                );
-                              })
+                                      <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                        ₡{precioCat.toLocaleString()}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                                {hayMasResultados && (
+                                  <div className="p-2.5 text-center text-[9px] font-black text-gray-400 uppercase bg-gray-50">
+                                    + {resultadosFiltrados.length - 15} modelos más. Escribe para seguir filtrando...
+                                  </div>
+                                )}
+                              </>
                             )}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div>
+                      <div className="mt-2">
                         <input 
                           type="text" 
                           required 
@@ -280,7 +299,7 @@ export default function QuickSaleModal({
                       </div>
                     )}
 
-                    <div className="grid grid-cols-12 gap-1.5 items-center">
+                    <div className="grid grid-cols-12 gap-1.5 items-center mt-2">
                       <div className="col-span-4">
                         <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1">Talla</label>
                         {prod.tipoVenta === 'stock' ? (
@@ -316,8 +335,8 @@ export default function QuickSaleModal({
                           onChange={e => {
                             const val = e.target.value;
                             handleProductoChange(index, 'cantidad', val);
-                            if (prod.tipoVenta === 'stock' && prod.productoId) {
-                              const prodCat = catalogo.find(p => (p.id || p._id) === prod.productoId);
+                            if (prod.tipoVenta === 'stock' && prod.productold) {
+                              const prodCat = catalogo.find(p => (p.id || p._id) === prod.productold);
                               if (prodCat) {
                                 const pr = prodCat.discountPrice ? prodCat.discountPrice : (prodCat.price || 15000);
                                 handleProductoChange(index, 'precioTotal', pr * (Number(val) || 1));
@@ -399,7 +418,7 @@ export default function QuickSaleModal({
             </div>
 
             {/* TOTAL GENERAL */}
-            <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2">
+            <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2 mb-2">
               <div>
                 <span className="font-bold text-green-800">TOTAL PEDIDO:</span>
                 <span className="text-[10px] text-green-600 block">{totalCantidadChemas} chemas en total</span>
@@ -412,7 +431,7 @@ export default function QuickSaleModal({
           </form>
         </div>
 
-        {/* PIE NORMAL (SIN STICKY) AL FINAL DEL FORMULARIO */}
+        {/* PIE NORMAL AL FINAL DEL FORMULARIO */}
         <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 rounded-b-[2rem]">
           <button 
             type="button" 
