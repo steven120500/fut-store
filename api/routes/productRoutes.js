@@ -60,6 +60,8 @@ function diffProduct(prev, next) {
   if (prev.type !== next.type) ch.push(`tipo: "${prev.type}" -> "${next.type}"`);
   if (prev.isNew !== next.isNew) ch.push(`nuevo: ${prev.isNew} -> ${next.isNew}`);
   if (prev.isMundial !== next.isMundial) ch.push(`mundial: ${prev.isMundial} -> ${next.isMundial}`);
+  // 👇 NUEVO: Registramos si cambiaron de caja / ubicación en el historial
+  if (prev.ubicacion !== next.ubicacion) ch.push(`ubicación: "${prev.ubicacion || 'N/A'}" -> "${next.ubicacion || 'N/A'}"`);
   ch.push(...diffInv('stock', prev.stock, next.stock));
   ch.push(...diffInv('bodega', prev.bodega, next.bodega));
   return ch;
@@ -100,7 +102,8 @@ router.get('/health', async (_req, res) => {
 /** Catálogo completo para POS */
 router.get('/all-pos', async (req, res) => {
   try {
-    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
+    // 👇 NUEVO: Agregamos 'ubicacion' para que la página la reciba al hacer ventas rápidas
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy ubicacion';
     // 🏆 Ordenado por _id descendente (lo más nuevo siempre arriba)
     const items = await Product.find({}).select(projection).sort({ _id: -1 }).lean();
     
@@ -123,20 +126,20 @@ router.get('/', async (req, res) => {
     const mode = (req.query.mode || '').trim();
 
     const find = {};
-    if (q) find.name = { $regex: q, $options: 'i' };
+    if (q) find.name = { $regex: q,$options: 'i' };
 
     if (type === 'Ofertas') {
-      find.discountPrice = { $ne: null, $gt: 0 };
+      find.discountPrice = { $ne: null,$gt: 0 };
     } else if (mode === 'disponibles') {
       find.$and = [
-        { $or: [{ discountPrice: { $exists: false } }, { discountPrice: null }, { discountPrice: 0 }] },
-        { $expr: { $gt: [{ $sum: { $map: { input: { $objectToArray: '$stock' }, as: 's', in: '$$s.v' } } }, 0] } },
+        { $or: [{ discountPrice: { $exists: false } }, { discountPrice: null }, { discountPrice: 0 }] },         {$expr: { $gt: [{$sum: { $map: { input: {$objectToArray: '$stock' }, as: 's', in: '$$s.v' } } }, 0] } },
       ];
     } else if (type) {
       find.type = type;
     }
 
-    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy';
+    // 👇 NUEVO: Agregamos 'ubicacion' en la vista estándar del catálogo
+    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy ubicacion';
 
     // 🏆 Ordenado por _id descendente
     const [items, total] = await Promise.all([
@@ -256,6 +259,7 @@ router.post('/', upload.any(), async (req, res) => {
       images,
       isNew,
       isMundial,
+      ubicacion: req.body.ubicacion ? String(req.body.ubicacion).trim().slice(0, 100) : '' // 👇 NUEVO: Guardar ubicación al crear
     });
 
     await History.create({
@@ -263,7 +267,7 @@ router.post('/', upload.any(), async (req, res) => {
       action: 'creó producto',
       item: `${product.name} (${product.type})`,
       date: new Date(),
-      details: `img principal: ${imageSrc} | Mundial: ${isMundial}`,
+      details: `img principal: ${imageSrc} | Caja: ${product.ubicacion || 'Sin asignar'}`,
     });
 
     res.status(201).json(product);
@@ -313,6 +317,11 @@ router.put('/:id', async (req, res) => {
 
     if (req.body.isMundial !== undefined) {
       update.isMundial = req.body.isMundial === 'true' || req.body.isMundial === true || req.body.isMundial === 'on';
+    }
+
+    // 👇 NUEVO: Detectar y guardar si cambian la ubicación en la edición
+    if (req.body.ubicacion !== undefined) {
+      update.ubicacion = String(req.body.ubicacion).trim().slice(0, 100);
     }
 
     if (req.body.imageSrc !== undefined) update.imageSrc = req.body.imageSrc || '';

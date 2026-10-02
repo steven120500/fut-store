@@ -78,6 +78,9 @@ const productSchema = new mongoose.Schema(
     // 🏆 NUEVO: Campo para identificar artículos del Mundial 2026
     isMundial: { type: Boolean, default: false },
 
+    // 📍 NUEVO: Ubicación física del producto en la bodega
+    ubicacion: { type: String, default: "", trim: true, maxlength: 100 },
+
     /* =========================
        🔒 CAMPOS PARA BLOQUEO (CANDADO)
        ========================= */
