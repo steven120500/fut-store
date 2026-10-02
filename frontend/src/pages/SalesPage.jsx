@@ -55,8 +55,9 @@ export default function SalesPage({ user, onLogout }) {
     vendedorAsignado: getInitialVendedor(),
     requiereEnvio: false,
     direccionEnvio: "",
+    // 🔥 CORRECCIÓN: productoId
     productos: [
-      { tipoVenta: 'stock', productold: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "" }
+      { tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "", ubicacion: "" }
     ]
   });
 
@@ -285,7 +286,8 @@ export default function SalesPage({ user, onLogout }) {
   const handleAddProducto = () => {
     setQuickForm(prev => ({
       ...prev,
-      productos: [...prev.productos, { tipoVenta: 'stock', productold: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '' }]
+      // 🔥 CORRECCIÓN: productoId
+      productos: [...prev.productos, { tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '', ubicacion: '' }]
     }));
   };
 
@@ -301,23 +303,26 @@ export default function SalesPage({ user, onLogout }) {
     const updated = [...quickForm.productos];
     updated[index][field] = value;
     
+    // 🔥 CORRECCIÓN: productoId
     if (field === 'tipoVenta') {
-      updated[index].productold = null;
+      updated[index].productoId = null;
       updated[index].nombre = "";
       updated[index].stockDisponible = null;
       updated[index].imageSrc = "";
       updated[index].type = "";
+      updated[index].ubicacion = "";
     }
     
-    if (field === 'nombre' && updated[index].productold) {
-      updated[index].productold = null;
+    if (field === 'nombre' && updated[index].productoId) {
+      updated[index].productoId = null;
       updated[index].stockDisponible = null;
       updated[index].imageSrc = "";
       updated[index].type = "";
+      updated[index].ubicacion = "";
     }
     
-    if (field === 'talla' && updated[index].productold) {
-      const prodInCat = catalogo.find(p => (p.id || p._id) === updated[index].productold);
+    if (field === 'talla' && updated[index].productoId) {
+      const prodInCat = catalogo.find(p => (p.id || p._id) === updated[index].productoId);
       if (prodInCat && prodInCat.stock) {
         updated[index].stockDisponible = Number(prodInCat.stock[value]) || 0;
       }
@@ -336,13 +341,14 @@ export default function SalesPage({ user, onLogout }) {
     
     updated[index] = {
       ...updated[index],
-      productold: itemId,
+      productoId: itemId, // 🔥 CORRECCIÓN CRÍTICA: Ahora el sistema sabe qué borrar
       nombre: itemCat.name,
       precioTotal: precioFinal * (Number(updated[index].cantidad) || 1),
       talla: tallaAUsar,
       stockDisponible: stockActualTalla,
       imageSrc: itemCat.imageSrc || (itemCat.images?.[0]?.url || ''),
-      type: itemCat.type || 'Camiseta'
+      type: itemCat.type || 'Camiseta',
+      ubicacion: itemCat.ubicacion || ''
     };
     
     setQuickForm(prev => ({ ...prev, productos: updated }));
@@ -355,7 +361,8 @@ export default function SalesPage({ user, onLogout }) {
     }
     
     for (const p of quickForm.productos) {
-      if (p.tipoVenta === 'stock' && p.productold && p.stockDisponible !== null) {
+      // 🔥 CORRECCIÓN: productoId
+      if (p.tipoVenta === 'stock' && p.productoId && p.stockDisponible !== null) {
         const cantVendida = Number(p.cantidad) || 1;
         if (cantVendida > p.stockDisponible) {
           return toast.error(`Stock insuficiente para "${p.nombre}" en talla ${p.talla}. Disponibles: ${p.stockDisponible} unds.`);
@@ -407,7 +414,8 @@ export default function SalesPage({ user, onLogout }) {
           vendedorAsignado: getInitialVendedor(),
           requiereEnvio: false,
           direccionEnvio: "",
-          productos: [{ tipoVenta: 'stock', productold: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "" }]
+          // 🔥 CORRECCIÓN: productoId
+          productos: [{ tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "", ubicacion: "" }]
         });
         fetchRankingData();
         fetchCatalogoProductos();

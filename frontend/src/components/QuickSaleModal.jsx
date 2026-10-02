@@ -26,7 +26,7 @@ export default function QuickSaleModal({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500"
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500"
       onClick={() => setShowQuickSaleModal(false)}
     >
       <div 
@@ -144,7 +144,7 @@ export default function QuickSaleModal({
               {quickForm.productos.map((prod, index) => {
                 const queryText = (prod.nombre || "").trim().toLowerCase();
 
-                // OPTIMIZACIÓN: Solo obtenemos todos y luego cortamos a 15
+                // OPTIMIZACIÓN: Filtramos y cortamos a 15 para no saturar el celular
                 const resultadosFiltrados = queryText.length === 0
                   ? catalogo 
                   : catalogo.filter(cat => {
@@ -153,12 +153,11 @@ export default function QuickSaleModal({
                       return nombreMatch || tipoMatch;
                     });
                 
-                // Cortamos a 15 elementos para no crashear el celular
                 const sugerencias = resultadosFiltrados.slice(0, 15);
                 const hayMasResultados = resultadosFiltrados.length > 15;
                 
-                // CORRECCIÓN: usamos productold en vez de productoId
-                const productoVinculado = prod.productold ? catalogo.find(p => (p.id || p._id) === prod.productold) : null;
+                // CORRECCIÓN: productoId (con i mayúscula) para vincular la base de datos
+                const productoVinculado = prod.productoId ? catalogo.find(p => (p.id || p._id) === prod.productoId) : null;
                 const tallasDisponibles = productoVinculado && productoVinculado.stock 
                   ? Object.keys(productoVinculado.stock).filter(talla => Number(productoVinculado.stock[talla]) > 0)
                   : ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '16', '18', '20', '22', '24', '26', '28', '3', '4', '5'];
@@ -195,21 +194,37 @@ export default function QuickSaleModal({
                           onChange={() => handleProductoChange(index, 'tipoVenta', 'pedido')}
                           className="accent-gray-700 cursor-pointer"
                         />
-                        Pedido
+                        Pedido Especial
                       </label>
                     </div>
 
-                    {prod.tipoVenta === 'stock' && prod.productold && (
-                      <div className="flex items-center justify-between bg-white px-3 py-1.5 rounded-lg border border-green-300 text-xs mt-2">
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
-                            {prod.type || 'Camiseta'}
-                          </span>
-                          <span className="font-bold text-gray-800 truncate">{prod.nombre}</span>
+                    {prod.tipoVenta === 'stock' && prod.productoId && (
+                      <div className="flex items-start justify-between bg-white px-3 py-2 rounded-lg border border-green-300 text-xs mt-2">
+                        <div className="flex flex-col gap-1 pr-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5 rounded">
+                              {prod.type || 'Camiseta'}
+                            </span>
+                            <span className="font-bold text-gray-800 line-clamp-2">{prod.nombre}</span>
+                          </div>
                         </div>
-                        <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full whitespace-nowrap">
-                          Stock: {prod.stockDisponible ?? 0} unds
-                        </span>
+                        
+                        {/* 🚨 ALERTA DE STOCK MEJORADA Y UBICACIÓN */}
+                        <div className="flex flex-col items-end flex-shrink-0">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                            (prod.stockDisponible ?? 0) > 2 ? 'text-green-600 bg-green-50' : 
+                            (prod.stockDisponible ?? 0) > 0 ? 'text-amber-600 bg-amber-50 animate-pulse' : 
+                            'text-red-600 bg-red-100 font-black'
+                          }`}>
+                            {prod.stockDisponible > 0 ? `Stock: ${prod.stockDisponible} unds` : '🚨 AGOTADA'}
+                          </span>
+                          
+                          {productoVinculado?.ubicacion && (
+                            <span className="text-[9px] text-blue-600 font-bold mt-1 bg-blue-50 px-1.5 py-0.5 rounded">
+                              📍 {productoVinculado.ubicacion}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
 
@@ -223,14 +238,14 @@ export default function QuickSaleModal({
                             onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
                             placeholder="Toca para ver el catálogo o busca..." 
                             className={`w-full border p-2 rounded-lg text-xs font-bold focus:border-black outline-none pr-7 ${
-                              prod.productold ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
+                              prod.productoId ? 'bg-green-50/30 border-green-400 text-green-900' : 'bg-white'
                             }`}
                           />
                           <FaSearch className="absolute right-2.5 top-2.5 text-gray-400 text-xs pointer-events-none" />
                         </div>
 
-                        {!prod.productold && (
-                          <div className="bg-white border border-gray-300 rounded-xl shadow-inner max-h-56 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 divide-y divide-gray-100">
+                        {!prod.productoId && (
+                          <div className="bg-white border border-gray-300 rounded-xl shadow-inner max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 divide-y divide-gray-100">
                             {sugerencias.length === 0 ? (
                               <div className="p-3 text-center text-xs text-gray-400 italic font-medium">
                                 No se encontraron resultados en stock.
@@ -258,15 +273,24 @@ export default function QuickSaleModal({
                                             <FaTshirt size={12} />
                                           </div>
                                         )}
-                                        <div className="truncate">
+                                        <div className="truncate flex flex-col">
                                           <div className="flex items-center gap-1">
                                             <span className="text-[8px] uppercase font-black px-1.5 py-0.5 bg-gray-200 text-gray-800 rounded">
                                               {tipoCat}
                                             </span>
+                                            {cat.ubicacion && (
+                                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                                                📍 {cat.ubicacion}
+                                              </span>
+                                            )}
                                           </div>
                                           <span className="block truncate uppercase mt-0.5 text-gray-900 font-bold">{cat.name}</span>
+                                          
+                                          {/* 🚨 SEMÁFORO DE STOCK EN LA LISTA */}
                                           <span className="text-[10px] text-gray-500 font-medium">
-                                            Bodega: <strong className={totalEnBodega > 0 ? 'text-green-600' : 'text-red-500'}>{totalEnBodega} unds</strong>
+                                            Bodega: <strong className={totalEnBodega > 2 ? 'text-green-600' : totalEnBodega > 0 ? 'text-amber-500' : 'text-red-600'}>
+                                              {totalEnBodega > 0 ? `${totalEnBodega} unds` : 'AGOTADO 🚨'}
+                                            </strong>
                                           </span>
                                         </div>
                                       </div>
@@ -335,8 +359,8 @@ export default function QuickSaleModal({
                           onChange={e => {
                             const val = e.target.value;
                             handleProductoChange(index, 'cantidad', val);
-                            if (prod.tipoVenta === 'stock' && prod.productold) {
-                              const prodCat = catalogo.find(p => (p.id || p._id) === prod.productold);
+                            if (prod.tipoVenta === 'stock' && prod.productoId) {
+                              const prodCat = catalogo.find(p => (p.id || p._id) === prod.productoId);
                               if (prodCat) {
                                 const pr = prodCat.discountPrice ? prodCat.discountPrice : (prodCat.price || 15000);
                                 handleProductoChange(index, 'precioTotal', pr * (Number(val) || 1));
@@ -388,7 +412,6 @@ export default function QuickSaleModal({
                 </div>
               </div>
 
-              {/* 📍 SE MUESTRA SOLO SI REQUIERE ENVÍO */}
               {quickForm.requiereEnvio && (
                 <div className="space-y-3 bg-blue-50/40 p-3 rounded-xl border border-blue-100 mb-2 animate-in fade-in zoom-in duration-200">
                   <div>
