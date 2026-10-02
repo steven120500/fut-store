@@ -80,6 +80,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   const [type, setType] = useState("Player");
   const [isNew, setIsNew] = useState(false);
   const [isMundial, setIsMundial] = useState(false);
+  
+  // 📍 NUEVO: Estado para la ubicación o caja
+  const [ubicacion, setUbicacion] = useState("");
+  
   const [stock, setStock] = useState({});
   const [loading, setLoading] = useState(false);
 
@@ -186,6 +190,10 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
       formData.append("price", String(price).trim());
       if (discountPrice) formData.append("discountPrice", String(discountPrice).trim());
       formData.append("type", type.trim());
+      
+      // 📍 NUEVO: Enviar ubicación al backend
+      if (ubicacion) formData.append("ubicacion", ubicacion.trim());
+      
       formData.append("stock", JSON.stringify(stockFinal));
       formData.append("isNew", isNew ? "true" : "false");
       formData.append("isMundial", isMundial ? "true" : "false"); 
@@ -220,11 +228,9 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   return (
     <div
       ref={modalRef}
-      // 🔥 FIX 1: overflow-y-auto en el fondo negro para que todo el modal pueda scrollear si es necesario
       className="fixed inset-0 bg-black/60 overflow-y-auto flex justify-center px-4 py-10 sm:pt-24 sm:pb-12"
       style={{ zIndex: 99999 }} 
     >
-      {/* 🔥 FIX 2: my-auto lo centra verticalmente si sobra espacio, y shrink-0 evita que se aplaste */}
       <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full h-fit my-auto shrink-0">
         
         <button
@@ -282,31 +288,44 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
             className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
           />
 
-          <input
-            type="text"
-            placeholder="Precio normal (Ej. 25000)"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-          />
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Precio normal (Ej. 25000)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+            />
+            <input
+              type="text"
+              placeholder="Precio descuento"
+              value={discountPrice}
+              onChange={(e) => setDiscountPrice(e.target.value)}
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+            />
+          </div>
 
-          <input
-            type="text"
-            placeholder="Precio con descuento (opcional)"
-            value={discountPrice}
-            onChange={(e) => setDiscountPrice(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-          />
-
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black font-semibold"
-          >
-            {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black font-semibold"
+            >
+              {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            
+            {/* 📍 NUEVO INPUT: UBICACIÓN DE LA CAJA */}
+            <input
+              type="text"
+              placeholder="Ubicación / Caja (Ej: A5 - 3)"
+              value={ubicacion}
+              onChange={(e) => setUbicacion(e.target.value)}
+              maxLength={100}
+              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black placeholder-gray-400 font-medium bg-blue-50/30 text-blue-900"
+            />
+          </div>
         </div>
 
         <div className="space-y-2 mb-6 border bg-gray-50 p-4 rounded-lg">

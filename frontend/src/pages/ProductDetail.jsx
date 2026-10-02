@@ -81,6 +81,7 @@ export default function ProductDetail({
   const [editedStock, setEditedStock] = useState({});
   const [editedIsNew, setEditedIsNew] = useState(false);
   const [editedIsMundial, setEditedIsMundial] = useState(false); 
+  const [editedUbicacion, setEditedUbicacion] = useState(''); 
   const [localImages, setLocalImages] = useState([]);
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
@@ -128,6 +129,7 @@ export default function ProductDetail({
     setEditedStock({ ...(data.stock || {}) });
     setEditedIsNew(Boolean(data.isNew));
     setEditedIsMundial(Boolean(data.isMundial)); 
+    setEditedUbicacion(data.ubicacion || ''); 
     
     setSaleForm(prev => ({
       ...prev,
@@ -302,6 +304,7 @@ export default function ProductDetail({
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
         isMundial: editedIsMundial, 
+        ubicacion: editedUbicacion.trim(),
       };
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
@@ -587,6 +590,10 @@ export default function ProductDetail({
                               <label className="text-xs font-bold text-gray-500">OFERTA (Opcional)</label>
                               <input type="number" value={editedDiscountPrice} onChange={e => setEditedDiscountPrice(e.target.value)} className="w-full border p-2 rounded" placeholder="0" />
                           </div>
+                      </div>
+                      <div>
+                          <label className="text-xs font-bold text-gray-500">UBICACIÓN / CAJA</label>
+                          <input type="text" value={editedUbicacion} onChange={e => setEditedUbicacion(e.target.value)} placeholder="Ej: Caja 1 (S-M), Caja 3 (L-XL)" className="w-full border p-2 rounded bg-blue-50/30 text-blue-900 font-medium focus:outline-none focus:border-black" maxLength={100} />
                       </div>
                   </div>
                   
