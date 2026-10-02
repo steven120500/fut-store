@@ -562,7 +562,6 @@ export default function ProductDetail({
                       <div className="grid grid-cols-2 gap-4">
                           <div>
                               <label className="text-xs font-bold text-gray-500">TIPO</label>
-                              {/* 🏆 AQUÍ ESTÁ EL CAMBIO: Añadido 'Tacos' para que aparezca en el menú de edición */}
                               <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
                                   {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','Tacos'].map(t => <option key={t}>{t}</option>)}
                               </select>
@@ -626,10 +625,17 @@ export default function ProductDetail({
             ) : (
               <>
                 <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
                       {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
+                      
+                      {/* 🔥 UBICACIÓN VISIBLE SOLO PARA ADMINISTRADORES FUERA DEL MODO DE EDICIÓN */}
+                      {isSuperUser && product.ubicacion && (
+                        <span className="px-2 py-1 bg-blue-50 text-blue-700 font-bold text-[10px] uppercase rounded tracking-widest border border-blue-200 shadow-sm flex items-center gap-1">
+                          📍 {product.ubicacion}
+                        </span>
+                      )}
                   </div>
                   <h1 className="text-3xl md:text-5xl font-black uppercase italic leading-tight text-black">{product.name}</h1>
                   <div className="mt-4 flex items-baseline gap-3">
@@ -672,12 +678,19 @@ export default function ProductDetail({
                           key={size}
                           disabled={qty <= 0}
                           onClick={() => setSelectedSize(size)}
-                          className={`min-w-[45px] h-[45px] px-2 border rounded-lg font-bold text-sm transition-all relative
+                          className={`h-[45px] px-3 flex items-center justify-center gap-1.5 border rounded-lg font-bold text-sm transition-all relative
                             ${qty <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
                             ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 text-black hover:border-black hover:shadow-sm'}
                           `}
                         >
-                          {size}
+                          <span>{size}</span>
+                          
+                          {/* 🔥 CANTIDAD DE STOCK EN EL BOTÓN VISIBLE SOLO PARA ADMINISTRADORES */}
+                          {isSuperUser && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black ${selectedSize === size ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'}`}>
+                              {qty}
+                            </span>
+                          )}
                         </button>
                       )
                     })}
