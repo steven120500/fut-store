@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 function TopBanner() {
   const messages = [
-    "STOCK DE +2500 CHEMAS",
+    "STOCK DE +6000 CHEMAS",
     "ENVIOS A TODO EL PAIS",
     "SOMOS FUTSTORE",
     "TU ESTILO JUEGA EN PRIMERA",
