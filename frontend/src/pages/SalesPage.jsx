@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaArrowLeft, FaTrophy, FaCashRegister, FaTshirt, FaUserTie, FaTruck,
-  FaMoneyBillWave, FaPlus, FaRedo, FaExclamationTriangle 
+  FaMoneyBillWave, FaPlus, FaRedo, FaExclamationTriangle, FaStar 
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
 import QuickSaleModal from '../components/QuickSaleModal';
+// 🔥 IMPORTAMOS EL NUEVO COMPONENTE QUE CREAREMOS AHORA
+import TopProductsBoard from '../components/TopProductsBoard'; 
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -21,6 +23,9 @@ const VENDEDORES = [
 
 export default function SalesPage({ user, onLogout }) {
   const navigate = useNavigate();
+  // 🔥 ESTADO PARA LAS PESTAÑAS
+  const [activeTab, setActiveTab] = useState('empleados');
+
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
   const [catalogo, setCatalogo] = useState([]);
@@ -55,7 +60,6 @@ export default function SalesPage({ user, onLogout }) {
     vendedorAsignado: getInitialVendedor(),
     requiereEnvio: false,
     direccionEnvio: "",
-    // 🔥 CORRECCIÓN: productoId
     productos: [
       { tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "", ubicacion: "" }
     ]
@@ -148,7 +152,6 @@ export default function SalesPage({ user, onLogout }) {
       if (res.ok) {
         const data = await res.json();
         
-        // 🔥 LÓGICA DE FUSIÓN: Unir "STEVEN" con "STEVEN CORRALES"
         const mergedRanking = [];
         data.forEach(emp => {
           let nombreAsignado = emp._id || '';
@@ -168,7 +171,6 @@ export default function SalesPage({ user, onLogout }) {
           }
         });
         
-        // Reordenar tras la fusión
         mergedRanking.sort((a, b) => b.montoTotal - a.montoTotal);
         setRanking(mergedRanking);
       }
@@ -189,7 +191,7 @@ export default function SalesPage({ user, onLogout }) {
       const v = normalize(s.vendedor);
       if (v === nv) return true;
       if (nv === 'bety' && v.includes('alonso')) return true;
-      if (nv === 'steven corrales' && v === 'steven') return true; // Aplicar fusión
+      if (nv === 'steven corrales' && v === 'steven') return true; 
       return false;
     });
 
@@ -252,7 +254,6 @@ export default function SalesPage({ user, onLogout }) {
     
     setSubmittingComision(true);
     try {
-      // 🔥 SOLUCIÓN ZONA HORARIA: Fuerza la fecha al día 15 del mes local actual
       const now = new Date();
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -286,7 +287,6 @@ export default function SalesPage({ user, onLogout }) {
   const handleAddProducto = () => {
     setQuickForm(prev => ({
       ...prev,
-      // 🔥 CORRECCIÓN: productoId
       productos: [...prev.productos, { tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: '', type: '', ubicacion: '' }]
     }));
   };
@@ -303,7 +303,6 @@ export default function SalesPage({ user, onLogout }) {
     const updated = [...quickForm.productos];
     updated[index][field] = value;
     
-    // 🔥 CORRECCIÓN: productoId
     if (field === 'tipoVenta') {
       updated[index].productoId = null;
       updated[index].nombre = "";
@@ -341,7 +340,7 @@ export default function SalesPage({ user, onLogout }) {
     
     updated[index] = {
       ...updated[index],
-      productoId: itemId, // 🔥 CORRECCIÓN CRÍTICA: Ahora el sistema sabe qué borrar
+      productoId: itemId,
       nombre: itemCat.name,
       precioTotal: precioFinal * (Number(updated[index].cantidad) || 1),
       talla: tallaAUsar,
@@ -361,7 +360,6 @@ export default function SalesPage({ user, onLogout }) {
     }
     
     for (const p of quickForm.productos) {
-      // 🔥 CORRECCIÓN: productoId
       if (p.tipoVenta === 'stock' && p.productoId && p.stockDisponible !== null) {
         const cantVendida = Number(p.cantidad) || 1;
         if (cantVendida > p.stockDisponible) {
@@ -414,7 +412,6 @@ export default function SalesPage({ user, onLogout }) {
           vendedorAsignado: getInitialVendedor(),
           requiereEnvio: false,
           direccionEnvio: "",
-          // 🔥 CORRECCIÓN: productoId
           productos: [{ tipoVenta: 'stock', productoId: null, nombre: "", talla: 'L', cantidad: 1, precioTotal: 15000, stockDisponible: null, imageSrc: "", type: "", ubicacion: "" }]
         });
         fetchRankingData();
@@ -470,12 +467,12 @@ export default function SalesPage({ user, onLogout }) {
           </div>
         </div>
         
-        <div className="border-b border-gray-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+        <div className="border-b border-gray-800 pb-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
-              <FaTrophy /> Ranking de Empleados
+              <FaTrophy /> Ventas & Estadísticas
             </h1>
-            <p className="text-gray-400 text-xs mt-1">Monitoreo de rendimiento del equipo y total de ventas registradas.</p>
+            <p className="text-gray-400 text-xs mt-1">Monitoreo de rendimiento del equipo y productos más vendidos.</p>
           </div>
           
           <div className="flex gap-4 w-full md:w-auto">
@@ -496,103 +493,131 @@ export default function SalesPage({ user, onLogout }) {
             </div>
           </div>
         </div>
+
+       {/* 🔥 PESTAÑAS PARA ALTERNAR VISTAS */}
+       <div className="flex items-center gap-2 mb-8 bg-[#111] p-1.5 rounded-xl border border-gray-800 w-full sm:w-fit">
+          <button
+            onClick={() => setActiveTab('empleados')}
+            className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+              activeTab === 'empleados' ? 'text-black shadow-md' : 'bg-transparent text-gray-500 hover:text-white'
+            }`}
+            style={activeTab === 'empleados' ? { backgroundColor: '#D4AF37' } : {}}
+          >
+            Empleados
+          </button>
+          <button
+            onClick={() => setActiveTab('productos')}
+            className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+              activeTab === 'productos' ? 'text-black shadow-md' : 'bg-transparent text-gray-500 hover:text-white'
+            }`}
+            style={activeTab === 'productos' ? { backgroundColor: '#D4AF37' } : {}}
+          >
+            <FaStar className={activeTab === 'productos' ? 'text-black' : 'text-gray-600'}/> Top Chemas
+          </button>
+        </div>
         
-        {loading ? (
-          <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
-            Calculando el ranking del equipo...
-          </div>
-        ) : ranking.length === 0 ? (
-          <div className="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-gray-800 text-gray-500 text-sm font-bold uppercase">
-            Aún no se han registrado ventas en el sistema.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {ranking.map((emp, index) => {
-              const esOro = index === 0;
-              const esPlata = index === 1;
-              const esBronce = index === 2;
-              
-              const abonosDelVendedor = apartadosActivos
-                .filter(ap => ap.vendedor === emp._id)
-                .reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
+        {/* 🔥 RENDER CONDICIONAL SEGÚN LA PESTAÑA */}
+        {activeTab === 'empleados' ? (
+          loading ? (
+            <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
+              Calculando el ranking del equipo...
+            </div>
+          ) : ranking.length === 0 ? (
+            <div className="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-gray-800 text-gray-500 text-sm font-bold uppercase">
+              Aún no se han registrado ventas en el sistema.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {ranking.map((emp, index) => {
+                const esOro = index === 0;
+                const esPlata = index === 1;
+                const esBronce = index === 2;
                 
-              const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;
-              const statsVendedor = getPrendasVendedor(emp._id);
-              
-              return (
-                <div
-                  key={emp._id}
-                  className={`bg-[#0a0a0a] rounded-2xl p-6 border transition-all relative overflow-hidden flex flex-col justify-between ${
-                    esOro ? 'border-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.15)] bg-gradient-to-b from-[#1a1813] to-[#0a0a0a]' :
-                    esPlata ? 'border-gray-400 shadow-lg' :
-                    esBronce ? 'border-amber-700/60 shadow-md' : 'border-gray-800'
-                  }`}
-                >
-                  <div className="absolute top-4 right-4 text-2xl">
-                    {esOro && <span title="1er Lugar">🥇</span>}
-                    {esPlata && <span title="2do Lugar">🥈</span>}
-                    {esBronce && <span title="3er Lugar">🥉</span>}
-                    {index > 2 && <span className="text-xs font-black bg-gray-800 text-gray-400 px-2 py-1 rounded-full">#{index + 1}</span>}
-                  </div>
+                const abonosDelVendedor = apartadosActivos
+                  .filter(ap => ap.vendedor === emp._id)
+                  .reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
                   
-                  <div>
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-black border border-gray-700 flex items-center justify-center text-[#D4AF37] font-black text-lg shadow-inner">
-                        <FaUserTie />
+                const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;
+                const statsVendedor = getPrendasVendedor(emp._id);
+                
+                return (
+                  <div
+                    key={emp._id}
+                    className={`bg-[#0a0a0a] rounded-2xl p-6 border transition-all relative overflow-hidden flex flex-col justify-between ${
+                      esOro ? 'border-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.15)] bg-gradient-to-b from-[#1a1813] to-[#0a0a0a]' :
+                      esPlata ? 'border-gray-400 shadow-lg' :
+                      esBronce ? 'border-amber-700/60 shadow-md' : 'border-gray-800'
+                    }`}
+                  >
+                    <div className="absolute top-4 right-4 text-2xl">
+                      {esOro && <span title="1er Lugar">🥇</span>}
+                      {esPlata && <span title="2do Lugar">🥈</span>}
+                      {esBronce && <span title="3er Lugar">🥉</span>}
+                      {index > 2 && <span className="text-xs font-black bg-gray-800 text-gray-400 px-2 py-1 rounded-full">#{index + 1}</span>}
+                    </div>
+                    
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 rounded-full bg-black border border-gray-700 flex items-center justify-center text-[#D4AF37] font-black text-lg shadow-inner">
+                          <FaUserTie />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block">Vendedor</span>
+                          <h3 className="font-black text-lg text-white truncate max-w-[150px] uppercase">{emp._id}</h3>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest block">Vendedor</span>
-                        <h3 className="font-black text-lg text-white truncate max-w-[150px] uppercase">{emp._id}</h3>
+                      
+                      <div className="space-y-2 my-6 border-y border-gray-800/80 py-4 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2"><FaCashRegister className="text-gray-600"/> Transacciones:</span>
+                          <span className="font-bold text-white">{emp.totalVentas}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
+                          <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalChemas} unds</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2">👟 Tacos movidos:</span>
+                          <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalTacos} prs</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400 flex items-center gap-2"><FaTruck className="text-gray-600"/> Envíos cobrados:</span>
+                          <span className="font-bold text-blue-400">₡{emp.enviosGenerados?.toLocaleString() || 0}</span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="space-y-2 my-6 border-y border-gray-800/80 py-4 text-xs">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2"><FaCashRegister className="text-gray-600"/> Transacciones:</span>
-                        <span className="font-bold text-white">{emp.totalVentas}</span>
+                    <div>
+                      <div className="bg-black/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center mt-2">
+                        <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Aporte Total</span>
+                        <span className="text-lg font-black text-green-500">₡{aporteTotalReal.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
-                        <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalChemas} unds</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2">👟 Tacos movidos:</span>
-                        <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalTacos} prs</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 flex items-center gap-2"><FaTruck className="text-gray-600"/> Envíos cobrados:</span>
-                        <span className="font-bold text-blue-400">₡{emp.enviosGenerados?.toLocaleString() || 0}</span>
-                      </div>
+                      
+                      {isSuperUser && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVendedorComision({
+                              nombre: emp._id,
+                              cantidadChemas: statsVendedor.totalChemas,
+                              cantidadTacos: statsVendedor.totalTacos
+                            });
+                            setShowComisionModal(true);
+                          }}
+                          className="w-full mt-3 py-2.5 bg-amber-600/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 hover:border-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                        >
+                          Sacar Comisión
+                        </button>
+                      )}
                     </div>
                   </div>
-                  
-                  <div>
-                    <div className="bg-black/60 p-3 rounded-xl border border-gray-800 flex justify-between items-center mt-2">
-                      <span className="text-[10px] uppercase font-black text-gray-400 tracking-wider">Aporte Total</span>
-                      <span className="text-lg font-black text-green-500">₡{aporteTotalReal.toLocaleString()}</span>
-                    </div>
-                    
-                    {isSuperUser && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVendedorComision({
-                            nombre: emp._id,
-                            cantidadChemas: statsVendedor.totalChemas,
-                            cantidadTacos: statsVendedor.totalTacos
-                          });
-                          setShowComisionModal(true);
-                        }}
-                        className="w-full mt-3 py-2.5 bg-amber-600/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 hover:border-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                      >
-                        Sacar Comisión
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          /* 🔥 AQUI CARGAMOS EL NUEVO COMPONENTE DE TOP VENTAS */
+          <TopProductsBoard />
         )}
         
         {showComisionModal && (

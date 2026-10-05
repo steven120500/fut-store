@@ -152,19 +152,20 @@ router.get('/top-products', async (req, res) => {
       // 2. Desglosar el array de "productos" en documentos individuales
       { $unwind: "$productos" },
       // 3. Agrupar por el ID o nombre del producto y sumar sus cantidades e ingresos
-      {
-        $group: {
-          _id: {
-            // Usa el ID si existe, si no usa el nombre normalizado a mayúsculas
-            idRef: "$productos.productoId",
-            nombreRef: { $toUpper: "$productos.nombre" }
-          },
-          nombre: { $first: "$productos.nombre" }, // Guardamos el nombre original para mostrarlo
-          tipo: { $first: "$productos.type" },
-          totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
-          totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
-        }
-      },
+     
+     {
+      $group: {
+        _id: {
+          idRef: "$productos.productoId",
+          nombreRef: { $toUpper: "$productos.nombre" }
+        },
+        nombre: { $first: "$productos.nombre" },
+        tipo: { $first: "$productos.type" },
+        imagen: { $first: "$productos.imageSrc" }, // 🔥 NUEVO: Traer la imagen
+        totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
+        totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
+      }
+    },,
       // 4. Ordenar del más vendido al menos vendido
       { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
       // 5. Limitar a los 10 o 15 mejores
