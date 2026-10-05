@@ -1,4 +1,3 @@
-
 import express from 'express';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
@@ -79,7 +78,7 @@ router.post('/', async (req, res) => {
       numero: req.body.numero,
       totalPago: Number(req.body.totalPago) || 0,
       costoEnvio: Number(req.body.costoEnvio) || 0,
-      direccionEnvio: req.body.direccionEnvio || '', // 👈 AÑADIDO: Guardar la dirección
+      direccionEnvio: req.body.direccionEnvio || '', 
       montoTotal: Number(req.body.montoTotal) || 0,
       
       tallaVendida: req.body.tallaVendida || (productosVendidos[0]?.talla || 'N/A'),
@@ -132,7 +131,7 @@ router.get('/', async (req, res) => {
 // 📊 NUEVA RUTA: TOP PRODUCTOS VENDIDOS POR MES
 router.get('/top-products', async (req, res) => {
   try {
-    const { year, month } = req.query; // Espera ej. year=2026, month=10
+    const { year, month } = req.query; 
     
     // Si no mandan fecha, por defecto usa el mes y año actuales
     const targetYear = year ? parseInt(year) : new Date().getFullYear();
@@ -152,23 +151,23 @@ router.get('/top-products', async (req, res) => {
       // 2. Desglosar el array de "productos" en documentos individuales
       { $unwind: "$productos" },
       // 3. Agrupar por el ID o nombre del producto y sumar sus cantidades e ingresos
-     
-     {
-      $group: {
-        _id: {
-          idRef: "$productos.productoId",
-          nombreRef: { $toUpper: "$productos.nombre" }
-        },
-        nombre: { $first: "$productos.nombre" },
-        tipo: { $first: "$productos.type" },
-        imagen: { $first: "$productos.imageSrc" }, // 🔥 NUEVO: Traer la imagen
-        totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
-        totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
-      }
-    },,
+      {
+        $group: {
+          _id: {
+            // Usa el ID si existe, si no usa el nombre normalizado a mayúsculas
+            idRef: "$productos.productoId",
+            nombreRef: { $toUpper: "$productos.nombre" }
+          },
+          nombre: { $first: "$productos.nombre" }, 
+          tipo: { $first: "$productos.type" },
+          imagen: { $first: "$productos.imageSrc" }, // 🔥 LA FOTO YA ESTÁ AQUÍ BIEN ESCRITA
+          totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
+          totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
+        }
+      },
       // 4. Ordenar del más vendido al menos vendido
       { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
-      // 5. Limitar a los 10 o 15 mejores
+      // 5. Limitar a los 15 mejores
       { $limit: 15 }
     ]);
 
@@ -179,7 +178,6 @@ router.get('/top-products', async (req, res) => {
     res.status(500).json({ error: "Error al calcular los productos más vendidos." });
   }
 });
-
 
 // 🔄 RUTA DE RANKING ACTUALIZADA: Devuelve Tacos y Chemas separados
 router.get('/ranking', async (req, res) => {
