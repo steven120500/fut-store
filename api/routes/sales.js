@@ -1,3 +1,4 @@
+
 import express from 'express';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
@@ -116,8 +117,7 @@ router.get('/', async (req, res) => {
     if (vendedor) query.vendedor = vendedor;
     if (fechaInicio && fechaFin) {
       query.fecha = {
-        $gte: new Date(fechaInicio),
-        $lte: new Date(fechaFin)
+        $gte: new Date(fechaInicio),$lte: new Date(fechaFin)
       };
     }
 
@@ -128,6 +128,57 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: "Error al cargar el historial de ventas" });
   }
 });
+
+// 📊 NUEVA RUTA: TOP PRODUCTOS VENDIDOS POR MES
+router.get('/top-products', async (req, res) => {
+  try {
+    const { year, month } = req.query; // Espera ej. year=2026, month=10
+    
+    // Si no mandan fecha, por defecto usa el mes y año actuales
+    const targetYear = year ? parseInt(year) : new Date().getFullYear();
+    // JS meses van de 0 a 11, entonces le restamos 1 al número del mes
+    const targetMonth = month ? parseInt(month) - 1 : new Date().getMonth();
+
+    const startDate = new Date(targetYear, targetMonth, 1);
+    const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
+
+    const topProducts = await Sale.aggregate([
+      // 1. Filtrar solo las ventas de ese mes específico
+      {
+        $match: {
+          fecha: { $gte: startDate,$lte: endDate }
+        }
+      },
+      // 2. Desglosar el array de "productos" en documentos individuales
+      { $unwind: "$productos" },
+      // 3. Agrupar por el ID o nombre del producto y sumar sus cantidades e ingresos
+      {
+        $group: {
+          _id: {
+            // Usa el ID si existe, si no usa el nombre normalizado a mayúsculas
+            idRef: "$productos.productoId",
+            nombreRef: { $toUpper: "$productos.nombre" }
+          },
+          nombre: { $first: "$productos.nombre" }, // Guardamos el nombre original para mostrarlo
+          tipo: { $first: "$productos.type" },
+          totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
+          totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
+        }
+      },
+      // 4. Ordenar del más vendido al menos vendido
+      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
+      // 5. Limitar a los 10 o 15 mejores
+      { $limit: 15 }
+    ]);
+
+    res.json(topProducts);
+
+  } catch (error) {
+    console.error("Error al generar Top Productos:", error);
+    res.status(500).json({ error: "Error al calcular los productos más vendidos." });
+  }
+});
+
 
 // 🔄 RUTA DE RANKING ACTUALIZADA: Devuelve Tacos y Chemas separados
 router.get('/ranking', async (req, res) => {
@@ -149,13 +200,12 @@ router.get('/ranking', async (req, res) => {
           cantidad: 1,
           // Calculamos cuántos tacos hay en esta venta revisando el array 'productos'
           tacosVendidos: {
-            $sum: {
-              $map: {
+            $sum: {$map: {
                 input: { $ifNull: ["$productos", []] },
                 as: "prod",
                 in: {
                   $cond: [
-                    { $regexMatch: { input: { $ifNull: ["$$prod.type", "$$prod.nombre"] }, regex: /taco/i } },
+                    { $regexMatch: { input: {$ifNull: ["$$prod.type", "$$prod.nombre"] }, regex: /taco/i } },
                     { $convert: { input: "$$prod.cantidad", to: "int", onError: 0, onNull: 0 } },
                     0
                   ]
