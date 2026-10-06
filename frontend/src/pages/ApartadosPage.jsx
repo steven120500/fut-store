@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaPlus, FaArrowRight, FaCheck, FaBoxOpen, FaTruck, FaStore, 
-  FaImage, FaSearch, FaMoneyBillWave, FaUserTie, FaTrash, FaChevronDown, FaChevronUp, FaFilePdf, FaTags, FaArrowLeft
+  FaImage, FaSearch, FaUserTie, FaTrash, FaChevronDown, FaChevronUp, FaFilePdf, FaTags, FaArrowLeft, FaExclamationTriangle
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import NewApartadoModal from '../components/NewApartadoModal'; 
+import RestockBoard from '../components/RestockBoard'; 
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -24,6 +25,8 @@ const getBase64 = (file) => {
 
 export default function ApartadosPage({ user }) {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('pedidos'); 
+
   const [apartados, setApartados] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeliverModal, setShowDeliverModal] = useState(false);
@@ -274,6 +277,76 @@ export default function ApartadosPage({ user }) {
     }
   };
 
+  // 🔥 MAGIA: ENVIAR RE-STOCK DIRECTO AL TABLERO CON LAS FOTOS DEL CATÁLOGO YA INCLUIDAS
+  const handleCrearRestockAlTablero = async (pedidoList) => {
+    try {
+      let productosProcesados = [];
+      for (const item of pedidoList) {
+        for (const [talla, cantidad] of Object.entries(item.tallasPedidas)) {
+          if (cantidad > 0) {
+            
+            productosProcesados.push({
+              tipoPedido: 'nuevo', 
+              descripcionManual: item.name,
+              talla: talla,
+              cantidad: Number(cantidad),
+              version: item.type || 'Fan',
+              // Recibe las imágenes tal cual como vienen (son URLs)
+              imagen1: item.imagen1 || null,
+              imagen2: item.imagen2 || null,
+              precioItem: 0,
+              nombreCamiseta: item.nombreCamiseta || '',
+              numeroCamiseta: item.numeroCamiseta || '',
+              parches: item.parches || ''
+            });
+          }
+        }
+      }
+
+      if(productosProcesados.length === 0) {
+        toast.warning("No asignaste cantidades para encargar.");
+        return false;
+      }
+
+      const payload = {
+        vendedor: currentUser,
+        cliente: 'FUTSTORE RE-STOCK', 
+        cedula: '000000000',
+        telefono: 'N/A',
+        productos: productosProcesados,
+        precioTotal: 0,
+        abono: 0,
+        faltante: 0,
+        costoEnvio: 0,
+        direccionEnvio: '',
+        // Asignamos la portada del pedido
+        imagen: productosProcesados[0]?.imagen1 || null,
+        imagen2: productosProcesados[0]?.imagen2 || null
+      };
+
+      const res = await fetch(`${API_BASE}/api/apartados`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setApartados([...apartados, data.apartado]);
+        toast.success("¡Tarjeta de Re-Stock creada exitosamente en el tablero!");
+        setActiveTab('pedidos'); 
+        return true; 
+      } else {
+        toast.error("Error al crear la tarjeta en el servidor");
+        return false;
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error de conexión al guardar");
+      return false;
+    }
+  };
+
   const moverApartado = async (id, nuevoEstado) => {
     setApartados(prev => prev.map(ap => (ap._id === id || ap.id === id) ? { ...ap, estado: nuevoEstado } : ap));
     try {
@@ -329,7 +402,6 @@ export default function ApartadosPage({ user }) {
     }
   };
 
-  // 🧮 LÓGICA DE CONTEO INTELIGENTE (TACOS VS CHEMAS)
   const contarArticulos = (apartadosArr) => {
     let chemas = 0;
     let tacos = 0;
@@ -343,7 +415,6 @@ export default function ApartadosPage({ user }) {
         
         const cant = Number(p.cantidad) || 1;
 
-        // Condición para detectar tacos en productos nuevos o viejos
         if (tipo.includes('tacos') || nombre.includes('tacos') || version.includes('tacos') || talla.includes('us')) {
           tacos += cant;
         } else {
@@ -355,7 +426,6 @@ export default function ApartadosPage({ user }) {
     return { chemas, tacos };
   };
 
-  // 📄 EXPORTAR PDF CON DISEÑO FUTSTORE Y TOTALES DESGLOSADOS
   const generarPDFPedidos = async () => {
     if (pendientes.length === 0) {
       return toast.warning("No hay pedidos pendientes para exportar.");
@@ -405,15 +475,12 @@ export default function ApartadosPage({ user }) {
       const doc = new jsPDF('landscape');
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // ⬛ ENCABEZADO NEGRO ESTILO FUTSTORE
       doc.setFillColor(17, 17, 17);
       doc.rect(0, 0, pageWidth, 42, 'F');
 
-      // 🟡 LÍNEA DORADA DE ACENTO
       doc.setFillColor(212, 175, 55); 
       doc.rect(0, 42, pageWidth, 3, 'F');
 
-      // TÍTULOS
       doc.setTextColor(255, 255, 255);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(20);
@@ -483,7 +550,6 @@ export default function ApartadosPage({ user }) {
         }
       });
 
-      // 🏆 TOTALES AL FINAL DEL PDF
       const finalY = doc.lastAutoTable.finalY + 15;
       const totalesPedidos = contarArticulos(pendientes);
 
@@ -516,7 +582,6 @@ export default function ApartadosPage({ user }) {
   const enCamino = apartadosFiltrados.filter(ap => ap.estado === 'EN_CAMINO');
   const paraEntregar = apartadosFiltrados.filter(ap => ap.estado === 'PARA_ENTREGAR');
 
-  // Cálculos para el UI visual
   const conteoPendientes = contarArticulos(pendientes);
   const conteoCamino = contarArticulos(enCamino);
   const conteoEntregar = contarArticulos(paraEntregar);
@@ -525,108 +590,137 @@ export default function ApartadosPage({ user }) {
     <div className="min-h-screen bg-black text-white pt-32 pb-16 px-4 md:px-8">
       <div className="max-w-7xl mx-auto">
 
-        {/* BOTÓN VOLVER */}
-        <button 
-          onClick={() => navigate(-1)} 
-          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer w-fit mb-6 shadow-sm"
-        >
-          <FaArrowLeft /> Volver
-        </button>
+        {/* BOTÓN VOLVER Y PESTAÑAS JUNTOS */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer shadow-sm"
+          >
+            <FaArrowLeft /> Volver
+          </button>
 
-        {/* ENCABEZADO Y BUSCADOR GENERAL */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-gray-800 pb-6">
-          <div>
-            <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
-              <FaBoxOpen /> Tablero de Apartados
-            </h1>
-
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-            <div className="flex items-center gap-2 bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 w-full sm:w-auto shadow-inner">
-              <FaSearch className="text-gray-500" size={14} />
-              <input 
-                type="text" 
-                placeholder="Buscar cédula o cliente..." 
-                value={filtroBusqueda}
-                onChange={(e) => setFiltroBusqueda(e.target.value)}
-                className="bg-transparent text-sm font-bold text-white outline-none w-full sm:w-48 placeholder-gray-600"
-              />
-            </div>
-
-            <button 
-              onClick={() => setShowAddModal(true)}
-              className="w-full sm:w-auto bg-white hover:bg-gray-600 text-black px-4 py-2.5 rounded-xl font-black flex items-center justify-center gap-2 transition cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest text-xs"
+          {/* 🔥 PESTAÑAS PARA ALTERNAR VISTAS */}
+          <div className="flex items-center gap-2 bg-[#111] p-1.5 rounded-xl border border-gray-800 w-full sm:w-fit shadow-md">
+            <button
+              onClick={() => setActiveTab('pedidos')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                activeTab === 'pedidos' ? 'text-black shadow-sm' : 'bg-transparent text-gray-500 hover:text-white'
+              }`}
+              style={activeTab === 'pedidos' ? { backgroundColor: '#D4AF37' } : {}}
             >
-              <FaPlus /> Nuevo Apartado
+              <FaBoxOpen size={12} /> Pedidos
+            </button>
+            <button
+              onClick={() => setActiveTab('restock')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
+                activeTab === 'restock' ? 'text-white shadow-sm' : 'bg-transparent text-gray-500 hover:text-white'
+              }`}
+              style={activeTab === 'restock' ? { backgroundColor: '#dc2626' } : {}} 
+            >
+              <FaExclamationTriangle size={12} /> Alerta Re-Stock
             </button>
           </div>
         </div>
 
-        {/* TABLERO KANBAN */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-
-          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
-            <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+        {/* 🔥 RENDER CONDICIONAL SEGÚN PESTAÑA */}
+        {activeTab === 'pedidos' ? (
+          <>
+            {/* ENCABEZADO Y BUSCADOR GENERAL (Solo en Pedidos) */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-gray-800 pb-6 animate-in fade-in duration-300">
               <div>
-                <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                  <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
-                </h2>
-                <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
-                   <span>👕 {conteoPendientes.chemas}</span>
-                   <span>👟 {conteoPendientes.tacos}</span>
+                <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
+                  Tablero de Apartados
+                </h1>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 bg-[#111] border border-gray-800 rounded-xl px-4 py-2.5 w-full sm:w-auto shadow-inner">
+                  <FaSearch className="text-gray-500" size={14} />
+                  <input 
+                    type="text" 
+                    placeholder="Buscar cédula o cliente..." 
+                    value={filtroBusqueda}
+                    onChange={(e) => setFiltroBusqueda(e.target.value)}
+                    className="bg-transparent text-sm font-bold text-white outline-none w-full sm:w-48 placeholder-gray-600"
+                  />
+                </div>
+
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="w-full sm:w-auto bg-white hover:bg-gray-600 text-black px-4 py-2.5 rounded-xl font-black flex items-center justify-center gap-2 transition cursor-pointer shadow-lg active:scale-95 uppercase tracking-widest text-xs"
+                >
+                  <FaPlus /> Nuevo Apartado
+                </button>
+              </div>
+            </div>
+
+            {/* TABLERO KANBAN */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start animate-in slide-in-from-bottom-4 duration-500">
+              
+              <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+                <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
+                  <div>
+                    <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                      <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
+                    </h2>
+                    <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                      <span>👕 {conteoPendientes.chemas}</span>
+                      <span>👟 {conteoPendientes.tacos}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={generarPDFPedidos}
+                    disabled={isExporting}
+                    className={`bg-white hover:bg-gray-300 text-black text-[10px] px-3 py-1.5 rounded-lg font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
+                  >
+                    <FaFilePdf size={12} /> {isExporting ? 'Generando...' : 'Exportar'}
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {pendientes.length === 0 && <p className="text-xs text-white text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
+                  {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
                 </div>
               </div>
-              <button 
-                onClick={generarPDFPedidos}
-                disabled={isExporting}
-                className={`bg-white hover:bg-gray-300 text-black text-[10px] px-3 py-1.5 rounded-lg font-black uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${isExporting ? 'opacity-50' : ''}`}
-              >
-                <FaFilePdf size={12} /> {isExporting ? 'Generando...' : 'Exportar'}
-              </button>
-            </div>
 
-            <div className="space-y-3">
-              {pendientes.length === 0 && <p className="text-xs text-white text-center py-10 font-bold uppercase">Sin pedidos pendientes</p>}
-              {pendientes.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'EN_CAMINO')} btnTexto="Marcar Pedido" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
-            </div>
-          </div>
+              <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+                <div className="mb-4 border-b border-gray-800 pb-2">
+                  <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                    <FaTruck className="text-amber-500" /> En Proceso / Camino ({enCamino.length})
+                  </h2>
+                  <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                    <span>👕 {conteoCamino.chemas}</span>
+                    <span>👟 {conteoCamino.tacos}</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
+                  {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900 text-white" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
+                </div>
+              </div>
 
-          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
-            <div className="mb-4 border-b border-gray-800 pb-2">
-              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                <FaTruck className="text-amber-500" /> En Proceso / Camino ({enCamino.length})
-              </h2>
-              <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
-                 <span>👕 {conteoCamino.chemas}</span>
-                 <span>👟 {conteoCamino.tacos}</span>
+              <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
+                <div className="mb-4 border-b border-gray-800 pb-2">
+                  <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
+                    <FaCheck className="text-green-500" /> Para Entregar ({paraEntregar.length})
+                  </h2>
+                  <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
+                    <span>👕 {conteoEntregar.chemas}</span>
+                    <span>👟 {conteoEntregar.tacos}</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
+                  {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
+                </div>
               </div>
             </div>
-            <div className="space-y-3">
-              {enCamino.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">Nada en camino por ahora</p>}
-              {enCamino.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => moverApartado(ap._id || ap.id, 'PARA_ENTREGAR')} btnTexto="Ya me llegó" btnIcon={<FaArrowRight />} colorBtn="bg-green-600 hover:bg-green-900 text-white" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
-            </div>
-          </div>
-
-          <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
-            <div className="mb-4 border-b border-gray-800 pb-2">
-              <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                <FaCheck className="text-green-500" /> Para Entregar ({paraEntregar.length})
-              </h2>
-              <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
-                 <span>👕 {conteoEntregar.chemas}</span>
-                 <span>👟 {conteoEntregar.tacos}</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {paraEntregar.length === 0 && <p className="text-xs text-gray-600 text-center py-10 font-bold uppercase">No hay entregas pendientes</p>}
-              {paraEntregar.map(ap => <TarjetaApartado key={ap._id || ap.id} data={ap} accion={() => confirmarEntrega(ap)} btnTexto="Entregar y Cobrar" colorBtn="bg-green-600 hover:bg-green-900" onDelete={() => confirmarBorrado(ap._id || ap.id)} />)}
-            </div>
-          </div>
-        </div>
+          </>
+        ) : (
+          <RestockBoard productosStock={productosStock} onCrearRestock={handleCrearRestockAlTablero} />
+        )}
       </div>
 
-      {/* 🚀 COMPONENTE DEL MODAL EXTRAÍDO */}
       <NewApartadoModal 
         showAddModal={showAddModal}
         setShowAddModal={setShowAddModal}
@@ -652,7 +746,6 @@ export default function ApartadosPage({ user }) {
         setActiveDropdownIndex={setActiveDropdownIndex}
       />
 
-      {/* 💸 MODAL: CONFIRMACIÓN DE ENTREGA */}
       {showDeliverModal && apartadoSeleccionado && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
@@ -685,7 +778,6 @@ export default function ApartadosPage({ user }) {
         </div>
       )}
 
-      {/* 🗑️ MODAL: CONFIRMACIÓN DE ELIMINACIÓN */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
@@ -727,8 +819,10 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
   const nombrePrincipal = primerProducto.tipoPedido === 'stock' ? primerProducto.busqueda : primerProducto.descripcionManual;
   const masArticulos = data.productos.length > 1 ? ` +${data.productos.length - 1} más` : '';
 
+  const isRestock = data.cliente === 'FUTSTORE RE-STOCK';
+
   return (
-    <div className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg hover:border-gray-500 transition relative overflow-hidden group">
+    <div className={`bg-black border ${isRestock ? 'border-red-600 shadow-[0_0_15px_rgba(220,38,38,0.15)]' : 'border-gray-700'} p-4 rounded-xl shadow-lg hover:border-gray-500 transition relative overflow-hidden group`}>
 
       <button 
         onClick={onDelete}
@@ -762,12 +856,15 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
           <p className="text-xs font-bold text-white truncate leading-tight">
             {nombrePrincipal} <span className="text-gray-400">{masArticulos}</span>
           </p>
-          <p className="text-[10px] text-gray-400 mt-1 truncate">Cliente: <span className="text-gray-200">{data.cliente}</span></p>
+          {isRestock ? (
+             <p className="text-[10px] text-red-500 mt-1 truncate font-black tracking-widest uppercase">🚨 PARA RE-STOCK</p>
+          ) : (
+             <p className="text-[10px] text-gray-400 mt-1 truncate">Cliente: <span className="text-gray-200">{data.cliente}</span></p>
+          )}
         </div>
       </div>
 
-      {/* ETIQUETA DE ENVÍO Y DIRECCIÓN */}
-      {data.costoEnvio > 0 && (
+      {data.costoEnvio > 0 && !isRestock && (
         <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-2 mb-3">
           <p className="text-[9px] font-black text-blue-400 uppercase flex items-center gap-1 mb-1">
             <FaTruck size={10}/> Requiere Envío (₡{data.costoEnvio})
@@ -780,7 +877,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
 
       <button 
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-center gap-1 py-1 text-[9px] font-black uppercase text-gray-500 hover:text-white transition bg-gray-900/50 rounded-lg mb-3"
+        className="w-full flex items-center justify-center gap-1 py-1 text-[9px] font-black uppercase text-gray-500 hover:text-white transition bg-gray-900/50 rounded-lg mb-3 cursor-pointer"
       >
         {isExpanded ? <>Ver Menos <FaChevronUp size={8}/></> : <>Ver Más Detalles <FaChevronDown size={8}/></>}
       </button>
@@ -821,29 +918,33 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
             </div>
           ))}
 
-          <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-800">
-            <div>
-              <p className="text-[9px] text-gray-500 uppercase font-bold">Cédula</p>
-              <p className="text-[10px] text-gray-300 font-mono truncate">{data.cedula}</p>
+          {!isRestock && (
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-gray-800">
+              <div>
+                <p className="text-[9px] text-gray-500 uppercase font-bold">Cédula</p>
+                <p className="text-[10px] text-gray-300 font-mono truncate">{data.cedula}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[9px] text-gray-500 uppercase font-bold">Teléfono</p>
+                <p className="text-[10px] text-gray-300 font-mono">{data.telefono}</p>
+              </div>
             </div>
-            <div className="text-right">
-              <p className="text-[9px] text-gray-500 uppercase font-bold">Teléfono</p>
-              <p className="text-[10px] text-gray-300 font-mono">{data.telefono}</p>
-            </div>
-          </div>
+          )}
         </div>
       )}
 
-      <div className="bg-[#111] rounded-lg p-2 flex justify-between items-center mt-3 border border-gray-800">
-        <div>
-          <p className="text-[9px] text-gray-500 uppercase font-bold">Abonado</p>
-          <p className="text-xs text-green-500 font-bold">₡{data.abono.toLocaleString()}</p>
+      {!isRestock && (
+        <div className="bg-[#111] rounded-lg p-2 flex justify-between items-center mt-3 border border-gray-800">
+          <div>
+            <p className="text-[9px] text-gray-500 uppercase font-bold">Abonado</p>
+            <p className="text-xs text-green-500 font-bold">₡{data.abono.toLocaleString()}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[9px] text-gray-500 uppercase font-bold">Faltante</p>
+            <p className="text-xs text-red-400 font-black">₡{data.faltante.toLocaleString()}</p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-[9px] text-gray-500 uppercase font-bold">Faltante</p>
-          <p className="text-xs text-red-400 font-black">₡{data.faltante.toLocaleString()}</p>
-        </div>
-      </div>
+      )}
 
       <button 
         onClick={accion}
