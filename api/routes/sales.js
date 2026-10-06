@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
 
     const productosVendidos = req.body.productos || [];
 
-    // 🛡️ MAGIA DE INVENTARIO: Descontar stock en la base de datos si la chema tiene ID del catálogo
+    // 🛡️ MAGIA DE INVENTARIO: Descontar stock (AHORA BLINDADO CONTRA FALLOS DE MONGOOSE)
     if (productosVendidos.length > 0) {
       for (const prod of productosVendidos) {
         if (prod.tipoVenta === 'stock' && prod.productoId) {
@@ -52,7 +52,12 @@ router.post('/', async (req, res) => {
               const stockActual = Number(dbProduct.stock[talla]) || 0;
               const nuevoStock = Math.max(0, stockActual - cantidadVendida);
               
-              dbProduct.stock[talla] = nuevoStock;
+              // 🔥 REGLA DE ORO DE MONGOOSE: Reasignar el objeto completo
+              dbProduct.stock = {
+                ...dbProduct.stock,
+                [talla]: nuevoStock
+              };
+              
               dbProduct.markModified('stock');
               await dbProduct.save();
             }
@@ -142,33 +147,26 @@ router.get('/top-products', async (req, res) => {
     const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
     const topProducts = await Sale.aggregate([
-      // 1. Filtrar solo las ventas de ese mes específico
       {
         $match: {
           fecha: { $gte: startDate,$lte: endDate }
         }
       },
-      // 2. Desglosar el array de "productos" en documentos individuales
       { $unwind: "$productos" },
-      // 3. Agrupar por el ID o nombre del producto y sumar sus cantidades e ingresos
       {
         $group: {
           _id: {
-            // Usa el ID si existe, si no usa el nombre normalizado a mayúsculas
             idRef: "$productos.productoId",
             nombreRef: { $toUpper: "$productos.nombre" }
           },
           nombre: { $first: "$productos.nombre" }, 
           tipo: { $first: "$productos.type" },
-          imagen: { $first: "$productos.imageSrc" }, // 🔥 LA FOTO YA ESTÁ AQUÍ BIEN ESCRITA
+          imagen: { $first: "$productos.imageSrc" }, 
           totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
           totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
         }
       },
-      // 4. Ordenar del más vendido al menos vendido
-      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
-      // 5. Limitar a los 15 mejores
-      { $limit: 15 }
+      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },       {$limit: 15 }
     ]);
 
     res.json(topProducts);
@@ -182,13 +180,11 @@ router.get('/top-products', async (req, res) => {
 // 🔄 RUTA DE RANKING ACTUALIZADA: Devuelve Tacos y Chemas separados
 router.get('/ranking', async (req, res) => {
   try {
-    // Actualiza de forma masiva en la BD cualquier registro viejo de Alonso Lobo para pasarlo a Bety
     await Sale.updateMany(
       { vendedor: { $regex: /alonso/i } },
       { $set: { vendedor: "Bety" } }
     );
 
-    // 🏆 AGREGACIÓN MEJORADA: Filtra dentro del array de productos para sumar tacos vs lo demás
     const ranking = await Sale.aggregate([
       {
         $project: {
@@ -197,7 +193,6 @@ router.get('/ranking', async (req, res) => {
           costoEnvio: 1,
           montoTotal: 1,
           cantidad: 1,
-          // Calculamos cuántos tacos hay en esta venta revisando el array 'productos'
           tacosVendidos: {
             $sum: {$map: {
                 input: { $ifNull: ["$productos", []] },
@@ -222,12 +217,10 @@ router.get('/ranking', async (req, res) => {
           dineroGenerado: { $sum: "$totalPago" },    
           enviosGenerados: { $sum: "$costoEnvio" },  
           montoTotal: { $sum: "$montoTotal" },
-          // Sumatorias separadas
           totalTacos: { $sum: "$tacosVendidos" },
         }
       },
       {
-        // 🧮 Agregamos el campo calculado de chemas
         $addFields: {
           totalChemas: { $subtract: ["$totalPrendas", "$totalTacos"] }
         }
@@ -270,7 +263,7 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    // 🔄 REVERTIR STOCK
+    // 🔄 REVERTIR STOCK (AHORA BLINDADO CONTRA FALLOS DE MONGOOSE)
     if (saleToDelete.productos && saleToDelete.productos.length > 0) {
       for (const prod of saleToDelete.productos) {
         if (prod.tipoVenta === 'stock' && prod.productoId) {
@@ -281,7 +274,12 @@ router.delete('/:id', async (req, res) => {
               const cantidadDevuelta = Number(prod.cantidad) || 1;
               
               const stockActual = Number(dbProduct.stock[talla]) || 0;
-              dbProduct.stock[talla] = stockActual + cantidadDevuelta;
+              
+              // 🔥 REGLA DE ORO DE MONGOOSE: Reasignar el objeto completo para forzar el guardado
+              dbProduct.stock = {
+                ...dbProduct.stock,
+                [talla]: stockActual + cantidadDevuelta
+              };
               
               dbProduct.markModified('stock');
               await dbProduct.save();
