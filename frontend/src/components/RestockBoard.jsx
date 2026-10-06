@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
-import { FaExclamationTriangle, FaImage, FaSearch, FaPlus, FaClipboardList, FaTrash, FaBoxOpen, FaTags } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { FaExclamationTriangle, FaImage, FaSearch, FaPlus, FaClipboardList, FaTrash, FaBoxOpen, FaTags, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 
 export default function RestockBoard({ productosStock, onCrearRestock }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [pedidoProveedor, setPedidoProveedor] = useState([]);
+  
+  // 🔥 NUEVO ESTADO: Límite de productos visibles para evitar crasheos
+  const [visibleCount, setVisibleCount] = useState(15);
 
   // Estados para el Modalito de Personalización
   const [modalItem, setModalItem] = useState(null);
   const [customForm, setCustomForm] = useState({ 
     nombre: '', numero: '', parches: ''
   });
+
+  // Si el usuario escribe algo en el buscador, reiniciamos el contador a 15
+  useEffect(() => {
+    setVisibleCount(15);
+  }, [searchTerm]);
 
   // 1. Filtrar los productos críticos
   const productosCriticos = productosStock.map(prod => {
@@ -32,6 +40,9 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
     prod.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 🔥 3. Extraer solo los productos que vamos a dibujar en pantalla
+  const productosVisibles = productosFiltrados.slice(0, visibleCount);
+
   // --- LÓGICA DEL TABLERO DE PEDIDOS ---
   const agregarAlPedido = (prod) => {
     const prodId = prod.id || prod._id;
@@ -44,7 +55,6 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
       tallasIniciales[tc.talla] = 1; 
     });
 
-    // 🔥 MAGIA: Extraemos las dos fotos automáticamente del catálogo
     const img1 = prod.imageSrc || (prod.images && prod.images[0]?.url) || null;
     const img2 = prod.imageSrc2 || (prod.images && prod.images[1]?.url) || null;
 
@@ -155,66 +165,82 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
             <p className="text-gray-500 text-xs mt-2 font-bold">No hay tallas críticas que coincidan con tu búsqueda.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {productosFiltrados.map((prod) => (
-              <div 
-                key={prod.id || prod._id} 
-                className="bg-[#0a0a0a] rounded-2xl p-4 border border-red-900/30 hover:border-red-600/50 transition-colors shadow-lg flex flex-col h-full group"
-              >
-                <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden mb-4 relative flex items-center justify-center border border-gray-800">
-                  {prod.imageSrc || (prod.images && prod.images[0]?.url) ? (
-                    <img 
-                      src={prod.imageSrc || prod.images[0]?.url} 
-                      alt={prod.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                    />
-                  ) : (
-                    <FaImage className="text-gray-700 text-4xl" />
-                  )}
-                  <div className="absolute top-2 right-2">
-                    <span className="text-[9px] uppercase font-black bg-black/80 backdrop-blur-md text-gray-300 px-2 py-1 rounded border border-gray-700">
-                      {prod.type || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col">
-                  <h3 className="font-bold text-white uppercase text-xs mb-3 line-clamp-2 leading-tight">
-                    {prod.name}
-                  </h3>
-                  
-                  <div className="bg-black/50 p-2.5 rounded-lg border border-gray-800 mb-4">
-                    <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest block mb-2 border-b border-gray-800 pb-1">
-                      En Peligro
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {prod.tallasCriticas.map((tc, idx) => {
-                        const isAgotado = tc.cantidad === 0;
-                        return (
-                          <div 
-                            key={idx} 
-                            className={`flex items-center gap-1.5 px-2 py-1 rounded border ${
-                              isAgotado ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-orange-900/20 border-orange-800 text-orange-400'
-                            }`}
-                          >
-                            <span className="font-black text-xs">{tc.talla}</span>
-                            <span className="text-[10px] font-bold opacity-80">({tc.cantidad})</span>
-                          </div>
-                        );
-                      })}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              {/* 🔥 RECORREMOS SOLO LOS VISIBLES, NO TODOS */}
+              {productosVisibles.map((prod) => (
+                <div 
+                  key={prod.id || prod._id} 
+                  className="bg-[#0a0a0a] rounded-2xl p-4 border border-red-900/30 hover:border-red-600/50 transition-colors shadow-lg flex flex-col h-full group"
+                >
+                  <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden mb-4 relative flex items-center justify-center border border-gray-800">
+                    {prod.imageSrc || (prod.images && prod.images[0]?.url) ? (
+                      <img 
+                        src={prod.imageSrc || prod.images[0]?.url} 
+                        alt={prod.name} 
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                      />
+                    ) : (
+                      <FaImage className="text-gray-700 text-4xl" />
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <span className="text-[9px] uppercase font-black bg-black/80 backdrop-blur-md text-gray-300 px-2 py-1 rounded border border-gray-700">
+                        {prod.type || 'N/A'}
+                      </span>
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => agregarAlPedido(prod)}
-                    className="mt-auto w-full py-2.5 bg-white hover:bg-gray-500 text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-md active:scale-95"
-                  >
-                    <FaPlus size={10} /> Añadir a Encargo
-                  </button>
+                  <div className="flex-1 flex flex-col">
+                    <h3 className="font-bold text-white uppercase text-xs mb-3 line-clamp-2 leading-tight">
+                      {prod.name}
+                    </h3>
+                    
+                    <div className="bg-black/50 p-2.5 rounded-lg border border-gray-800 mb-4">
+                      <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest block mb-2 border-b border-gray-800 pb-1">
+                        En Peligro
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {prod.tallasCriticas.map((tc, idx) => {
+                          const isAgotado = tc.cantidad === 0;
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded border ${
+                                isAgotado ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-orange-900/20 border-orange-800 text-orange-400'
+                              }`}
+                            >
+                              <span className="font-black text-xs">{tc.talla}</span>
+                              <span className="text-[10px] font-bold opacity-80">({tc.cantidad})</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => agregarAlPedido(prod)}
+                      className="mt-auto w-full py-2.5 bg-white hover:bg-gray-500 text-black rounded-lg text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-2 shadow-md active:scale-95 cursor-pointer"
+                    >
+                      <FaPlus size={10} /> Añadir a Encargo
+                    </button>
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* 🔥 BOTÓN PARA CARGAR MÁS PRODUCTOS */}
+            {visibleCount < productosFiltrados.length && (
+              <div className="mt-8 flex justify-center border-t border-gray-800 pt-6">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 15)}
+                  className="flex items-center gap-2 px-6 py-3 border border-gray-700 text-gray-400 hover:text-white hover:border-[#D4AF37] rounded-xl font-black uppercase tracking-widest text-[10px] transition cursor-pointer shadow-sm hover:shadow-[#D4AF37]/20 hover:bg-[#1a1a1a]"
+                >
+                  Cargar más modelos <FaArrowDown size={10} />
+                </button>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 
@@ -267,7 +293,6 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                     </div>
                   </div>
 
-                  {/* Configurar cantidades por talla */}
                   <div className="bg-[#111] rounded-lg p-2 border border-gray-800">
                     <p className="text-[9px] text-gray-500 font-bold uppercase mb-2">Unidades a pedir por talla:</p>
                     <div className="grid grid-cols-3 gap-2">
@@ -327,18 +352,17 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
         </div>
       </div>
 
-      {/* 🔥 MODALITO DE PERSONALIZACIÓN TEMA OSCURO */}
+      {/* 🔥 MODALITO DE PERSONALIZACIÓN */}
       {modalItem && (
         <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white border border-gray-700 text-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200">
-            <h3 className="font-black uppercase text-lg text-black mb-2 flex items-center gap-2">
+            <h3 className="font-black uppercase text-lg text-black mb-4 flex items-center gap-2">
               <FaTags /> Personalizar Encargo
             </h3>
             <p className="text-[11px] font-bold text-gray-400 mb-6 line-clamp-2 leading-tight">{modalItem.name}</p>
             
             <div className="space-y-4">
               
-              {/* Mostramos las fotos que ya jaló automáticamente */}
               <div className="flex gap-3 mb-2">
                 {modalItem.imagen1 && (
                   <div className="flex-1">
@@ -392,7 +416,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
             </div>
             
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setModalItem(null)} className="w-1/2 py-2.5 border border-gray-700 rounded-xl font-bold text-[11px] hover:bg-gray-800 transition cursor-pointer">Cancelar</button>
+              <button onClick={() => setModalItem(null)} className="w-1/2 py-2.5 border border-red-700 rounded-xl bf-red-500 font-bold text-[11px] hover:bg-red-800 transition cursor-pointer text-black">Cancelar</button>
               <button onClick={saveCustomModal} className="w-1/2 py-2.5 bg-gray-300 hover:bg-gray-500 text-black rounded-xl font-black text-[11px] uppercase tracking-widest transition shadow-lg cursor-pointer">Guardar</button>
             </div>
           </div>
