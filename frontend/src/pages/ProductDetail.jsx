@@ -12,7 +12,6 @@ import Footer from '../components/Footer';
 import LoginModal from '../components/LoginModal'; 
 import RegisterUserModal from '../components/RegisterUserModal'; 
 import Medidas from '../components/Medidas';
-import SaleModal from '../components/SaleModal'; 
 
 const API_BASE = "https://fut-store.onrender.com";
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -57,23 +56,8 @@ export default function ProductDetail({
   const [isEditing, setIsEditing] = useState(false);
   const [loadingAction, setLoadingAction] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [showConfirmSave, setShowConfirmSave] = useState(false); 
 
-  // ESTADOS ACTUALIZADOS PARA REGISTRO DE VENTAS
-  const [isRegisteringSale, setIsRegisteringSale] = useState(false);
-  const [loadingCedula, setLoadingCedula] = useState(false); 
-  const [saleForm, setSaleForm] = useState({
-    cedula: '',
-    nombre: '',
-    numero: '',
-    totalPago: 0,
-    costoEnvio: 0, 
-    requiereEnvio: false, 
-    direccionEnvio: '',   
-    tallaVendida: '',
-    cantidadVendida: 1
-  });
-
+  // Estados de edición directos
   const [editedName, setEditedName] = useState('');
   const [editedPrice, setEditedPrice] = useState(0);
   const [editedDiscountPrice, setEditedDiscountPrice] = useState('');
@@ -131,16 +115,6 @@ export default function ProductDetail({
     setEditedIsMundial(Boolean(data.isMundial)); 
     setEditedUbicacion(data.ubicacion || ''); 
     
-    setSaleForm(prev => ({
-      ...prev,
-      totalPago: data.discountPrice || data.price || 0,
-      costoEnvio: 0,
-      requiereEnvio: false,
-      direccionEnvio: '',
-      tallaVendida: selectedSize || 'L',
-      cantidadVendida: 1
-    }));
-    
     let imgs = [];
     if (Array.isArray(data.images) && data.images.length > 0) {
       imgs = data.images.map(img => (typeof img === 'object' ? img.url : img)).filter(url => url && url.startsWith('http'));
@@ -197,120 +171,34 @@ export default function ProductDetail({
 
   const handleCancelEditClick = () => {
     setIsEditing(false);
-    setIsRegisteringSale(false);
     unlockProduct();
     if (product) syncEditState(product);
   };
 
-  const getInventoryChanges = () => {
-    const changes = [];
-    const tallas = getTallasByTipo(editedType);
-    tallas.forEach((size) => {
-      const oldStock = parseInt(product?.stock?.[size] ?? 0, 10);
-      const newStock = parseInt(editedStock?.[size] ?? 0, 10);
-      if (oldStock !== newStock) {
-        changes.push(`Stock [${size}]: ${oldStock} ➔ ${newStock}`);
-      }
-    });
-    return changes;
-  };
-
-  const handleOpenSaleForm = () => {
-    let detectedSizes = [];
-    let totalQty = 0;
-
-    if (product && editedStock) {
-      const tallas = getTallasByTipo(editedType);
-      for (const t of tallas) {
-        const oldQty = parseInt(product?.stock?.[t] ?? 0, 10);
-        const newQty = parseInt(editedStock?.[t] ?? 0, 10);
-        if (oldQty > newQty) {
-          const diff = oldQty - newQty;
-          detectedSizes.push(`${t} (${diff})`);
-          totalQty += diff; 
-        }
-      }
-    }
-
-    let finalSizeStr = selectedSize || 'L';
-    let finalQty = 1;
-
-    if (detectedSizes.length === 1) {
-      finalSizeStr = detectedSizes[0].split(' ')[0];
-      finalQty = totalQty;
-    } else if (detectedSizes.length > 1) {
-      finalSizeStr = detectedSizes.join(', ');
-      finalQty = totalQty;
-    }
-
-    const precioBase = product?.discountPrice || product?.price || 0;
-
-    setSaleForm(prev => ({
-      ...prev,
-      tallaVendida: finalSizeStr,
-      cantidadVendida: finalQty,
-      totalPago: precioBase * finalQty
-    }));
-
-    setIsRegisteringSale(true);
-  };
-
-  const handleQuantityChange = (val) => {
-    const newQty = Math.max(1, parseInt(val, 10) || 1);
-    const precioBase = product?.discountPrice || product?.price || 0;
-    setSaleForm(prev => ({
-      ...prev,
-      cantidadVendida: newQty,
-      totalPago: precioBase * newQty
-    }));
-  };
-
-  const handleCedulaChange = async (e) => {
-    const cedulaInput = e.target.value;
-    setSaleForm({ ...saleForm, cedula: cedulaInput });
-    
-    const cleanCedula = cedulaInput.replace(/\D/g, '');
-    if (cleanCedula.length === 9) {
-      setLoadingCedula(true);
-      try {
-        const res = await fetch(`https://api.hacienda.go.cr/fe/ae?identificacion=${cleanCedula}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.nombre) {
-            setSaleForm(prev => ({ ...prev, nombre: data.nombre }));
-            toast.success("Cliente encontrado en el registro");
-          }
-        }
-      } catch (error) {
-        console.error("No se pudo obtener el nombre de la cédula:", error);
-      } finally {
-        setLoadingCedula(false);
-      }
-    }
-  };
-
-  const handleSave = async (overrideStock = null) => {
+  // 🔥 GUARDADO DIRECTO: SIN MODAL DE VENTAS
+  const handleSave = async () => {
     if (loadingAction) return;
     setLoadingAction(true);
     try {
-      const stockToUse = overrideStock || editedStock;
       const cleanStock = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, Math.max(0, parseInt(v, 10) || 0)]));
       const payload = {
         name: editedName.trim(),
         price: parseInt(editedPrice, 10) || 0,
         discountPrice: editedDiscountPrice ? parseInt(editedDiscountPrice, 10) : null,
         type: editedType,
-        stock: cleanStock(stockToUse),
+        stock: cleanStock(editedStock),
         images: localImages.map(i => i.src), 
         isNew: editedIsNew,
         isMundial: editedIsMundial, 
         ubicacion: editedUbicacion.trim(),
       };
+      
       const res = await fetch(`${API_BASE}/api/products/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'x-user': displayName },
         body: JSON.stringify(payload),
       });
+      
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         if (res.status === 409) {
@@ -318,71 +206,17 @@ export default function ProductDetail({
         }
         throw new Error("Error al actualizar");
       }
+      
       const updated = await res.json();
       setProduct(updated);
       syncEditState(updated);
       setIsEditing(false);
-      setShowConfirmSave(false);
-      setIsRegisteringSale(false);
+      
       if (onUpdate) onUpdate(updated);
-      toast.success("Guardado correctamente");
+      toast.success("Producto guardado correctamente");
     } catch (err) {
       toast.error(err.message);
     } finally {
-      setLoadingAction(false);
-    }
-  };
-
-  const handleRegisterSaleSubmit = async (e) => {
-    e.preventDefault();
-    if (!saleForm.cedula || !saleForm.nombre || !saleForm.numero) {
-      return toast.warning("Por favor completa los datos del cliente.");
-    }
-
-    const subtotalPrenda = Number(saleForm.totalPago) || 0;
-    const montoEnvio = Number(saleForm.costoEnvio) || 0;
-    const granTotal = subtotalPrenda + montoEnvio;
-    const cant = Number(saleForm.cantidadVendida) || 1;
-    const talla = saleForm.tallaVendida;
-
-    setLoadingAction(true);
-    try {
-      const salePayload = {
-        cedula: saleForm.cedula,
-        nombre: saleForm.nombre,
-        numero: saleForm.numero,
-        totalPago: subtotalPrenda,
-        costoEnvio: saleForm.requiereEnvio ? montoEnvio : 0,    
-        direccionEnvio: saleForm.requiereEnvio ? saleForm.direccionEnvio : '',
-        montoTotal: granTotal,     
-        tallaVendida: talla,
-        cantidad: cant,
-        productoId: id,
-        productoNombre: editedName,
-        vendedor: displayName,
-        fecha: new Date().toISOString()
-      };
-
-      await fetch(`${API_BASE}/api/sales`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-user': displayName },
-        body: JSON.stringify(salePayload),
-      });
-
-      let finalStock = { ...editedStock };
-      const oldStockSize = parseInt(product?.stock?.[talla] ?? 0, 10);
-      const currentEditedStockSize = parseInt(editedStock?.[talla] ?? 0, 10);
-
-      const tallasVisiblesActuales = getTallasByTipo(editedType);
-      if (tallasVisiblesActuales.includes(talla) && oldStockSize === currentEditedStockSize) {
-        finalStock[talla] = Math.max(0, currentEditedStockSize - cant);
-        setEditedStock(finalStock);
-      }
-
-      await handleSave(finalStock);
-      toast.success(`💰 Venta registrada con éxito por ${displayName}`);
-    } catch (err) {
-      toast.error("Error al registrar la venta");
       setLoadingAction(false);
     }
   };
@@ -457,11 +291,6 @@ export default function ProductDetail({
   const tallasVisibles = getTallasByTipo(currentType);
   
   const stockRestante = selectedSize ? (isEditing ? editedStock[selectedSize] : product.stock?.[selectedSize]) : 0;
-  const inventoryChanges = getInventoryChanges();
-
-  const subTotalChema = Number(saleForm.totalPago) || 0;
-  const costoDeEnvio = saleForm.requiereEnvio ? (Number(saleForm.costoEnvio) || 0) : 0;
-  const totalConEnvio = subTotalChema + costoDeEnvio;
 
   return (
     <>
@@ -616,10 +445,11 @@ export default function ProductDetail({
                   </div>
 
                   <div className="flex gap-3 pt-4 border-t">
-                    <button onClick={() => { setIsRegisteringSale(false); setShowConfirmSave(true); }} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition">
+                    {/* 🔥 BOTÓN DE GUARDADO DIRECTO */}
+                    <button onClick={handleSave} disabled={loadingAction} className="flex-1 bg-black text-white py-3 rounded-lg font-bold hover:bg-gray-800 transition cursor-pointer">
                         {loadingAction ? 'Guardando...' : 'GUARDAR CAMBIOS'}
                     </button>
-                    <button onClick={handleCancelEditClick} disabled={loadingAction} className="px-4 border border-gray-300 text-red-500 rounded-lg font-bold hover:bg-gray-800">CANCELAR</button>
+                    <button onClick={handleCancelEditClick} disabled={loadingAction} className="px-4 border border-gray-300 text-red-500 rounded-lg font-bold hover:bg-gray-800 cursor-pointer">CANCELAR</button>
                   </div>
               </div>
             ) : (
@@ -630,7 +460,6 @@ export default function ProductDetail({
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
                       {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
                       
-                      {/* 🔥 UBICACIÓN VISIBLE SOLO PARA ADMINISTRADORES FUERA DEL MODO DE EDICIÓN */}
                       {isSuperUser && product.ubicacion && (
                         <span className="px-2 py-1 bg-blue-50 text-blue-700 font-bold text-[10px] uppercase rounded tracking-widest border border-blue-200 shadow-sm flex items-center gap-1">
                           📍 {product.ubicacion}
@@ -678,14 +507,13 @@ export default function ProductDetail({
                           key={size}
                           disabled={qty <= 0}
                           onClick={() => setSelectedSize(size)}
-                          className={`h-[45px] px-3 flex items-center justify-center gap-1.5 border rounded-lg font-bold text-sm transition-all relative
+                          className={`h-[45px] px-3 flex items-center justify-center gap-1.5 border rounded-lg font-bold text-sm transition-all relative cursor-pointer
                             ${qty <= 0 ? 'opacity-30 cursor-not-allowed bg-gray-100 border-gray-200 line-through text-gray-400' : ''}
                             ${selectedSize === size ? 'bg-black text-white border-black shadow-md transform scale-105' : 'bg-white border-gray-200 text-black hover:border-black hover:shadow-sm'}
                           `}
                         >
                           <span>{size}</span>
                           
-                          {/* 🔥 CANTIDAD DE STOCK EN EL BOTÓN VISIBLE SOLO PARA ADMINISTRADORES */}
                           {isSuperUser && (
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-black ${selectedSize === size ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-700'}`}>
                               {qty}
@@ -705,10 +533,10 @@ export default function ProductDetail({
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <button onClick={handleAddToCart} className="w-full bg-black text-white py-4 rounded-xl font-black text-lg hover:bg-gray-800 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98]">
+                  <button onClick={handleAddToCart} className="w-full bg-black text-white py-4 rounded-xl font-black text-lg hover:bg-gray-800 transition shadow-lg flex items-center justify-center gap-3 active:scale-[0.98] cursor-pointer">
                     <FaShoppingCart /> AÑADIR AL CARRITO
                   </button>
-                  <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-3 active:scale-[0.98]">
+                  <button onClick={handleBuyWhatsApp} className="w-full bg-green-600 text-white py-4 rounded-xl font-black text-lg hover:bg-green-700 transition shadow-lg shadow-green-100 flex items-center justify-center gap-3 active:scale-[0.98] cursor-pointer">
                     <FaWhatsapp size={26} /> COMPRAR DIRECTO
                   </button>
                 </div>
@@ -717,8 +545,8 @@ export default function ProductDetail({
                   <div className="mt-12 pt-6 border-t border-gray-100">
                     <p className="text-[10px] font-bold text-gray-400 uppercase mb-3 text-center tracking-widest">Zona Administrativa</p>
                     <div className="flex gap-3">
-                      {isSuperUser && <button onClick={handleEditClick} disabled={loadingAction} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm"><FaEdit /> EDITAR / VENTAS</button>}
-                      {canDelete && <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm"><FaTrash /> ELIMINAR</button>}
+                      {isSuperUser && <button onClick={handleEditClick} disabled={loadingAction} className="flex-1 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200 flex items-center justify-center gap-2 text-sm cursor-pointer"><FaEdit /> EDITAR INVENTARIO</button>}
+                      {canDelete && <button onClick={() => setShowConfirmDelete(true)} className="flex-1 py-3 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 text-sm cursor-pointer"><FaTrash /> ELIMINAR</button>}
                     </div>
                   </div>
                 )}
@@ -747,43 +575,19 @@ export default function ProductDetail({
                 <div className="flex flex-col gap-3">
                   <button 
                     onClick={() => navigate('/checkout')} 
-                    className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition"
+                    className="w-full bg-black text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition cursor-pointer"
                   >
                     FINALIZAR COMPRA
                   </button>
                   <button 
                     onClick={() => { setShowDecisionModal(false); navigate('/'); }} 
-                    className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition"
+                    className="w-full bg-white text-black border-2 border-black py-3 rounded-xl font-bold hover:bg-gray-50 transition cursor-pointer"
                   >
                     SEGUIR VIENDO
                   </button>
                 </div>
               </motion.div>
             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* 🏆 MODAL DE VENTA/GUARDAR SEPARADO */}
-        <AnimatePresence>
-          {showConfirmSave && (
-            <SaleModal 
-              isRegisteringSale={isRegisteringSale}
-              setIsRegisteringSale={setIsRegisteringSale}
-              inventoryChanges={inventoryChanges}
-              handleOpenSaleForm={handleOpenSaleForm}
-              handleSave={handleSave}
-              loadingAction={loadingAction}
-              setShowConfirmSave={setShowConfirmSave}
-              handleRegisterSaleSubmit={handleRegisterSaleSubmit}
-              displayName={displayName}
-              saleForm={saleForm}
-              setSaleForm={setSaleForm}
-              loadingCedula={loadingCedula}
-              tallasVisibles={tallasVisibles}
-              handleQuantityChange={handleQuantityChange}
-              handleCedulaChange={handleCedulaChange}
-              totalConEnvio={totalConEnvio}
-            />
           )}
         </AnimatePresence>
         
@@ -795,8 +599,8 @@ export default function ProductDetail({
                 <h3 className="text-lg font-bold mb-2 text-black">¿Eliminar producto viejo?</h3>
                 <p className="text-gray-500 text-xs mb-6">Esta acción no se puede deshacer.</p>
                 <div className="flex gap-2">
-                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm text-black">Cancelar</button>
-                  <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">{loadingAction ? '...' : 'Eliminar'}</button>
+                  <button onClick={() => setShowConfirmDelete(false)} className="flex-1 py-2 border rounded-lg font-bold text-sm text-black cursor-pointer">Cancelar</button>
+                  <button onClick={executeDelete} className="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 cursor-pointer">{loadingAction ? '...' : 'Eliminar'}</button>
                 </div>
               </div>
             </motion.div>
