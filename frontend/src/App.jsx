@@ -40,7 +40,7 @@ import BalancePage from "./pages/BalancePage.jsx";
 import ApartadosPage from './pages/ApartadosPage';
 
 const API_BASE = "https://fut-store.onrender.com"; 
-const GOLD = "#9E8F91"
+const GOLD = "#9E8F91";
 
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
@@ -49,7 +49,22 @@ function buildPages(page, pages) {
 
 const getPid = (p) => String(p?._id ?? p?.id ?? "");
 
-// 🔥 1. CAMBIAMOS EL NOMBRE A MainApp PARA PODER USAR LOS HOOKS DE LA URL
+// 🔥 COMPONENTE SKELETON PARA TARJETAS DE PRODUCTO
+function ProductSkeleton() {
+  return (
+    <div className="flex flex-col bg-white rounded-2xl p-3 border border-gray-100 shadow-sm animate-pulse">
+      <div className="w-full aspect-square bg-gray-200 rounded-xl mb-3" />
+      <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
+      <div className="h-4 bg-gray-300 rounded w-4/5 mb-1.5" />
+      <div className="h-4 bg-gray-200 rounded w-2/4 mb-4" />
+      <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center">
+        <div className="h-5 bg-gray-300 rounded w-1/3" />
+        <div className="h-8 w-8 bg-gray-200 rounded-full" />
+      </div>
+    </div>
+  );
+}
+
 function MainApp() {
   const [products, setProducts] = useState([]);
 
@@ -59,19 +74,19 @@ function MainApp() {
 
   const [startedWithIntro] = useState(loading);
   const [isFiltering, setIsFiltering] = useState(false); 
+  
+  // 🔥 NUEVO ESTADO: Controla el Skeleton mientras cargan los productos
+  const [isFetchingProducts, setIsFetchingProducts] = useState(true);
 
-  // 🔥 2. IMPORTAMOS LOS PARÁMETROS DE LA URL
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
-  // 🔥 3. INICIALIZAMOS LOS ESTADOS LEYENDO LA URL
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [filterType, setFilterType] = useState(searchParams.get("type") || "");
   const [filterSizes, setFilterSizes] = useState(
     searchParams.get("sizes") ? searchParams.get("sizes").split(",") : []
   );
 
-  // 🚀 ESTADO INTELIGENTE: Verifica si abrieron la app desde un link filtrado
   const [pendingScroll, setPendingScroll] = useState(() => {
     return !!(searchParams.get("q") || searchParams.get("type") || searchParams.get("sizes"));
   });
@@ -96,7 +111,7 @@ function MainApp() {
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
 
-  // 🔥 4. EFECTO PARA SINCRONIZAR LA URL CADA VEZ QUE CAMBIA UN FILTRO
+  // Sincronizar la URL cada vez que cambia un filtro
   useEffect(() => {
     if (location.pathname === "/") {
       const params = new URLSearchParams();
@@ -142,10 +157,6 @@ function MainApp() {
     };
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-  }, [searchTerm, filterType, filterSizes]);
-
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
@@ -176,6 +187,8 @@ function MainApp() {
 
     const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
 
+    // 🔥 ACTIVAMOS EL SKELETON ANTES DE PEDIR DATOS
+    setIsFetchingProducts(true);
     if (needsMassiveFetch) setIsFiltering(true); 
 
     try {
@@ -224,26 +237,43 @@ function MainApp() {
 
       setProducts(fetchedItems);
       setTotal(fetchedTotal);
-      if (json.page !== page && !needsMassiveFetch) setPage(json.page); 
+      if (json.page && json.page !== p && !needsMassiveFetch) setPage(json.page); 
 
-    } catch {
+    } catch (error) {
+      console.error("Error cargando productos:", error);
       setProducts([]);
       setTotal(0);
     } finally {
+      // 🔥 APAGAMOS EL SKELETON SIEMPRE (HAYA ÉXITO O ERROR)
       setIsFiltering(false); 
+      setIsFetchingProducts(false);
     }
   };
 
+  // 🔥 EFECTO UNIFICADO PARA EVITAR CONDICIONES DE CARRERA AL FILTRAR Y PAGINAR
+  const prevFiltersRef = useRef({ searchTerm, filterType, filterSizes });
+
   useEffect(() => {
-    if (!loading) {
-      fetchProducts({ page, q: searchTerm, type: filterType, sizes: filterSizes });
+    if (loading) return;
+
+    const filtersChanged =
+      prevFiltersRef.current.searchTerm !== searchTerm ||
+      prevFiltersRef.current.filterType !== filterType ||
+      prevFiltersRef.current.filterSizes !== filterSizes;
+
+    prevFiltersRef.current = { searchTerm, filterType, filterSizes };
+
+    if (filtersChanged && page !== 1) {
+      setPage(1); // Esto disparará nuevamente el efecto ya con page = 1
+      return;
     }
+
+    fetchProducts({ page: filtersChanged ? 1 : page, q: searchTerm, type: filterType, sizes: filterSizes });
   }, [loading, page, searchTerm, filterType, filterSizes]);
 
-  // 🔥 SOLUCIÓN DEFINITIVA: SCROLL LIGADO A LA CARGA DE PRODUCTOS
+  // Scroll ligado a la carga de productos
   useEffect(() => {
-    // Si la app cargó, hay un link filtrado pendiente y los productos ya llegaron...
-    if (!loading && pendingScroll && products.length > 0) {
+    if (!loading && !isFetchingProducts && pendingScroll && products.length > 0) {
       setTimeout(() => {
         const catalogo = document.getElementById("catalogo-top");
         if (catalogo) {
@@ -251,13 +281,13 @@ function MainApp() {
           const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
           window.scrollTo({ top: rect.top + scrollTop - 100, behavior: "smooth" });
         }
-      }, 300); // 300ms de gracia para que se acomoden las imágenes
-      setPendingScroll(false); // Apagamos el trigger para que no lo vuelva a hacer
+      }, 300);
+      setPendingScroll(false);
     } else if (!loading && isFirstRun.current && !pendingScroll) {
-      window.scrollTo(0, 0); // Si no hay link filtrado, dejamos arriba
+      window.scrollTo(0, 0);
       isFirstRun.current = false;
     }
-  }, [loading, pendingScroll, products]);
+  }, [loading, isFetchingProducts, pendingScroll, products]);
 
   useEffect(() => {
     if (!loading && !isFirstRun.current && pageTopRef.current && !pendingScroll) {
@@ -317,6 +347,8 @@ function MainApp() {
     });
   }
 
+  const listaFinalProductos = filteredProducts();
+
   return (
     <CartProvider>
       <div className="w-full min-h-screen bg-white text-black antialiased">
@@ -371,7 +403,6 @@ function MainApp() {
                   {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
 
                   <div className="fixed top-0 left-0 w-full z-50">
-                 
                     <Header
                       onLoginClick={() => setShowLogin(true)}
                       onLogout={handleLogout}
@@ -384,7 +415,7 @@ function MainApp() {
                       setShowUserListModal={setShowUserListModal}
                       setFilterType={setFilterType}
                     />
-                     <TopBanner />
+                    <TopBanner />
                   </div>
 
                   <div className="h-[120px]" />
@@ -396,10 +427,10 @@ function MainApp() {
                     </button>
                   )}
 
-                  {/* 🔥 CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
+                  {/* CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
                   <div id="catalogo-top" className="w-full bg-white flex flex-col items-center pb-16 pt-6">
                     
-                    {/* 🔥 1. BARRA DE FILTROS AL 100% DE ANCHO (Liberada) */}
+                    {/* 1. BARRA DE FILTROS */}
                     <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
                       <FilterBar 
                         searchTerm={searchTerm} 
@@ -411,26 +442,38 @@ function MainApp() {
                       />
                     </div>
 
-                    {/* 🔥 2. GRILLA DE PRODUCTOS RESTRINGIDA A 1150px (Con márgenes blancos) */}
+                    {/* 2. GRILLA DE PRODUCTOS O SKELETON */}
                     <div 
                       className="w-full px-4 sm:px-6 md:px-8" 
                       style={{ maxWidth: "1800px" }}
                     >
-                      {/* La grilla de productos */}
                       <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {filteredProducts().map((product) => (
-                          <ProductCard
-                            canEdit={canEdit}
-                            key={getPid(product)}
-                            product={product}
-                            user={user}
-                            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-                          />
-                        ))}
+                        {isFetchingProducts ? (
+                          // 🔥 MOSTRAMOS 8 TARJETAS SKELETON MIENTRAS CARGA
+                          Array.from({ length: 8 }).map((_, idx) => (
+                            <ProductSkeleton key={`skeleton-${idx}`} />
+                          ))
+                        ) : listaFinalProductos.length === 0 ? (
+                          // MENSAJE SI NO HAY RESULTADOS CUANDO YA TERMINÓ DE CARGAR
+                          <div className="col-span-full py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-sm">
+                            No se encontraron productos con estos filtros.
+                          </div>
+                        ) : (
+                          // PRODUCTOS REALES
+                          listaFinalProductos.map((product) => (
+                            <ProductCard
+                              canEdit={canEdit}
+                              key={getPid(product)}
+                              product={product}
+                              user={user}
+                              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                            />
+                          ))
+                        )}
                       </div>
 
-                      {/* Paginación */}
-                      {pages > 1 && (
+                      {/* Paginación (Oculta mientras carga el skeleton) */}
+                      {!isFetchingProducts && pages > 1 && (
                         <div className="mt-12 flex flex-col items-center gap-3">
                           <nav className="flex items-center justify-center gap-2">
                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
@@ -457,7 +500,6 @@ function MainApp() {
   );
 }
 
-// 🔥 5. ENVOLVEMOS TODO EN EL COMPONENTE PRINCIPAL
 export default function App() {
   return (
     <Router>
