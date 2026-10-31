@@ -195,7 +195,7 @@ router.post('/confirm-payment', async (req, res) => {
         message: clienteHTML 
       }),
       sendEmail({ 
-        email: 'scorrales18@gmail.com', // ⚠️ O el correo admin oficial
+        email: 'futstorecrchemas@gmail.com', // ⚠️ O el correo admin oficial
         subject: `🚨 VENTA WEB PAGADA: ₡${order.total}`, 
         message: adminHTML 
       })
