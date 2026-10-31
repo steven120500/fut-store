@@ -62,11 +62,14 @@ export default function Checkout() {
       if (tiloPayResponse === "1") {
         confirmarPagoBackend(orderId);
       } else {
-        toast.error("El pago fue cancelado o la tarjeta fue rechazada.");
-        navigate('/checkout', { replace: true });
+        // 🔥 MOSTRARÁ EL CÓDIGO EXACTO Y NO BORRARÁ LA URL
+        toast.error(`Error de Tilopay. Código recibido: ${tiloPayResponse}`, { autoClose: false });
+        console.error("URL con el error:", window.location.href);
+        
+        // navigate('/checkout', { replace: true }); <-- Comentado temporalmente para poder leer la URL
       }
     }
-  }, [location, navigate]);
+  }, [location]);
 
   const confirmarPagoBackend = async (orderId) => {
     try {
