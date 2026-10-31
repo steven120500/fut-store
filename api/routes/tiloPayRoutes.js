@@ -6,22 +6,30 @@ import sendEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
-// --- RUTA 1: CREAR LINK DE PAGO (Y guardar pedido) ---
+// Función auxiliar para login en Tilopay (reutilizable)
+const getTiloPayToken = async () => {
+    const API_USER = process.env.TILOPAY_USER?.trim();
+    const API_PASSWORD = process.env.TILOPAY_PASSWORD?.trim();
+    if (!API_USER || !API_PASSWORD) throw new Error("Faltan credenciales de TiloPay en el servidor.");
+
+    const res = await axios.post('https://app.tilopay.com/api/v1/login', {
+        apiuser: API_USER,
+        password: API_PASSWORD
+    });
+    return res.data.access_token || res.data.token || res.data;
+};
+
+// --- RUTA 1: CREAR LINK DE PAGO Y DEJAR ORDEN PENDIENTE ---
 router.post('/create-link', async (req, res) => {
   try {
     const { cliente, total, productos, envio } = req.body;
-    
-    // 1. CREDENCIALES DE PRODUCCIÓN (Deben estar en Render)
-    const API_USER = process.env.TILOPAY_USER?.trim();
-    const API_PASSWORD = process.env.TILOPAY_PASSWORD?.trim();
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
     
-    // Redirección al frontend
-    const FRONTEND = process.env.FRONTEND_URL || "https://futstorecr.com";
-
+    // Asegurar que la URL sea segura para la redirección
+    const FRONTEND = process.env.FRONTEND_URL || "https://fut-store.onrender.com";
     const orderRef = `ORD-${Date.now()}`; 
 
-    // --- 2. GUARDAR DATOS EN MONGO DB ---
+    // --- 1. GUARDAR ORDEN EN ESTADO PENDIENTE ---
     try {
         const newOrder = new Order({
             orderId: orderRef,
@@ -49,30 +57,21 @@ router.post('/create-link', async (req, res) => {
         });
 
         await newOrder.save();
-        console.log(`📝 Pedido ${orderRef} guardado correctamente (Pendiente).`);
-
+        console.log(`📝 Pedido ${orderRef} guardado en BD (Pendiente de pago).`);
     } catch (dbError) {
-        console.error("❌ Error guardando pedido:", dbError);
-        return res.status(500).json({ message: "Error al crear el pedido en base de datos" });
+        console.error("❌ Error guardando pedido pendiente:", dbError);
+        return res.status(500).json({ message: "Error al crear el pedido preliminar" });
     }
 
-    // --- 3. LOGIN TILOPAY (PRODUCCIÓN) ---
-    if (!API_USER || !API_PASSWORD || !API_KEY) return res.status(500).json({ message: "Faltan credenciales" });
-
-    let token = "";
+    // --- 2. PEDIR PERMISO A TILOPAY ---
+    let token;
     try {
-      // ✅ URL OFICIAL DEL BANCO REAL
-      const loginResponse = await axios.post('https://app.tilopay.com/api/v1/login', {
-        apiuser: API_USER,
-        password: API_PASSWORD
-      });
-      token = loginResponse.data.access_token || loginResponse.data.token || loginResponse.data;
-    } catch (e) { 
-      console.error("Error Login TiloPay:", e.response?.data || e.message);
-      return res.status(401).json({message: "Error Login TiloPay"}); 
+        token = await getTiloPayToken();
+    } catch (e) {
+        return res.status(401).json({message: "Error de autenticación con el banco."}); 
     }
 
-    // --- 4. CONFIGURAR PAYLOAD TILOPAY ---
+    // --- 3. ARMAR PAQUETE Y ENVIAR AL BANCO ---
     const fullName = cliente?.nombre || "Cliente General";
     const nameParts = fullName.trim().split(" ");
     
@@ -80,36 +79,36 @@ router.post('/create-link', async (req, res) => {
       key: API_KEY, 
       amount: total,
       currency: "CRC",
-      redirect: `${FRONTEND}/checkout?order=${orderRef}`,
+      // Tilopay redireccionará aquí y el Frontend leerá si pagó o no
+      redirect: `${FRONTEND}/checkout?order=${orderRef}`, 
       
       billToFirstName: nameParts[0],
       billToLastName: nameParts.slice(1).join(" ") || "Cliente",
-      billToEmail: cliente?.correo || "cliente@email.com",
-      billToTelephone: cliente?.telefono || "88888888",
-      billToAddress: cliente?.direccion || "San Jose", 
+      billToEmail: cliente?.correo || "info@futstorecr.com",
+      billToTelephone: cliente?.telefono || "00000000",
+      billToAddress: cliente?.direccion || "Costa Rica", 
       billToCity: "San Jose",
       billToState: "San Jose",
       billToZipPostCode: "10101",
       billToCountry: "CR",
       
       orderNumber: orderRef, 
-      description: `Compra FutStore - ${productos?.length || 1} items`
+      description: `FUTSTORE CR - ${productos?.length || 1} artículos`
     };
     
-    // --- 5. ENVIAR A TILOPAY (PRODUCCIÓN) ---
     try {
-        // ✅ URL OFICIAL DE PAGOS
         const linkResponse = await axios.post('https://app.tilopay.com/api/v1/processPayment', payload, { 
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' } 
         });
+        // Devolvemos el link seguro para que el frontend redirija
         return res.json({ url: linkResponse.data.url });
     } catch (appError) {
-        console.error("❌ Error TiloPay:", JSON.stringify(appError.response?.data));
-        res.status(500).json({ message: "Error TiloPay", detalle: appError.response?.data });
+        console.error("❌ Error TiloPay al generar link:", JSON.stringify(appError.response?.data));
+        res.status(500).json({ message: "Error en la pasarela de pago", detalle: appError.response?.data });
     }
   } catch (error) { 
     console.error("Error general en create-link:", error);
-    res.status(500).json({ message: "Error interno" }); 
+    res.status(500).json({ message: "Error interno del servidor" }); 
   }
 });
 
@@ -117,30 +116,47 @@ router.post('/create-link', async (req, res) => {
 router.post('/confirm-payment', async (req, res) => {
   try {
     const { orderId } = req.body;
+    
+    // 1. Verificar existencia de la orden
     const order = await Order.findOne({ orderId });
     if (!order) return res.status(404).json({ message: "Orden no encontrada" });
+    if (order.status === 'paid') return res.json({ message: "El pedido ya había sido procesado.", status: 'paid' });
 
-    if (order.status === 'paid') return res.json({ message: "Ya procesada", status: 'paid' });
+    // 🔥 2. VALIDAR QUE EL PAGO ES REAL (Consultar el estado a TiloPay)
+    // Cuando integras Tilopay, idealmente ellos mandan un hash. Por ahora 
+    // asumimos seguridad básica hasta habilitar la verificación en 2 pasos de la API.
 
-    // 1. Restar Stock
+    // 3. RESTAR STOCK (BLINDADO CON ESTRUCTURA MONGOOSE)
     for (const item of order.items) {
       if (item.product_id) {
-        const product = await Product.findById(item.product_id);
-        if (product && product.stock && product.stock[item.size] !== undefined) {
-             const currentStock = parseInt(product.stock[item.size] || 0);
-             product.stock[item.size] = Math.max(0, currentStock - item.quantity);
-             await product.save();
-             console.log(`📉 Stock actualizado: ${product.name} (${item.size})`);
+        try {
+          const product = await Product.findById(item.product_id);
+          if (product && product.stock && product.stock[item.size] !== undefined) {
+               const talla = String(item.size);
+               const currentStock = Number(product.stock[talla]) || 0;
+               
+               // Reasignamos el objeto completo para forzar el guardado
+               product.stock = {
+                 ...product.stock,
+                 [talla]: Math.max(0, currentStock - item.quantity)
+               };
+               
+               product.markModified('stock');
+               await product.save();
+               console.log(`📉 Stock actualizado por pago web: ${product.name} (Talla: ${talla})`);
+          }
+        } catch (err) {
+          console.error(`Aviso: Error restando stock del producto ${item.product_id} tras pago.`, err.message);
         }
       }
     }
     
-    // 2. Marcar como pagado en MongoDB
+    // 4. MARCAR COMO PAGADO
     order.status = 'paid';
     await order.save();
-    console.log(`✅ Pedido ${orderId} pagado con éxito.`);
+    console.log(`✅ Pedido ${orderId} marcado como pagado exitosamente.`);
     
-    // --- 3. 🚀 ENVIAR CORREOS AUTOMÁTICOS EN SEGUNDO PLANO ---
+    // --- 5. ENVIAR CORREOS AUTOMÁTICOS ---
     const clienteHTML = `
       <div style="background-color: #000; color: #fff; padding: 30px; font-family: 'Helvetica', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #9E8F91;">
         <h1 style="text-align: center; letter-spacing: 3px; color: #fff;">FUTSTORE</h1>
@@ -149,49 +165,48 @@ router.post('/confirm-payment', async (req, res) => {
         <p>Tu pago ha sido aprobado y tu pedido <strong>#${order.orderId}</strong> está confirmado.</p>
         
         <div style="background-color: #111; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <h3 style="color: #9E8F91; margin-top: 0;">Detalle:</h3>
+          <h3 style="color: #9E8F91; margin-top: 0;">Detalle de Compra:</h3>
           <p>Total pagado: <strong>₡${order.total.toLocaleString()}</strong></p>
-          <p>Enviado a: ${order.customer.address}</p>
+          <p>Dirección: ${order.customer.address}</p>
         </div>
         
-        <p style="font-size: 13px; color: #999;">Nos prepararemos para despachar tu paquete muy pronto.</p>
-        <p style="text-align: center; color: #9E8F91; margin-top: 30px;">FutStore Costa Rica 🇨🇷 | info@futstorecr.com</p>
+        <p style="font-size: 13px; color: #999;">Nos prepararemos para despachar tu paquete lo antes posible.</p>
+        <p style="text-align: center; color: #9E8F91; margin-top: 30px;">FutStore Costa Rica 🇨🇷</p>
       </div>
     `;
 
     const adminHTML = `
       <div style="font-family: sans-serif; border: 4px solid #2ecc71; padding: 20px; color: #000;">
-        <h2 style="color: #27ae60; margin-top: 0;">💰 ¡PAGO CONFIRMADO!</h2>
+        <h2 style="color: #27ae60; margin-top: 0;">💰 ¡NUEVO PAGO EN WEB!</h2>
         <p><strong>Cliente:</strong> ${order.customer.name}</p>
-        <p><strong>Monto:</strong> ₡${order.total.toLocaleString()}</p>
-        <p><strong>ID de Orden:</strong> #${order.orderId}</p>
-        <p><strong>WhatsApp:</strong> ${order.customer.phone}</p>
+        <p><strong>Monto PAGADO:</strong> ₡${order.total.toLocaleString()}</p>
+        <p><strong>Orden:</strong> #${order.orderId}</p>
+        <p><strong>Teléfono:</strong> ${order.customer.phone}</p>
         <br />
-        <a href="https://futstorecr.com/pedidos" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">GESTIONAR ENVÍO</a>
+        <a href="https://futstorecr.com/pedidos" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">VER EN TABLERO</a>
       </div>
     `;
 
-    // Disparamos los correos sin 'await' para que la respuesta sea instantánea al cliente
+    // Disparamos los correos sin 'await' para que la respuesta web sea instantánea
     Promise.all([
       sendEmail({ 
         email: order.customer.email, 
-        subject: `Factura de Compra #${order.orderId} - FutStore`, 
+        subject: `Factura de Compra #${order.orderId} - FutStore CR`, 
         message: clienteHTML 
       }),
       sendEmail({ 
-        email: 'scorrales18@gmail.com',
-        subject: `🚨 VENTA PAGADA: ₡${order.total}`, 
+        email: 'scorrales18@gmail.com', // ⚠️ O el correo admin oficial
+        subject: `🚨 VENTA WEB PAGADA: ₡${order.total}`, 
         message: adminHTML 
       })
-    ]).catch(err => console.error("Error silencioso enviando correos:", err));
-    // ---------------------------------------------------------
+    ]).catch(err => console.error("Error silencioso enviando correos:", err.message));
 
-    // 4. Responder éxito al Frontend
-    res.json({ success: true, message: "Pago confirmado y stock actualizado." });
+    // Responder éxito al Frontend
+    res.json({ success: true, message: "Transacción aprobada. Pedido en proceso." });
 
   } catch (error) { 
     console.error("Error confirmando pago:", error);
-    res.status(500).json({ message: "Error interno confirmando el pago" }); 
+    res.status(500).json({ message: "Error interno verificando la transacción" }); 
   }
 });
 

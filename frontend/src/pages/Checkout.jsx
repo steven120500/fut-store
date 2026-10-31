@@ -33,8 +33,8 @@ export default function Checkout() {
   const [opcionesEnvio, setOpcionesEnvio] = useState([]); 
   const [envioSeleccionado, setEnvioSeleccionado] = useState(null);
   
-  // 🏆 CAMBIO: Arrancamos con "sinpe" por defecto mientras se arregla la pasarela
-  const [metodoPago, setMetodoPago] = useState("sinpe");
+  // 🏆 CAMBIO: Arrancamos con "tarjeta" por defecto ahora que la pasarela está activa
+  const [metodoPago, setMetodoPago] = useState("tarjeta");
   
   const [loadingPay, setLoadingPay] = useState(false);
   const [verifyingPayment, setVerifyingPayment] = useState(false);
@@ -345,7 +345,7 @@ export default function Checkout() {
           return;
       }
 
-      /* ⛔ TEMPORALMENTE DESHABILITADO POR MANTENIMIENTO DE PASARELA
+      // 🔥 LÓGICA DE TILOPAY (TARJETA) REHABILITADA
       if (metodoPago === 'tarjeta') {
           const orderData = {
             cliente: {
@@ -382,7 +382,6 @@ export default function Checkout() {
           if (data.url) window.location.href = data.url; 
           else { toast.error("No se recibió el link de pago."); setLoadingPay(false); }
       }
-      */
 
     } catch (error) {
       console.error("DETALLE DEL ERROR:", error);
@@ -556,14 +555,13 @@ export default function Checkout() {
 
             <div className="border-t pt-4">
                 <p className="font-bold text-sm mb-3 flex items-center gap-2">💳 Método de Pago</p>
-                <div className="grid grid-cols-1 gap-4">
-                    {/* ⛔ TEMPORALMENTE DESHABILITADO POR MANTENIMIENTO DE PASARELA
+                <div className="grid grid-cols-2 gap-4">
+                    {/* 🔥 PASARELA DE PAGO REHABILITADA */}
                     <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
                         <input type="radio" name="pago" value="tarjeta" className="hidden" checked={metodoPago === 'tarjeta'} onChange={() => setMetodoPago('tarjeta')} />
                         <FaCreditCard size={24}/>
-                        <span className="font-bold text-xs">Tarjeta</span>
+                        <span className="font-bold text-xs text-center">Pago Seguro Web</span>
                     </label>
-                    */}
                     <label className={`cursor-pointer border rounded-xl p-4 flex flex-col items-center justify-center gap-2 ${metodoPago === 'sinpe' ? 'border-black bg-gray-50 ring-1 ring-black' : 'border-gray-200'}`}>
                         <input type="radio" name="pago" value="sinpe" className="hidden" checked={metodoPago === 'sinpe'} onChange={() => setMetodoPago('sinpe')} />
                         <FaWhatsapp size={24}/>
