@@ -122,33 +122,35 @@ router.post('/confirm-payment', async (req, res) => {
     if (!order) return res.status(404).json({ message: "Orden no encontrada" });
     if (order.status === 'paid') return res.json({ message: "El pedido ya había sido procesado.", status: 'paid' });
 
-    // 🔥 2. VALIDAR QUE EL PAGO ES REAL (Consultar el estado a TiloPay)
-    // Cuando integras Tilopay, idealmente ellos mandan un hash. Por ahora 
-    // asumimos seguridad básica hasta habilitar la verificación en 2 pasos de la API.
-
-    // 3. RESTAR STOCK (BLINDADO CON ESTRUCTURA MONGOOSE)
-    for (const item of order.items) {
-      if (item.product_id) {
-        try {
-          const product = await Product.findById(item.product_id);
-          if (product && product.stock && product.stock[item.size] !== undefined) {
-               const talla = String(item.size);
-               const currentStock = Number(product.stock[talla]) || 0;
-               
-               // Reasignamos el objeto completo para forzar el guardado
-               product.stock = {
-                 ...product.stock,
-                 [talla]: Math.max(0, currentStock - item.quantity)
-               };
-               
-               product.markModified('stock');
-               await product.save();
-               console.log(`📉 Stock actualizado por pago web: ${product.name} (Talla: ${talla})`);
+    // 3. RESTAR STOCK (BLINDADO CON ESTRUCTURA MONGOOSE Y DOBLE DESCUENTO)
+    // ✅ Verificamos la bandera para no restar dos veces
+    if (!order.stockDiscounted) {
+        for (const item of order.items) {
+          if (item.product_id) {
+            try {
+              const product = await Product.findById(item.product_id);
+              if (product && product.stock && product.stock[item.size] !== undefined) {
+                   const talla = String(item.size);
+                   const currentStock = Number(product.stock[talla]) || 0;
+                   
+                   // Reasignamos el objeto completo para forzar el guardado
+                   product.stock = {
+                     ...product.stock,
+                     [talla]: Math.max(0, currentStock - item.quantity)
+                   };
+                   
+                   product.markModified('stock');
+                   await product.save();
+                   console.log(`📉 Stock actualizado por pago web: ${product.name} (Talla: ${talla})`);
+              }
+            } catch (err) {
+              console.error(`Aviso: Error restando stock del producto ${item.product_id} tras pago.`, err.message);
+            }
           }
-        } catch (err) {
-          console.error(`Aviso: Error restando stock del producto ${item.product_id} tras pago.`, err.message);
         }
-      }
+        
+        // Marcamos que ya se descontó para que no vuelva a pasar
+        order.stockDiscounted = true;
     }
     
     // 4. MARCAR COMO PAGADO

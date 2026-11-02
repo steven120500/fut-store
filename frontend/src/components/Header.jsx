@@ -17,7 +17,7 @@ export default function Header({
   onLogout,
   onLogoClick,
   user,
-  canSeeHistory,
+  canSeeHistory, // Mantenemos el prop por si lo usas en otro lado, pero ya no controlará el menú admin
   isSuperUser,
   setShowRegisterUserModal,
   setShowUserListModal,
@@ -143,9 +143,26 @@ export default function Header({
 
                   <nav className="space-y-2">
                     
-                    {/* 🔹 VISTO POR USUARIOS CON FUNCIONES Y SUPER ADMINS */}
-                    {(isSuperUser || canSeeHistory) && (
+                    {/* 🔹 VISTO POR TODOS LOS USUARIOS LOGUEADOS (EMPLEADOS Y DUEÑOS) */}
+                    <button onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer">
+                      <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
+                    </button>
+
+                    <button onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                      <FaColumns size={16} /> Tablero de Apartados
+                    </button>
+
+                    <button onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                      <FaCashRegister size={16} /> Registro de Ventas
+                    </button>
+
+                    {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE, REPORTES Y USUARIOS */}
+                    {isSuperUser && (
                       <>
+                        <div className="pt-6 pb-2 mt-4 border-t border-black/10">
+                          <p className="text-black/40 text-[10px] uppercase font-black tracking-widest px-2">Administración</p>
+                        </div>
+
                         <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Agregar Usuario
                         </button>
@@ -157,24 +174,7 @@ export default function Header({
                         <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaHistory size={14}/> Historial de Cambios
                         </button>
-                        
-                        <button onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer">
-                          <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
-                        </button>
 
-                        <button onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
-                          <FaColumns size={16} /> Tablero de Apartados
-                        </button>
-
-                        <button onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
-                          <FaCashRegister size={16} /> Registro de Ventas
-                        </button>
-                      </>
-                    )}
-
-                    {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE Y REPORTES DIARIOS */}
-                    {isSuperUser && (
-                      <>
                         <button onClick={() => { navigate('/balance'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                           <FaBalanceScale size={16} /> Balance y Gastos
                         </button>

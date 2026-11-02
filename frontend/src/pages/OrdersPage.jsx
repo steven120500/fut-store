@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaClock, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes, FaClipboardList } from 'react-icons/fa'; 
+import { FaBoxOpen, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes, FaClipboardList } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
@@ -10,7 +11,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://fut-store.onrender.com/
 const OrdersPage = ({ user }) => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('paid'); 
     const navigate = useNavigate(); 
 
     // Estados para el Modal de la Guía
@@ -19,13 +19,6 @@ const OrdersPage = ({ user }) => {
     const [trackingNumber, setTrackingNumber] = useState('');
     const [sendingTracking, setSendingTracking] = useState(false);
     
-    // Estado para llevar control de órdenes descontadas
-    const [discountedOrders, setDiscountedOrders] = useState(new Set()); 
-
-    // Estados para el Modal de Confirmación de Descuento
-    const [showDiscountModal, setShowDiscountModal] = useState(false);
-    const [orderToDiscount, setOrderToDiscount] = useState(null);
-
     useEffect(() => {
         fetchOrders();
     }, []);
@@ -33,7 +26,9 @@ const OrdersPage = ({ user }) => {
     const fetchOrders = async () => {
         try {
             const res = await axios.get(`${API_URL}/orders`);
-            setOrders(res.data);
+            // Filtrar solo las órdenes pagadas o enviadas, ya que no manejamos carritos abandonados aquí
+            const filteredPaidOrders = res.data.filter(order => order.status === 'paid' || order.status === 'sent');
+            setOrders(filteredPaidOrders);
             setLoading(false);
         } catch (error) {
             console.error("Error cargando pedidos:", error);
@@ -82,35 +77,6 @@ const OrdersPage = ({ user }) => {
         }
     };
 
-    const openDiscountModal = (orderId) => {
-        setOrderToDiscount(orderId);
-        setShowDiscountModal(true);
-    };
-
-    const confirmAutoDiscount = async () => {
-        if (!orderToDiscount) return;
-        
-        setShowDiscountModal(false);
-
-        try {
-            const res = await axios.post(`${API_URL}/orders/${orderToDiscount}/discount-stock`);
-            if (res.data.ok) {
-                toast.success("Inventario actualizado con éxito 📉");
-                
-                setDiscountedOrders(prev => {
-                    const newSet = new Set(prev);
-                    newSet.add(orderToDiscount);
-                    return newSet;
-                });
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al descontar del stock");
-        } finally {
-            setOrderToDiscount(null);
-        }
-    };
-
     const openTrackingModal = (order) => {
         setSelectedOrder(order);
         setShowTrackingModal(true);
@@ -153,11 +119,6 @@ const OrdersPage = ({ user }) => {
         });
     };
 
-    const filteredOrders = orders.filter(order => {
-        if (activeTab === 'paid') return order.status === 'paid' || order.status === 'sent';
-        else return order.status === 'pending' || order.status === 'failed';
-    });
-
     return (
         <div className="min-h-screen bg-black text-white flex flex-col font-sans">
             <div className="flex-grow pt-24 px-4 md:px-8">
@@ -179,46 +140,28 @@ const OrdersPage = ({ user }) => {
                         
                         <div className="flex bg-[#111] p-1 rounded-full border border-gray-800">
                             <button 
-                                onClick={() => setActiveTab('paid')}
-                                className={`px-6 py-2 rounded-full font-bold transition flex items-center gap-2 text-sm ${
-                                    activeTab === 'paid' 
-                                    ? 'bg-green-500 text-black shadow-lg' 
-                                    : 'text-gray-400 hover:text-white'
-                                }`}
+                                className="px-6 py-2 rounded-full font-bold transition flex items-center gap-2 text-sm bg-green-500 text-black shadow-lg"
                             >
                                 <FaCheckCircle /> Ventas Confirmadas
-                            </button>
-
-                            <button 
-                                onClick={() => setActiveTab('pending')}
-                                className={`px-6 py-2 rounded-full font-bold transition flex items-center gap-2 text-sm ${
-                                    activeTab === 'pending' 
-                                    ? 'bg-yellow-600 text-black shadow-lg' 
-                                    : 'text-gray-400 hover:text-white'
-                                }`}
-                            >
-                                <FaClock /> Carritos Abandonados
                             </button>
                         </div>
                     </div>
 
                     {loading ? (
                         <p className="text-center text-gray-400 animate-pulse mt-10 uppercase font-black tracking-widest text-xs">Cargando base de datos...</p>
-                    ) : filteredOrders.length === 0 ? (
+                    ) : orders.length === 0 ? (
                         <div className="text-center py-20 bg-[#111] rounded-xl border border-dashed border-gray-800">
                             <p className="text-xl text-gray-500 font-medium uppercase tracking-widest text-xs">
-                                {activeTab === 'paid' ? "No hay ventas nuevas hoy." : "La papelera está vacía."}
+                                No hay ventas nuevas hoy.
                             </p>
                         </div>
                     ) : (
                         <div className="grid gap-8 mb-20"> 
-                            {filteredOrders.map((order) => {
+                            {orders.map((order) => {
                                 const esEnvioCorreos = order.shipping?.method?.toLowerCase().includes('correo');
 
                                 return (
-                                <div key={order._id} className={`bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative ${
-                                    activeTab === 'paid' ? 'border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]' : 'border-gray-800 opacity-80'
-                                }`}>
+                                <div key={order._id} className="bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]">
                                     
                                     <div className="bg-[#111] px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 relative">
                                         <div className="flex flex-col pr-12 md:pr-0">
@@ -228,15 +171,14 @@ const OrdersPage = ({ user }) => {
                                         </div>
                                         <div className="mt-4 md:mt-0 text-left md:text-right">
                                             <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2  ${
-                                                order.status === 'sent' ? 'bg-blue-500 text-white' : 
-                                                order.status === 'paid' ? 'bg-green-500 text-black' : 'bg-yellow-500 text-black'
+                                                order.status === 'sent' ? 'bg-blue-500 text-white' : 'bg-green-500 text-black'
                                             }`}>
-                                                {order.status === 'sent' ? 'ENVIADO' : order.status === 'paid' ? 'PAGADO' : 'PENDIENTE'}
+                                                {order.status === 'sent' ? 'ENVIADO' : 'PAGADO'}
                                             </span>
                                             <p className="text-2xl font-black text-white">₡ {order.total?.toLocaleString()}</p>
                                         </div>
 
-                                        {!showTrackingModal && !showDiscountModal && (
+                                        {!showTrackingModal && (
                                             <button 
                                                 onClick={() => handleDeleteOrder(order._id)}
                                                 className="absolute top-28 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
@@ -298,7 +240,7 @@ const OrdersPage = ({ user }) => {
                                                 </div>
                                             </div>
                                             
-                                            {activeTab === 'paid' && esEnvioCorreos && order.status !== 'sent' && (
+                                            {esEnvioCorreos && order.status !== 'sent' && (
                                                 <button 
                                                     onClick={() => openTrackingModal(order)}
                                                     className="mt-6 w-full bg-white hover:bg-zinc-200 text-black font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-3 uppercase text-xs tracking-widest"
@@ -345,15 +287,6 @@ const OrdersPage = ({ user }) => {
                                                     ))}
                                                 </div>
                                             </div>
-
-                                            {user?.isSuperUser && !order.stockDiscounted && !discountedOrders.has(order._id) && (
-                                                <button 
-                                                    onClick={() => openDiscountModal(order._id)}
-                                                    className="w-full bg-white hover:bg-gray-700 text-black font-black py-4 rounded-xl transition shadow-lg flex items-center justify-center gap-2 uppercase text-xs tracking-widest mt-auto"
-                                                >
-                                                    <FaTshirt /> Descontar del Inventario
-                                                </button>
-                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -362,38 +295,6 @@ const OrdersPage = ({ user }) => {
                     )}
                 </div>
             </div>
-
-            {/* 🌟 MODAL DE CONFIRMACIÓN DE DESCUENTO 🌟 */}
-            {showDiscountModal && (
-                <div className="fixed inset-0 z-500 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white border border-gray-800 p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
-                        <div className="text-center mb-6">
-                            <div className="w-14 h-14 bg-black text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-orange-500/30">
-                                <FaTshirt size={24} />
-                            </div>
-                            <h2 className="text-xl font-black italic uppercase text-black tracking-tighter">¿Descontar Stock?</h2>
-                            <p className="text-xs text-black mt-2">
-                                Esta acción restará automáticamente las prendas de esta orden del inventario general.
-                            </p>
-                        </div>
-
-                        <div className="flex gap-3">
-                            <button 
-                                onClick={() => setShowDiscountModal(false)}
-                                className="flex-1 py-4 bg-black border border-gray-800 text-zinc-400 rounded-xl font-bold hover:bg-zinc-800 hover:text-white transition uppercase text-[10px] tracking-widest"
-                            >
-                                CANCELAR
-                            </button>
-                            <button 
-                                onClick={confirmAutoDiscount}
-                                className="flex-1 py-4 bg-black text-white rounded-xl font-black hover:bg-orange-700 transition flex justify-center items-center gap-2 uppercase text-[10px] tracking-widest"
-                            >
-                                ACEPTAR
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* MODAL DE GUÍA */}
             {showTrackingModal && (
