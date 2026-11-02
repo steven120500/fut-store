@@ -1,413 +1,370 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaWhatsapp, FaChevronDown } from "react-icons/fa";
-import { FiArrowUpRight } from "react-icons/fi";
+import { FaArrowRight, FaWhatsapp, FaChevronDown } from "react-icons/fa";
 
 // 📦 DATOS DE PRODUCTOS
 const slides = [
-  { id: 0, code: "01", image: "/TacosHero.png", title: "Comprar Tacos", subtitle: "TRACCIÓN & VELOCIDAD PRO", tag: "CALZADO ÉLITE", eventName: "filtrarTacos" },
-  { id: 1, code: "02", image: "/PlayerB.png", title: "Ver Player", subtitle: "TECNOLOGÍA DE CAMPO", tag: "VERSIÓN JUGADOR", eventName: "filtrarPlayer" },
-  { id: 2, code: "03", image: "/RetroB.png", title: "Ver Retros", subtitle: "LEYENDAS INMORTALES", tag: "ARCHIVO HISTÓRICO", eventName: "filtrarRetros" },
-  { id: 3, code: "04", image: "/Descuento.png", title: "Ver Ofertas", subtitle: "OPORTUNIDADES ÚNICAS", tag: "DESCUENTOS", eventName: "filtrarOfertas", isOffer: true },
-  { id: 4, code: "05", image: "/FanB.png", title: "Ver Fan", subtitle: "CULTURA DE ESTADIO", tag: "VERSIÓN AFICIONADO", eventName: "filtrarFan" },
-  { id: 5, code: "06", image: "/NacionalB.png", title: "Ver Nacional", subtitle: "PASIÓN DE NUESTRA TIERRA", tag: "FÚTBOL NACIONAL", eventName: "filtrarNacional" }
+  { id: 0, image: "/TacosHero.png", title: "Comprar Tacos", eventName: "filtrarTacos" },
+  { id: 1, image: "/PlayerB.png", title: "Ver Player", eventName: "filtrarPlayer" },
+  { id: 2, image: "/RetroB.png", title: "Ver Retros", eventName: "filtrarRetros" },
+  { id: 3, image: "/Descuento.png", title: "Ver Ofertas", eventName: "filtrarOfertas", isOffer: true },
+  { id: 4, image: "/FanB.png", title: "Ver Fan", eventName: "filtrarFan" },
+  { id: 5, image: "/NacionalB.png", title: "Ver Nacional", eventName: "filtrarNacional" }
 ];
 
 export default function Bienvenido() {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  
+  const [showWaMsg, setShowWaMsg] = useState(true);
 
-  // Estados para Swipe vertical en móvil
-  const [touchStartY, setTouchStartY] = useState(0);
-  const [touchEndY, setTouchEndY] = useState(0);
+  // Estados para Swipe en celular
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
+  // 🚀 FORZAR SCROLL ARRIBA AL REFRESCAR LA PÁGINA
   useEffect(() => {
-    const checkSize = () => setIsMobile(window.innerWidth < 768);
+    if ("scrollRestoration" in window) {
+      window.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Detección de pantalla
+  useEffect(() => {
+    let timeoutId;
+    const checkSize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 150);
+    };
+    
     checkSize();
     window.addEventListener("resize", checkSize);
-    return () => window.removeEventListener("resize", checkSize);
+    return () => {
+      window.removeEventListener("resize", checkSize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
-  // ⚙️ MOTOR DE MOVIMIENTO CONTINUO SIN PAUSA POR HOVER
+  // ⏱️ Rotación automática rápida (4 segundos)
   useEffect(() => {
+    if (isPaused) return; 
     const timer = setInterval(() => {
       setActiveIdx((prev) => (prev + 1) % slides.length);
-    }, 2600);
-
+    }, 3000); 
+    
     return () => clearInterval(timer);
+  }, [isPaused, activeIdx]);
+
+  useEffect(() => {
+    const waTimer = setInterval(() => {
+      setShowWaMsg((prev) => !prev);
+    }, 6000); 
+    return () => clearInterval(waTimer);
   }, []);
 
-  const total = slides.length;
   const activeSlide = slides[activeIdx];
 
   const handleNavigation = (eventName) => {
     window.dispatchEvent(new CustomEvent(eventName));
   };
 
-  // 📐 MATEMÁTICA CIRCULAR PARA QUE LA BANDA BAJE DE ARRIBA HACIA ABAJO
-  const getCircularOffset = (index) => {
-    let diff = (activeIdx - index) % total;
-    if (diff < 0) diff += total;
-    if (diff > total / 2) diff -= total;
-    return diff;
+  // 📱 Lógica Táctil (Móvil)
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsPaused(true);
   };
-
-  // 📱 Gestos táctiles verticales en la banda derecha
-  const handleTouchStart = (e) => setTouchStartY(e.targetTouches[0].clientY);
-  const handleTouchMove = (e) => setTouchEndY(e.targetTouches[0].clientY);
+  
+  const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX);
+  
   const handleTouchEnd = () => {
-    if (!touchStartY || !touchEndY) return;
-    const distance = touchEndY - touchStartY;
-    if (distance > 40) setActiveIdx((prev) => (prev + 1) % total);
-    if (distance < -40) setActiveIdx((prev) => (prev - 1 + total) % total);
-    setTouchStartY(0);
-    setTouchEndY(0);
+    if (!touchStart || !touchEnd) {
+      setIsPaused(false);
+      return;
+    }
+    const distance = touchStart - touchEnd;
+    if (distance > 75) setActiveIdx((prev) => (prev + 1) % slides.length);
+    if (distance < -75) setActiveIdx((prev) => (prev - 1 + slides.length) % slides.length);
+    setTouchStart(0);
+    setTouchEnd(0);
+    setIsPaused(false);
   };
 
-  // Distancia ampliada para acomodar las fotos más grandes
-  const stepDistance = isMobile ? 165 : 245;
+  // 📐 Estilos del carrusel 3D (Móvil)
+  const getCardStyle = (index) => {
+    const total = slides.length;
+    const diff = (index - activeIdx + total) % total;
+
+    if (diff === 0) return { zIndex: 30, transform: "translate(-50%, -50%) scale(1) rotateY(0deg)", opacity: 1, filter: "brightness(1)", pointerEvents: "auto" };
+    if (diff === 1) return { zIndex: 20, transform: "translate(calc(-50% + 90px), -50%) scale(0.75) rotate(6deg)", opacity: 0.45, filter: "brightness(0.65)", pointerEvents: "auto" };
+    if (diff === total - 1) return { zIndex: 20, transform: "translate(calc(-50% - 90px), -50%) scale(0.75) rotate(-6deg)", opacity: 0.45, filter: "brightness(0.65)", pointerEvents: "auto" };
+    return { zIndex: 10, transform: "translate(-50%, -50%) scale(0.5)", opacity: 0, pointerEvents: "none" };
+  };
 
   return (
-    <section className="relative w-full h-screen min-h-[620px] grid grid-cols-12 overflow-hidden select-none bg-black pt-20 md:pt-24">
-      
-      {/* ========================================================
-          👈 PANEL IZQUIERDO: PANTALLA COMPLETA DEL ESTADIO
-          ======================================================== */}
-      <div className="relative col-span-7 md:col-span-8 lg:col-span-9 h-full overflow-hidden flex flex-col justify-between p-5 sm:p-10 lg:p-16 border-r border-gray-800">
-        
-        {/* 🏟️ IMAGEN DEL ESTADIO A PANTALLA COMPLETA */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <motion.img
-            key={`bg-${isMobile}`}
-            src={isMobile ? "/FondoM.png" : "/FondoD.png"}
-            alt="Estadio FutStore"
-            animate={{ scale: [1.02, 1.07, 1.02] }}
-            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-            className="w-full h-full object-cover object-center"
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.32) 50%, rgba(0,0,0,0.9) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(circle at center, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.75) 100%)",
-            }}
-          />
-        </div>
-
-        {/* 🔝 BARRA SUPERIOR: ETIQUETA Y CONTADOR EN PLATEADO */}
-        <div className="relative z-20 flex items-center justify-between">
-          <div
-            className="flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-gray-600"
-            style={{ backgroundColor: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
-          >
-            <span
-              className="w-2 h-2 rounded-full animate-ping"
-              style={{ backgroundColor: "#E2E8F0" }}
-            />
-            <span className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-gray-200">
-              FUTSTORE CR • 2026
-            </span>
-          </div>
-
-          <div
-            className="hidden sm:flex items-center gap-2 text-xs font-mono font-bold text-gray-400 px-4 py-1.5 rounded-full border border-gray-600"
-            style={{ backgroundColor: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
-          >
-            <span style={{ color: "#F8FAFC" }}>{activeSlide.code}</span>
-            <span className="text-gray-600">/</span>
-            <span>0{total}</span>
-          </div>
-        </div>
-
-        {/* 🏆 CENTRO DEL ESTADIO: BIENVENIDA PRINCIPAL EN PLATEADO METÁLICO */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative z-20 my-auto flex flex-col items-start sm:items-center sm:text-center max-w-3xl sm:mx-auto pointer-events-none"
-        >
-          <span
-            className="px-3.5 py-1 rounded-full text-[9px] sm:text-xs font-black uppercase tracking-widest mb-3 border"
-            style={{
-              backgroundColor: "rgba(226, 232, 240, 0.12)",
-              borderColor: "rgba(203, 213, 225, 0.45)",
-              color: "#E2E8F0",
-            }}
-          >
-            TIENDA OFICIAL EN COSTA RICA
-          </span>
-
-          <h2 className="text-3xl sm:text-6xl lg:text-7xl font-black text-white uppercase tracking-wider leading-none drop-shadow-2xl">
-            BIENVENIDO A{" "}
-            <span
-              style={{
-                background: "linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 55%, #94A3B8 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 0 25px rgba(226,232,240,0.35))",
-              }}
-            >
-              FUTSTORE
-            </span>
-          </h2>
-
-          <p className="mt-3 text-xs sm:text-base lg:text-lg text-gray-300 font-semibold max-w-xl tracking-wide">
-            Camisetas Player, Fan, Retros Históricas y Calzado Pro con envíos a todo el país.
-          </p>
-        </motion.div>
-
-        {/* ✅ ESQUINA INFERIOR IZQUIERDA: "LA ÉLITE DEL FÚTBOL EN TU PIEL" EN PLATEADO */}
-        <div className="relative z-20 mt-auto max-w-2xl pointer-events-none">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`meta-${activeSlide.id}`}
-              initial={{ opacity: 0, x: -15 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 15 }}
-              transition={{ duration: 0.25 }}
-              className="flex items-center gap-2 mb-1.5"
-            >
-              <span
-                className="h-0.5 w-6 inline-block"
-                style={{ backgroundColor: "#CBD5E1" }}
-              />
-              <span
-                className="text-[9px] sm:text-xs font-extrabold uppercase tracking-widest"
-                style={{ color: "#CBD5E1" }}
-              >
-                {activeSlide.subtitle}
-              </span>
-            </motion.div>
-          </AnimatePresence>
-
-          <h1 className="text-2xl sm:text-5xl lg:text-6xl font-black text-white uppercase leading-none tracking-tight drop-shadow-2xl">
-            LA ÉLITE DEL
-            <br />
-            <span>FÚTBOL </span>
-            <span
-              className="italic font-black"
-              style={{
-                background: "linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 60%, #94A3B8 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                filter: "drop-shadow(0 4px 20px rgba(0,0,0,0.9))",
-              }}
-            >
-              "EN TU PIEL"
-            </span>
-          </h1>
-        </div>
-
-        {/* ⏳ BARRA DE PROGRESO PLATEADA INFERIOR (SIEMPRE EN MOVIMIENTO) */}
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-gray-800 z-30">
-          <motion.div
-            key={`bar-${activeIdx}`}
-            initial={{ width: "0%" }}
-            animate={{ width: "100%" }}
-            transition={{ duration: 2.6, ease: "linear" }}
-            className="h-full"
-            style={{
-              background: "linear-gradient(90deg, #94A3B8 0%, #FFFFFF 50%, #CBD5E1 100%)",
-              boxShadow: "0 0 12px rgba(226, 232, 240, 0.8)",
-            }}
-          />
-        </div>
+    <section 
+      className="relative w-full min-h-screen flex items-center justify-center overflow-hidden select-none bg-black pt-20"
+    >
+      {/* 🖼️ FONDO GENERAL */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <img src={isMobile ? "/FondoM.png" : "/FondoD.png"} alt="Fondo FutStore" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
       </div>
 
       {/* ========================================================
-          👉 PANEL DERECHO: BANDA VERTICAL CON FOTOS MÁS GRANDES
+          📱 VERSIÓN CELULAR 
           ======================================================== */}
-      <div
-        className="relative col-span-5 md:col-span-4 lg:col-span-3 h-full flex flex-col justify-between overflow-hidden"
-        style={{ backgroundColor: "#0c0c0c" }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* 🎢 RIEL VERTICAL CON DESPLAZAMIENTO CONTINUO HACIA ABAJO */}
-        <div className="relative flex-1 w-full overflow-hidden flex items-center justify-center">
-          
-          {/* Sombras superior e inferior para efecto de túnel oscuro */}
-          <div
-            className="pointer-events-none absolute top-0 inset-x-0 h-20 z-30"
-            style={{
-              background: "linear-gradient(180deg, #0c0c0c 0%, rgba(12,12,12,0) 100%)",
+      <div className="md:hidden flex flex-col items-center justify-between w-full h-[70vh] z-20 px-6">
+        
+        {/* 🔥 ENCABEZADO MÓVIL CON MAYOR MOVIMIENTO */}
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.1, delayChildren: 0.05 }
+            }
+          }}
+          className="flex items-center justify-center gap-4 mt-4"
+        >
+          <motion.div 
+            variants={{
+              hidden: { scaleY: 0, opacity: 0 },
+              visible: { scaleY: 1, opacity: 1, transition: { duration: 0.4, ease: "backOut" } }
             }}
-          />
-          <div
-            className="pointer-events-none absolute bottom-0 inset-x-0 h-20 z-30"
-            style={{
-              background: "linear-gradient(0deg, #0c0c0c 0%, rgba(12,12,12,0) 100%)",
-            }}
-          />
+            className="w-1 h-12 bg-white origin-top"
+          ></motion.div>
 
-          {/* Halo plateado / rojo detrás de la prenda central */}
-          <div
-            className="pointer-events-none absolute w-56 h-56 sm:w-72 sm:h-72 rounded-full blur-3xl z-0"
-            style={{
-              backgroundColor: activeSlide.isOffer
-                ? "rgba(220, 38, 38, 0.2)"
-                : "rgba(226, 232, 240, 0.14)",
-            }}
-          />
+          <div className="flex flex-col text-left max-w-[150px] sm:max-w-[200px]">
+            <motion.h1 
+              variants={{
+                hidden: { opacity: 0, y: 25, x: -10, filter: "blur(6px)" },
+                visible: { opacity: 1, y: 0, x: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 120, damping: 14 } }
+              }}
+              style={{ fontSize: "20px" }} 
+              className="font-black text-white uppercase leading-snug tracking-widest drop-shadow-md"
+            >
+              La élite del fútbol,
+            </motion.h1>
+            <motion.h2 
+              variants={{
+                hidden: { opacity: 0, y: 25, x: 10, filter: "blur(6px)" },
+                visible: { opacity: 1, y: 0, x: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 120, damping: 14 } }
+              }}
+              style={{ fontSize: "20px" }} 
+              className="font-black text-white uppercase leading-snug tracking-widest drop-shadow-md"
+            >
+              en tu piel.
+            </motion.h2>
+          </div>
+        </motion.div>
 
-          {/* Marco central de enfoque más amplio */}
-          <div
-            className="pointer-events-none absolute w-11/12 h-52 sm:h-64 lg:h-72 rounded-2xl border z-10"
-            style={{
-              borderColor: "rgba(226,232,240,0.1)",
-              backgroundColor: "rgba(255,255,255,0.02)",
-            }}
-          />
-
-          {/* Prendas moviéndose hacia abajo (TAMAÑO AUMENTADO) */}
-          {slides.map((slide, index) => {
-            const offset = getCircularOffset(index);
-            const isCenter = offset === 0;
-            const isVisible = Math.abs(offset) <= 1;
-            const isWrapping = offset <= -1;
-
-            return (
-              <motion.div
-                key={slide.id}
-                onClick={() => {
-                  if (isCenter) {
-                    handleNavigation(slide.eventName);
-                  } else {
-                    setActiveIdx(index);
-                  }
-                }}
-                animate={{
-                  y: offset * stepDistance,
-                  scale: isCenter ? 1.15 : 0.68,
-                  opacity: isCenter ? 1 : isVisible ? 0.35 : 0,
-                  filter: isCenter ? "brightness(1.08)" : "brightness(0.55)",
-                  zIndex: isCenter ? 25 : isVisible ? 15 : 0,
-                }}
-                transition={
-                  isWrapping && !isCenter
-                    ? { duration: 0 }
-                    : {
-                        type: "spring",
-                        stiffness: 95,
-                        damping: 18,
-                        mass: 0.9,
-                      }
-                }
-                style={{ pointerEvents: isVisible ? "auto" : "none" }}
-                className="absolute w-full px-2 sm:px-4 flex flex-col items-center justify-center cursor-pointer group"
-              >
-                <img
-                  src={slide.image}
-                  alt={slide.title}
-                  style={{
-                    maxHeight: isMobile ? "155px" : "245px",
-                    filter: "drop-shadow(0 25px 30px rgba(0,0,0,0.92))",
-                  }}
-                  className="w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                />
-
-                <AnimatePresence>
-                  {isCenter && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      className="mt-2 px-3.5 py-0.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest shadow-lg border"
-                      style={{
-                        backgroundColor: "rgba(0,0,0,0.88)",
-                        borderColor: "rgba(203,213,225,0.45)",
-                        color: "#E2E8F0",
-                      }}
-                    >
-                      {slide.tag}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
+        {/* Contenedor móvil */}
+        <div 
+          className="relative w-full max-w-sm h-72 mx-auto [perspective:1000px]"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {slides.map((slide, i) => (
+            <div
+              key={slide.id}
+              onClick={() => setActiveIdx(i)}
+              style={getCardStyle(i)}
+              className="absolute top-1/2 left-1/2 cursor-pointer transition-all duration-700 ease-out flex items-center justify-center"
+            >
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className={`w-auto object-contain transition-all duration-700 ${
+                  i === activeIdx
+                    ? "max-h-[190px] drop-shadow-[0_25px_40px_rgba(0,0,0,0.95)]"
+                    : "max-h-[120px] drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)]"
+                }`}
+              />
+            </div>
+          ))}
         </div>
 
-        {/* 🚀 BOTÓN DE ACCIÓN INFERIOR (PLATEADO METÁLICO / ROJO EN OFERTAS) */}
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleNavigation(activeSlide.eventName)}
-          style={{
-            background: activeSlide.isOffer
-              ? "#dc2626"
-              : "linear-gradient(135deg, #F8FAFC 0%, #CBD5E1 50%, #94A3B8 100%)",
-            color: activeSlide.isOffer ? "#ffffff" : "#000000",
+        <div className="mb-4 h-12">
+          <AnimatePresence mode="wait">
+            <motion.button
+              key={`btn-mob-${activeSlide.id}`}
+              onClick={() => handleNavigation(activeSlide.eventName)}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 120, damping: 12 }}
+              className={`flex items-center gap-2.5 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl border ${
+                activeSlide.isOffer
+                  ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-500/50"
+                  : "bg-white text-black border-white/80"
+              }`}
+            >
+              <span>{activeSlide.title}</span>
+              <FaArrowRight className="text-xs" />
+            </motion.button>
+          </AnimatePresence>
+        </div>
+      </div>
+
+     {/* ========================================================
+          💻 VERSIÓN DESKTOP 
+          ======================================================== */}
+      <div 
+        className="hidden md:grid relative z-10 w-full max-w-6xl mx-auto px-12 grid-cols-2 gap-12 items-center h-full pt-16 lg:pt-24"
+      >
+        
+        {/* Columna Izquierda: Texto con animación elástica y fluida de gran movilidad */}
+        <motion.div 
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 0 },
+            visible: {
+              opacity: 1,
+              transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+            }
           }}
-          className="relative z-40 w-full h-16 sm:h-20 lg:h-24 px-4 sm:px-6 flex items-center justify-between font-black uppercase tracking-wider transition-all duration-300 cursor-pointer group border-t border-black hover:opacity-95"
+          className="flex flex-col items-start text-left"
         >
-          <div className="flex flex-col items-start text-left min-w-0 pr-2">
-            <span className="text-[8px] sm:text-[10px] font-extrabold tracking-widest uppercase opacity-75">
-              EXPLORAR AHORA
-            </span>
-            <AnimatePresence mode="wait">
-              <motion.span
-                key={`cta-title-${activeSlide.id}`}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="text-xs sm:text-lg lg:text-xl font-black tracking-tight truncate w-full"
+          {/* Logo Opaco | Línea | Texto */}
+          <div className="flex items-center gap-6">
+            <motion.div 
+              variants={{
+                hidden: { scaleY: 0, opacity: 0 },
+                visible: { scaleY: 1, opacity: 1, transition: { duration: 0.5, ease: "backOut" } }
+              }}
+              className="w-1 h-32 lg:h-40 bg-white origin-top"
+            ></motion.div>
+
+            <div className="flex flex-col text-left">
+              <motion.h1 
+                variants={{
+                  hidden: { opacity: 0, y: 40, x: -40, scale: 0.95, filter: "blur(8px)" },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0, 
+                    x: 0, 
+                    scale: 1, 
+                    filter: "blur(0px)", 
+                    transition: { type: "spring", stiffness: 90, damping: 12 } 
+                  }
+                }}
+                className="text-6xl lg:text-7xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl"
               >
-                {activeSlide.title}
-              </motion.span>
+                La élite del<br />fútbol,
+              </motion.h1>
+              <motion.h2 
+                variants={{
+                  hidden: { opacity: 0, y: 40, x: -40, scale: 0.95, filter: "blur(8px)" },
+                  visible: { 
+                    opacity: 1, 
+                    y: 0, 
+                    x: 0, 
+                    scale: 1, 
+                    filter: "blur(0px)", 
+                    transition: { type: "spring", stiffness: 90, damping: 12 } 
+                  }
+                }}
+                className="text-3xl lg:text-7xl font-black text-white uppercase leading-tight tracking-widest drop-shadow-xl"
+              >
+                en tu piel.
+              </motion.h2>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Columna Derecha: Imagen con movimiento magnético */}
+        <div className="relative flex flex-col items-center justify-center h-[400px] lg:h-[450px]">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={activeSlide.id}
+              src={activeSlide.image}
+              alt={activeSlide.title}
+              initial={{ opacity: 0, scale: 0.65, x: 80, y: 40, rotate: 10, filter: "blur(12px)" }}
+              animate={{ opacity: 1, scale: 1, x: 0, y: 0, rotate: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, scale: 0.65, x: -80, y: -40, rotate: -10, filter: "blur(12px)" }}
+              transition={{ type: "spring", stiffness: 95, damping: 13, mass: 0.8 }}
+              className="max-h-[300px] lg:max-h-[380px] object-contain drop-shadow-[0_25px_50px_rgba(255,255,255,0.2)] z-20"
+            />
+          </AnimatePresence>
+
+          {/* 🚀 BOTÓN A LA DERECHA */}
+          <div className="absolute bottom-4 right-0 lg:bottom-10 lg:-right-4 z-30">
+            <AnimatePresence mode="wait">
+              <motion.button
+                key={`btn-desk-${activeSlide.id}`}
+                onClick={() => handleNavigation(activeSlide.eventName)}
+                initial={{ opacity: 0, y: 25, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -25, scale: 0.85 }}
+                transition={{ type: "spring", stiffness: 120, damping: 13 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-sm uppercase tracking-widest shadow-2xl border transition-all ${
+                  activeSlide.isOffer
+                    ? "bg-gradient-to-r from-red-600 to-red-500 text-white border-red-400 shadow-[0_0_30px_rgba(220,38,38,0.6)]"
+                    : "bg-white text-black border-white/80 shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:bg-gray-200"
+                }`}
+              >
+                <span>{activeSlide.title}</span>
+                <FaArrowRight />
+              </motion.button>
             </AnimatePresence>
           </div>
+        </div>
 
-          <div
-            className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-            style={{
-              backgroundColor: "#000000",
-              color: "#F8FAFC",
-            }}
-          >
-            <FiArrowUpRight className="text-lg sm:text-2xl" />
-          </div>
-        </motion.button>
       </div>
 
       {/* 💬 BOTÓN FLOTANTE DE WHATSAPP */}
-      <div className="fixed bottom-5 left-5 md:bottom-8 md:left-8 z-50 flex flex-col items-start pointer-events-none">
-        <a
-          href="https://wa.me/50672327096"
-          target="_blank"
+      <div className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 flex flex-col items-start pointer-events-none">
+        <a 
+          href="https://wa.me/50672327096" 
+          target="_blank" 
           rel="noopener noreferrer"
-          className="relative flex items-center justify-center pointer-events-auto group"
+          className="relative flex items-center justify-center pointer-events-auto group mt-1"
         >
-          <div className="absolute inset-0 bg-green-600 rounded-full animate-ping opacity-60" />
-          <div className="relative bg-green-600 text-white p-3.5 md:p-4 rounded-full shadow-2xl group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
-            <FaWhatsapp className="text-2xl md:text-3xl" />
+          <div className="absolute inset-0 bg-green-600 rounded-full animate-ping opacity-60"></div>
+          <div className="absolute inset-0 bg-green-600 rounded-full blur-md opacity-50 group-hover:opacity-80 transition-opacity"></div>
+          <div className="relative bg-green-600 text-white p-3.5 md:p-4 rounded-full shadow-[0_0_15px_rgba(37,211,102,0.6)] group-hover:scale-110 transition-transform duration-300 flex items-center justify-center">
+            <FaWhatsapp className="text-2xl md:text-3xl drop-shadow-md" />
           </div>
         </a>
       </div>
 
-      {/* ⬇️ INDICADOR DE SCROLL EN PLATEADO */}
+      {/* ⬇️ INDICADOR ANIMADO DE SCROLL */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
-        className="absolute bottom-2 left-1/3 -translate-x-1/2 flex flex-col items-center justify-center z-40 opacity-70 pointer-events-none"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center z-40 opacity-70 pointer-events-none"
       >
         <motion.div
-          animate={{ y: [0, 5, 0] }}
+          animate={{ y: [0, 6, 0] }}
           transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
         >
-          <FaChevronDown style={{ color: "#E2E8F0" }} className="text-sm" />
+          <FaChevronDown className="text-white text-sm" />
         </motion.div>
       </motion.div>
+
+      {/* ⏳ INDICADOR DE TIEMPO (PROGRESS BAR) */}
+      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10 z-40">
+        <motion.div
+          key={`progress-${activeIdx}`}
+          initial={{ width: "0%" }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 3, ease: "linear" }}
+          className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]"
+        />
+      </div>
+      
     </section>
   );
 }
