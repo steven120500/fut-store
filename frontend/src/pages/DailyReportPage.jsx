@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle, FaTrash, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaMoneyBillWave, FaTshirt, FaTruck, FaCashRegister, FaFilePdf, FaRedo, FaExclamationTriangle, FaTrash, FaMapMarkerAlt, FaGlobe } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -9,17 +9,38 @@ import Footer from '../components/Footer';
 
 const API_BASE = "https://fut-store.onrender.com";
 
+// Obtener el mes actual en formato YYYY-MM según hora de Costa Rica
+const getCurrentMonthCR = () => {
+  const now = new Date();
+  const crDate = new Date(now.toLocaleString('en-US', { timeZone: 'America/Costa_Rica' }));
+  const year = crDate.getFullYear();
+  const month = String(crDate.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
+// Obtener el YYYY-MM de cualquier fecha guardada en BD
+const getItemMonthCR = (dateString) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '';
+  const crDate = new Date(d.toLocaleString('en-US', { timeZone: 'America/Costa_Rica' }));
+  const year = crDate.getFullYear();
+  const month = String(crDate.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
 export default function DailyReportPage({ user, onLogout }) {
   const navigate = useNavigate();
   
   const [sales, setSales] = useState([]);
-  const [apartadosActivos, setApartadosActivos] = useState([]); // ESTADO PARA LOS APARTADOS
+  const [apartadosActivos, setApartadosActivos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
-  
-  // Estado para confirmar la eliminación de una venta específica
   const [deletingId, setDeletingId] = useState(null);
+
+  // 📅 Estado para filtrar automáticamente por el mes actual (se resetea solo cada mes)
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthCR());
 
   const isSuperUser = user?.isSuperUser || user?.roles?.includes("edit");
   const displayName = user?.firstName || user?.username || 'Admin';
@@ -80,31 +101,52 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 🔄 COMBINAR Y ORDENAR VENTAS Y APARTADOS POR FECHA
-  const combinedHistory = [
-    ...sales.map(s => ({ ...s, isApartado: false, sortDate: new Date(s.fecha || 0).getTime() })),
-    ...apartadosActivos.map(a => ({ ...a, isApartado: true, sortDate: new Date(a.fecha || a.fechaCreacion || 0).getTime() }))
+  // 🔄 1. COMBINAR Y ORDENAR TODAS LAS VENTAS Y APARTADOS
+  const allCombinedHistory = [
+    ...sales.map(s => ({ ...s, isApartado: false, sortDate: new Date(s.fecha || s.createdAt || 0).getTime() })),
+    ...apartadosActivos.map(a => ({ ...a, isApartado: true, sortDate: new Date(a.fecha || a.fechaCreacion || a.createdAt || 0).getTime() }))
   ].sort((a, b) => b.sortDate - a.sortDate);
 
-  // Función auxiliar para obtener el string unificado de las chemas (Sirve para Ventas y Apartados)
+  // 🔄 2. FILTRAR POR EL MES SELECCIONADO (RESETEO AUTOMÁTICO MENSUAL)
+  const combinedHistory = selectedMonth === 'ALL'
+    ? allCombinedHistory
+    : allCombinedHistory.filter(item => {
+        const dateStr = item.fecha || item.fechaCreacion || item.createdAt;
+        return getItemMonthCR(dateStr) === selectedMonth;
+      });
+
+  // 👕 FUNCIÓN MEJORADA: Detalle específico y compatible con Ventas Web, Tienda y Apartados
   const getResumenPrendas = (item) => {
     if (item.productos && item.productos.length > 0) {
       return item.productos.map(p => {
         const nombreItem = item.isApartado 
           ? (p.tipoPedido === 'stock' ? p.busqueda : p.descripcionManual) 
-          : p.nombre;
-        return `${p.cantidad}x ${nombreItem} (${p.talla})`;
+          : (p.nombre || p.productoNombre || p.name || item.productoNombre || 'Artículo');
+        
+        const tallaItem = p.talla || p.tallaVendida || p.size || item.tallaVendida || 'Estándar';
+        const versionItem = p.version ? ` [${p.version.toUpperCase()}]` : '';
+        const cantItem = p.cantidad || p.quantity || 1;
+
+        return `${cantItem}x ${nombreItem}${versionItem} (${tallaItem})`;
       }).join(' + ');
     }
-    return `${item.productoNombre || 'Camiseta'} (${item.tallaVendida || 'N/A'})`;
+    return `${item.cantidad || 1}x ${item.productoNombre || 'Camiseta'} (${item.tallaVendida || 'N/A'})`;
+  };
+
+  // 🔢 FUNCIÓN AUXILIAR: Contar total de unidades en una transacción
+  const getCantidadPrendasItem = (item) => {
+    if (item.productos && item.productos.length > 0) {
+      return item.productos.reduce((sum, p) => sum + (Number(p.cantidad || p.quantity) || 1), 0);
+    }
+    return Number(item.cantidad) || 1;
   };
 
   // 📄 EXPORTAR PDF DIARIO
   const exportDailyPDF = () => {
     const hoyCR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
 
-    const dailyCombined = combinedHistory.filter(item => {
-      const dateString = item.fecha || item.fechaCreacion;
+    const dailyCombined = allCombinedHistory.filter(item => {
+      const dateString = item.fecha || item.fechaCreacion || item.createdAt;
       if (!dateString) return false;
       const itemDateCR = new Date(dateString).toLocaleDateString('en-CA', { timeZone: 'America/Costa_Rica' });
       return itemDateCR === hoyCR;
@@ -125,15 +167,16 @@ export default function DailyReportPage({ user, onLogout }) {
     doc.text(`Generado por: ${displayName}`, 14, 28);
 
     const tableData = dailyCombined.map((item, index) => {
-      const cantPrendas = item.isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (item.cantidad || 1);
+      const cantPrendas = getCantidadPrendasItem(item);
+      const dateVal = item.fecha || item.fechaCreacion || item.createdAt;
       return [
         index + 1,
-        item.fecha || item.fechaCreacion ? new Date(item.fecha || item.fechaCreacion).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit' }) : 'N/A',
+        dateVal ? new Date(dateVal).toLocaleTimeString('es-CR', { timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit' }) : 'N/A',
         `${item.vendedor || 'General'} ${item.isApartado ? '(APARTADO)' : ''}`,
         item.nombre || item.cliente || 'N/A',
         item.cedula || 'N/A',
         item.numero || item.telefono || 'N/A',
-        item.direccionEnvio || 'N/A', // 👈 DIRECCIÓN AÑADIDA AL PDF
+        item.direccionEnvio || 'N/A',
         getResumenPrendas(item),
         cantPrendas,
         `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
@@ -144,58 +187,61 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
+      head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Prendas', 'Cant.', 'Prendas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
-      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] }, // Letra un poco más pequeña para que quepa todo
+      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { horizontal: 10 },
-      columnStyles: { 6: { cellWidth: 35 } } // Ajuste de ancho de la columna Dirección
+      columnStyles: { 6: { cellWidth: 35 } }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
-    const totalChemas = dailyCombined.reduce((sum, item) => sum + (item.isApartado ? item.productos.reduce((s, p) => s + Number(p.cantidad), 0) : (item.cantidad || 1)), 0);
-    const granTotal = dailyCombined.reduce((sum, item) => sum + (item.isApartado ? item.abono : item.montoTotal || 0), 0);
+    const totalChemas = dailyCombined.reduce((sum, item) => sum + getCantidadPrendasItem(item), 0);
+    const granTotal = dailyCombined.reduce((sum, item) => sum + (Number(item.isApartado ? item.abono : item.montoTotal) || 0), 0);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Total Chemas Movidas Hoy: ${totalChemas} unds`, 14, finalY);
+    doc.text(`Total Prendas Movidas Hoy: ${totalChemas} unds`, 14, finalY);
     doc.text(`Gran Total Entrado en Caja Hoy: CRC ${granTotal.toLocaleString()}`, 14, finalY + 6);
 
     doc.save(`Corte_Diario_${hoyCR}.pdf`);
     toast.success("📄 PDF Diario exportado correctamente");
   };
 
-  // 📄 EXPORTAR PDF MENSUAL
+  // 📄 EXPORTAR PDF MENSUAL (Respeta el mes seleccionado)
   const exportMonthlyPDF = () => {
     if (!combinedHistory || combinedHistory.length === 0) {
-      return toast.warning("No hay transacciones registradas en el sistema para exportar.");
+      return toast.warning("No hay transacciones registradas en este periodo para exportar.");
     }
 
     const doc = new jsPDF('landscape');
-    const currentMonthName = new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
+    const labelPeriodo = selectedMonth === 'ALL' 
+      ? 'HISTORIAL COMPLETO' 
+      : new Date(`${selectedMonth}-15T12:00:00`).toLocaleString('es-ES', { month: 'long', year: 'numeric' }).toUpperCase();
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(33, 33, 33);
-    doc.text(`FUTSTORE CR - REPORTE MENSUAL DE CAJA (${currentMonthName})`, 14, 20);
+    doc.text(`FUTSTORE CR - REPORTE MENSUAL DE CAJA (${labelPeriodo})`, 14, 20);
 
     doc.setFontSize(11);
     doc.setTextColor(100, 100, 100);
     doc.text(`Generado por: ${displayName}`, 14, 28);
 
     const tableData = combinedHistory.map((item, index) => {
-      const cantPrendas = item.isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (item.cantidad || 1);
+      const cantPrendas = getCantidadPrendasItem(item);
+      const dateVal = item.fecha || item.fechaCreacion || item.createdAt;
       return [
         index + 1,
-        item.fecha || item.fechaCreacion ? new Date(item.fecha || item.fechaCreacion).toLocaleDateString() : 'N/A',
+        dateVal ? new Date(dateVal).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' }) : 'N/A',
         `${item.vendedor || 'General'} ${item.isApartado ? '(APARTADO)' : ''}`,
         item.nombre || item.cliente || 'N/A',
         item.cedula || 'N/A',
         item.numero || item.telefono || 'N/A',
-        item.direccionEnvio || 'N/A', // 👈 DIRECCIÓN AÑADIDA AL PDF
+        item.direccionEnvio || 'N/A',
         getResumenPrendas(item),
         cantPrendas,
         `CRC ${(item.isApartado ? item.precioTotal : item.totalPago || 0).toLocaleString()}`,
@@ -206,27 +252,27 @@ export default function DailyReportPage({ user, onLogout }) {
 
     autoTable(doc, {
       startY: 35,
-      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Chemas', 'Cant.', 'Chemas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
+      head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Prendas', 'Cant.', 'Prendas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
-      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] }, // Letra un poco más pequeña para que quepa todo
+      bodyStyles: { fontSize: 7, textColor: [30, 30, 30] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { horizontal: 10 },
-      columnStyles: { 6: { cellWidth: 35 } } // Ajuste de ancho de la columna Dirección
+      columnStyles: { 6: { cellWidth: 35 } }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
-    const totalChemasMes = combinedHistory.reduce((sum, item) => sum + (item.isApartado ? item.productos.reduce((s, p) => s + Number(p.cantidad), 0) : (item.cantidad || 1)), 0);
-    const granTotalMes = combinedHistory.reduce((sum, item) => sum + (item.isApartado ? item.abono : item.montoTotal || 0), 0);
+    const totalChemasMes = combinedHistory.reduce((sum, item) => sum + getCantidadPrendasItem(item), 0);
+    const granTotalMes = combinedHistory.reduce((sum, item) => sum + (Number(item.isApartado ? item.abono : item.montoTotal) || 0), 0);
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Total Chemas Movidas Acumuladas: ${totalChemasMes} unds`, 14, finalY);
+    doc.text(`Total Prendas Movidas en el Mes: ${totalChemasMes} unds`, 14, finalY);
     doc.text(`Ingreso Bruto Total Mensual (Caja): CRC ${granTotalMes.toLocaleString()}`, 14, finalY + 6);
 
-    doc.save(`Reporte_Mensual_Caja_${currentMonthName}.pdf`);
+    doc.save(`Reporte_Mensual_Caja_${labelPeriodo.replace(/\s+/g, '_')}.pdf`);
     toast.success("📄 PDF Mensual exportado correctamente");
   };
 
@@ -252,43 +298,39 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 🏆 LÓGICA DE SEPARACIÓN TACOS VS CHEMAS EN LOS REPORTES (INCLUYE APARTADOS)
-  const totalDineroEnvios = sales.reduce((sum, item) => sum + (item.costoEnvio || 0), 0);
-  
-  // CÁLCULO SUMANDO LOS ABONOS AL GRAN TOTAL CAJA
-  const totalAbonosActivos = apartadosActivos.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
-  const granTotalCaja = sales.reduce((sum, item) => sum + (item.montoTotal || 0), 0) + totalAbonosActivos;
+  // 🏆 LÓGICA EXACTA DE TOTALES DEL MES SELECCIONADO (SIN MEZCLAR MESES PASADOS)
+  const ventasDelPeriodo = combinedHistory.filter(i => !i.isApartado);
+  const apartadosDelPeriodo = combinedHistory.filter(i => i.isApartado);
 
-  // Calculamos los tacos buscando si "tacos" está en el nombre o tipo del producto dentro de TODAS las transacciones
+  const totalDineroEnvios = ventasDelPeriodo.reduce((sum, item) => sum + (Number(item.costoEnvio) || 0), 0);
+  const totalAbonosActivos = apartadosDelPeriodo.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
+  const totalVentasDirectas = ventasDelPeriodo.reduce((sum, item) => sum + (Number(item.montoTotal) || 0), 0);
+  const granTotalCaja = totalVentasDirectas + totalAbonosActivos;
+
   let countTacos = 0;
   let countPrendasGlobal = 0;
 
   combinedHistory.forEach(s => {
-    const isApartado = s.isApartado;
-    
-    // Contar el global del pedido/apartado
-    countPrendasGlobal += isApartado ? s.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : (s.cantidad || 1);
+    countPrendasGlobal += getCantidadPrendasItem(s);
 
     if (s.productos && s.productos.length > 0) {
       s.productos.forEach(p => {
-        // En apartados, el nombre está en descripcionManual o busqueda. En ventas en nombre.
-        const nombreAAnalizar = (p.nombre || p.descripcionManual || p.busqueda || '').toLowerCase();
+        const nombreAAnalizar = (p.nombre || p.productoNombre || p.descripcionManual || p.busqueda || '').toLowerCase();
         const tipoAAnalizar = (p.type || p.version || '').toLowerCase();
-        const tallaAAnalizar = (p.talla || '').toLowerCase();
+        const tallaAAnalizar = (p.talla || p.tallaVendida || '').toLowerCase();
 
         if (tipoAAnalizar.includes('tacos') || nombreAAnalizar.includes('tacos') || tallaAAnalizar.includes('us')) {
-          countTacos += (Number(p.cantidad) || 1);
+          countTacos += (Number(p.cantidad || p.quantity) || 1);
         }
       });
-    } else if (!isApartado) {
-      // Por si fue una venta vieja antes de usar el array
+    } else if (!s.isApartado) {
       if ((s.productoNombre || '').toLowerCase().includes('tacos')) {
         countTacos += (Number(s.cantidad) || 1);
       }
     }
   });
 
-  const countChemas = countPrendasGlobal - countTacos;
+  const countChemas = Math.max(0, countPrendasGlobal - countTacos);
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
@@ -304,12 +346,32 @@ export default function DailyReportPage({ user, onLogout }) {
           </button>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+            {/* 📅 SELECTOR DE MES AUTOMÁTICO */}
+            <div className="flex items-center gap-2 bg-black border border-gray-700 px-3 py-2 rounded-xl">
+              <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Mes:</span>
+              <input
+                type="month"
+                value={selectedMonth === 'ALL' ? '' : selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value || getCurrentMonthCR())}
+                className="bg-transparent text-[#D4AF37] font-black text-xs outline-none cursor-pointer"
+              />
+              <button
+                onClick={() => setSelectedMonth(selectedMonth === 'ALL' ? getCurrentMonthCR() : 'ALL')}
+                className={`text-[10px] px-2 py-1 rounded font-black uppercase transition cursor-pointer ${
+                  selectedMonth === 'ALL' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                }`}
+                title="Ver todos los meses o solo el mes actual"
+              >
+                {selectedMonth === 'ALL' ? 'Viendo Todo' : 'Ver Todo'}
+              </button>
+            </div>
+
             {isSuperUser && (
               <button 
                 onClick={() => setShowResetModal(true)}
                 className="px-4 py-3 bg-red-600/20 border border-red-600/40 hover:bg-red-600 text-red-400 hover:text-white font-black rounded-xl transition flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
               >
-                <FaRedo size={12} /> Resetear Ventas (Mes)
+                <FaRedo size={12} /> Vaciar BD
               </button>
             )}
 
@@ -334,11 +396,13 @@ export default function DailyReportPage({ user, onLogout }) {
             <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
               <FaCalendarAlt /> Historial y Reportes de Caja
             </h1>
-            <p className="text-gray-400 text-xs mt-1">Auditoría general de ingresos acumulados en el sistema.</p>
+            <p className="text-gray-400 text-xs mt-1">
+              Mostrando corte automático del periodo: <strong className="text-white uppercase">{selectedMonth === 'ALL' ? 'Todos los meses' : selectedMonth}</strong> (Se reinicia automáticamente el 1° de cada mes).
+            </p>
           </div>
         </div>
 
-        {/* 🏆 ENCABEZADO DE TARJETAS ACTUALIZADO PARA INCLUIR TACOS */}
+        {/* 🏆 ENCABEZADO DE TARJETAS */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
@@ -382,7 +446,7 @@ export default function DailyReportPage({ user, onLogout }) {
           </div>
         ) : combinedHistory.length === 0 ? (
           <div className="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-gray-800 text-gray-500 text-sm font-bold uppercase">
-            No se encontraron ingresos registrados en el sistema.
+            No se encontraron ingresos registrados en este mes ({selectedMonth}).
           </div>
         ) : (
           <div className="bg-[#0a0a0a] border border-gray-800 rounded-2xl overflow-hidden shadow-xl">
@@ -392,7 +456,7 @@ export default function DailyReportPage({ user, onLogout }) {
                   <tr>
                     <th className="p-4">Fecha / Vendedor</th>
                     <th className="p-4">Cliente / Cédula / Tel</th>
-                    <th className="p-4">Dirección</th> {/* 👈 COLUMNA AÑADIDA A LA TABLA */}
+                    <th className="p-4">Dirección</th>
                     <th className="p-4">Detalle Prendas</th>
                     <th className="p-4 text-center">Cant.</th>
                     <th className="p-4 text-right">Prendas</th>
@@ -405,16 +469,20 @@ export default function DailyReportPage({ user, onLogout }) {
                   {combinedHistory.map((item) => {
                     const itemId = item._id || item.id;
                     const isApartado = item.isApartado;
-                    const dateString = item.fecha || item.fechaCreacion;
-                    const cantPrendas = isApartado ? item.productos.reduce((sum, p) => sum + Number(p.cantidad), 0) : item.cantidad;
+                    const isWebSale = (item.vendedor || '').toLowerCase().includes('web');
+                    const dateString = item.fecha || item.fechaCreacion || item.createdAt;
+                    const cantPrendas = getCantidadPrendasItem(item);
 
                     return (
                       <tr key={itemId} className="hover:bg-zinc-900/40 transition">
                         <td className="p-4">
                           <span className="font-bold text-white block">
-                            {dateString ? new Date(dateString).toLocaleDateString() : 'N/A'}
+                            {dateString ? new Date(dateString).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' }) : 'N/A'}
                           </span>
-                          <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest">{item.vendedor}</span>
+                          <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest flex items-center gap-1">
+                            {isWebSale && <FaGlobe size={10} className="text-blue-400" />}
+                            {item.vendedor}
+                          </span>
                           {isApartado && (
                             <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30 mt-1 inline-block font-black uppercase tracking-wider">
                               APARTADO
@@ -426,7 +494,6 @@ export default function DailyReportPage({ user, onLogout }) {
                           <span className="text-[10px] text-gray-500 font-mono">ID: {item.cedula} | Tel: {item.numero || item.telefono}</span>
                         </td>
                         
-                        {/* 👈 CELDAS DE DIRECCIÓN CON ICONO */}
                         <td className="p-4">
                           <div className="flex items-start gap-1">
                             {item.direccionEnvio ? <FaMapMarkerAlt className="text-gray-500 mt-0.5 flex-shrink-0" size={10} /> : null}
@@ -436,7 +503,7 @@ export default function DailyReportPage({ user, onLogout }) {
                           </div>
                         </td>
 
-                        <td className="p-4 max-w-[200px]">
+                        <td className="p-4 max-w-[240px]">
                           <span className="font-black text-white uppercase block leading-snug">
                             {getResumenPrendas(item)}
                           </span>
@@ -449,7 +516,7 @@ export default function DailyReportPage({ user, onLogout }) {
                           {isApartado && <span className="block text-[9px] text-gray-500 font-normal">Valor Total</span>}
                         </td>
                         <td className="p-4 text-right font-bold text-blue-400">
-                          {isApartado ? 'N/A' : `₡${item.costoEnvio?.toLocaleString()}`}
+                          {isApartado ? 'N/A' : `₡${(item.costoEnvio || 0).toLocaleString()}`}
                         </td>
                         <td className="p-4 text-right font-black text-green-500 text-sm">
                           ₡{(isApartado ? item.abono : item.montoTotal)?.toLocaleString()}
@@ -503,9 +570,9 @@ export default function DailyReportPage({ user, onLogout }) {
               <FaExclamationTriangle size={24} />
             </div>
 
-            <h3 className="font-black uppercase text-base tracking-tight mb-2">¿Realizar Cierre de Mes?</h3>
+            <h3 className="font-black uppercase text-base tracking-tight mb-2">¿Vaciar Base de Datos?</h3>
             <p className="text-xs text-gray-600 font-medium mb-6 px-2">
-              Esta acción borrará <strong className="text-red-600">todas las ventas y comisiones</strong> del sistema para dejar las cuentas en cero. ¿Estás completamente seguro?
+              El sistema ya separa las ventas por mes automáticamente. Usar este botón borrará <strong className="text-red-600">permanentemente todo el historial</strong> de la base de datos. ¿Estás seguro?
             </p>
 
             <div className="flex gap-2">
@@ -522,7 +589,7 @@ export default function DailyReportPage({ user, onLogout }) {
                 onClick={confirmResetMonthlySales} 
                 className="w-1/2 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
               >
-                {resetting ? 'Vaciando...' : 'SÍ, RESETEAR '}
+                {resetting ? 'Vaciando...' : 'SÍ, BORRAR TODO'}
               </button>
             </div>
           </div>

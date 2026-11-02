@@ -2,7 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import Order from '../models/Order.js'; 
 import Product from '../models/Product.js'; 
-import Sale from '../models/Sale.js'; // 👈 Importamos el modelo de ventas
+import Sale from '../models/Sale.js'; 
 import sendEmail from '../utils/sendEmail.js'; 
 
 const router = express.Router();
@@ -26,7 +26,6 @@ router.post('/create-link', async (req, res) => {
     const { cliente, total, productos, envio } = req.body;
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
     
-    // Asegurar que la URL sea segura para la redirección
     const FRONTEND = process.env.FRONTEND_URL || "https://fut-store.onrender.com";
     const orderRef = `ORD-${Date.now()}`; 
 
@@ -80,7 +79,6 @@ router.post('/create-link', async (req, res) => {
       key: API_KEY, 
       amount: total,
       currency: "CRC",
-      // Tilopay redireccionará aquí y el Frontend leerá si pagó o no
       redirect: `${FRONTEND}/checkout?order=${orderRef}`, 
       
       billToFirstName: nameParts[0],
@@ -101,7 +99,6 @@ router.post('/create-link', async (req, res) => {
         const linkResponse = await axios.post('https://app.tilopay.com/api/v1/processPayment', payload, { 
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'Accept': 'application/json' } 
         });
-        // Devolvemos el link seguro para que el frontend redirija
         return res.json({ url: linkResponse.data.url });
     } catch (appError) {
         console.error("❌ Error TiloPay al generar link:", JSON.stringify(appError.response?.data));
@@ -118,7 +115,6 @@ router.post('/confirm-payment', async (req, res) => {
   try {
     const { orderId } = req.body;
     
-    // 1. Verificar existencia de la orden
     const order = await Order.findOne({ orderId });
     if (!order) return res.status(404).json({ message: "Orden no encontrada" });
     if (order.status === 'paid') return res.json({ message: "El pedido ya había sido procesado.", status: 'paid' });
@@ -133,7 +129,6 @@ router.post('/confirm-payment', async (req, res) => {
                    const talla = String(item.size);
                    const currentStock = Number(product.stock[talla]) || 0;
                    
-                   // Reasignamos el objeto completo para forzar el guardado
                    product.stock = {
                      ...product.stock,
                      [talla]: Math.max(0, currentStock - item.quantity)
@@ -148,8 +143,6 @@ router.post('/confirm-payment', async (req, res) => {
             }
           }
         }
-        
-        // Marcamos que ya se descontó para que no vuelva a pasar
         order.stockDiscounted = true;
     }
     
@@ -158,23 +151,33 @@ router.post('/confirm-payment', async (req, res) => {
     await order.save();
     console.log(`✅ Pedido ${orderId} marcado como pagado exitosamente.`);
 
-    // 🌟 4.5. REGISTRAR LA VENTA AUTOMÁTICAMENTE EN EL PANEL GENERAL 🌟
+    // 🌟 4.5. REGISTRAR LA VENTA AUTOMÁTICAMENTE EN EL PANEL GENERAL (BLINDADO) 🌟
     try {
+      const totalCant = order.items.reduce((acc, item) => acc + (Number(item.quantity) || 1), 0);
+      const primerItem = order.items[0] || {};
+
       const nuevaVenta = new Sale({
-        cedula: "N/A - Compra Web",
+        cedula: order.customer.cedula || "Compra Web",
         nombre: order.customer.name || "Cliente Web",
         numero: order.customer.phone || "00000000",
         totalPago: order.total - (order.shipping?.cost || 0),
         costoEnvio: order.shipping?.cost || 0,
-        direccionEnvio: order.customer.address || "N/A",
+        direccionEnvio: order.customer.address || "Recoger en el Local",
         montoTotal: order.total,
+        cantidad: totalCant,
+        productoNombre: primerItem.name || "Camiseta Web",
+        tallaVendida: primerItem.size || "Estándar",
         productos: order.items.map(item => ({
-          productoNombre: item.name,
-          tallaVendida: item.size,
-          cantidad: item.quantity,
+          nombre: item.name,           // ✅ Compatible con el reporte diario
+          productoNombre: item.name,   // ✅ Respaldo
+          talla: item.size,            // ✅ Compatible con el reporte diario
+          tallaVendida: item.size,     // ✅ Respaldo
+          version: item.version || "", // ✅ Lee la versión (Player / Fan)
+          cantidad: item.quantity || 1,
           precio: item.price
         })),
-        vendedor: 'Web - TiloPay' 
+        vendedor: 'Web - TiloPay',
+        archivado: false
       });
 
       await nuevaVenta.save();
@@ -214,7 +217,7 @@ router.post('/confirm-payment', async (req, res) => {
       </div>
     `;
 
-    // Disparamos los correos sin 'await' para que la respuesta web sea instantánea (Corregida la sintaxis del asunto del cliente)
+    // Disparar correos sin bloquear la respuesta
     Promise.all([
       sendEmail({ 
         email: order.customer.email, 
@@ -228,7 +231,6 @@ router.post('/confirm-payment', async (req, res) => {
       })
     ]).catch(err => console.error("Error silencioso enviando correos:", err.message));
 
-    // Responder éxito al Frontend
     res.json({ success: true, message: "Transacción aprobada. Pedido en proceso." });
 
   } catch (error) { 

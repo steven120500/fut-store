@@ -5,7 +5,7 @@ import History from '../models/History.js';
 
 const router = express.Router();
 
-const VENDEDORES_OFICIALES = [
+const VENDEDORESOFICIALES = [
   'LaR Delflow',
   'Justin Lobo',
   'Carlos Lobo',
@@ -18,12 +18,11 @@ const normalizarVendedor = (inputName) => {
   if (!inputName) return 'Steven Corrales';
   let cleanInput = inputName.trim().toLowerCase();
   
-  // 🛡️ Unificar Alonso Lobo con Bety automáticamente
   if (cleanInput.includes('alonso') || cleanInput.includes('alonso lobo')) {
     return 'Bety';
   }
 
-  const match = VENDEDORES_OFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
+  const match = VENDEDORESOFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
   if (match) return match;
   return inputName
     .trim()
@@ -39,7 +38,7 @@ router.post('/', async (req, res) => {
 
     const productosVendidos = req.body.productos || [];
 
-    // 🛡️ MAGIA DE INVENTARIO: Descontar stock (AHORA BLINDADO CONTRA FALLOS DE MONGOOSE)
+    // 🛡️ MAGIA DE INVENTARIO: Descontar stock
     if (productosVendidos.length > 0) {
       for (const prod of productosVendidos) {
         if (prod.tipoVenta === 'stock' && prod.productoId) {
@@ -52,7 +51,6 @@ router.post('/', async (req, res) => {
               const stockActual = Number(dbProduct.stock[talla]) || 0;
               const nuevoStock = Math.max(0, stockActual - cantidadVendida);
               
-              // 🔥 REGLA DE ORO DE MONGOOSE: Reasignar el objeto completo
               dbProduct.stock = {
                 ...dbProduct.stock,
                 [talla]: nuevoStock
@@ -112,16 +110,22 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 📤 GET: Obtener todas las ventas
+// 📤 GET: Obtener ventas (Soporta ?includeArchived=true para el Balance General)
 router.get('/', async (req, res) => {
   try {
-    const { vendedor, fechaInicio, fechaFin } = req.query;
+    const { vendedor, fechaInicio, fechaFin, includeArchived } = req.query;
     let query = {};
+
+    // Si no piden explícitamente los archivados, traemos solo los activos del mes
+    if (includeArchived !== 'true') {
+      query.archivado = false;
+    }
 
     if (vendedor) query.vendedor = vendedor;
     if (fechaInicio && fechaFin) {
       query.fecha = {
-        $gte: new Date(fechaInicio),$lte: new Date(fechaFin)
+        $gte: new Date(fechaInicio),
+        $lte: new Date(fechaFin)
       };
     }
 
@@ -133,14 +137,11 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 NUEVA RUTA: TOP PRODUCTOS VENDIDOS POR MES
+// 📊 TOP PRODUCTOS VENDIDOS POR MES
 router.get('/top-products', async (req, res) => {
   try {
     const { year, month } = req.query; 
-    
-    // Si no mandan fecha, por defecto usa el mes y año actuales
     const targetYear = year ? parseInt(year) : new Date().getFullYear();
-    // JS meses van de 0 a 11, entonces le restamos 1 al número del mes
     const targetMonth = month ? parseInt(month) - 1 : new Date().getMonth();
 
     const startDate = new Date(targetYear, targetMonth, 1);
@@ -149,7 +150,7 @@ router.get('/top-products', async (req, res) => {
     const topProducts = await Sale.aggregate([
       {
         $match: {
-          fecha: { $gte: startDate,$lte: endDate }
+          fecha: { $gte: startDate, $lte: endDate }
         }
       },
       { $unwind: "$productos" },
@@ -166,18 +167,18 @@ router.get('/top-products', async (req, res) => {
           totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
         }
       },
-      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },       {$limit: 15 }
+      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
+      { $limit: 15 }
     ]);
 
     res.json(topProducts);
-
   } catch (error) {
     console.error("Error al generar Top Productos:", error);
     res.status(500).json({ error: "Error al calcular los productos más vendidos." });
   }
 });
 
-// 🔄 RUTA DE RANKING ACTUALIZADA: Devuelve Tacos y Chemas separados
+// 🔄 RUTA DE RANKING
 router.get('/ranking', async (req, res) => {
   try {
     await Sale.updateMany(
@@ -186,6 +187,7 @@ router.get('/ranking', async (req, res) => {
     );
 
     const ranking = await Sale.aggregate([
+      { $match: { archivado: false } }, // Solo ranking del mes activo
       {
         $project: {
           vendedor: 1,
@@ -194,12 +196,13 @@ router.get('/ranking', async (req, res) => {
           montoTotal: 1,
           cantidad: 1,
           tacosVendidos: {
-            $sum: {$map: {
+            $sum: {
+              $map: {
                 input: { $ifNull: ["$productos", []] },
                 as: "prod",
                 in: {
                   $cond: [
-                    { $regexMatch: { input: {$ifNull: ["$$prod.type", "$$prod.nombre"] }, regex: /taco/i } },
+                    { $regexMatch: { input: { $ifNull: ["$$prod.type", "$$prod.nombre"] }, regex: /taco/i } },
                     { $convert: { input: "$$prod.cantidad", to: "int", onError: 0, onNull: 0 } },
                     0
                   ]
@@ -235,27 +238,28 @@ router.get('/ranking', async (req, res) => {
   }
 });
 
-// 🔄 DELETE: Cierre de mes (Borrado total)
+// 🔄 RUTA DE CIERRE DE MES INTELIGENTE (Archivar en lugar de borrar para proteger el Balance)
 router.delete('/reset/all', async (req, res) => {
   try {
-    await Sale.deleteMany({});
+    // En lugar de hacer deleteMany, marcamos las ventas como archivadas para que el Balance anual las conserve
+    await Sale.updateMany({ archivado: false }, { $set: { archivado: true } });
     
     await History.create({
       user: req.headers['x-user'] || 'Admin',
-      action: 'reseteó todas las ventas',
+      action: 'archivó ventas del mes',
       item: 'Cierre de mes de ventas',
       date: new Date(),
-      details: 'Se vaciaron todas las ventas del sistema'
+      details: 'Las ventas del mes activo pasaron al historial financiero general.'
     });
 
-    res.json({ success: true, message: "Todas las ventas han sido borradas para el nuevo mes." });
+    res.json({ success: true, message: "Cierre de mes realizado con éxito. El panel diario está en cero pero el balance guarda la memoria." });
   } catch (error) {
     console.error("Error al resetear ventas:", error);
-    res.status(500).json({ error: "Error al vaciar las ventas del sistema." });
+    res.status(500).json({ error: "Error al realizar el cierre de mes." });
   }
 });
 
-// 🗑️ DELETE: Eliminar venta por ID, devolver stock y registrar en historial
+// 🗑️ DELETE: Eliminar venta por ID individual, devolver stock y registrar en historial
 router.delete('/:id', async (req, res) => {
   try {
     const saleToDelete = await Sale.findById(req.params.id);
@@ -263,7 +267,6 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    // 🔄 REVERTIR STOCK (AHORA BLINDADO CONTRA FALLOS DE MONGOOSE)
     if (saleToDelete.productos && saleToDelete.productos.length > 0) {
       for (const prod of saleToDelete.productos) {
         if (prod.tipoVenta === 'stock' && prod.productoId) {
@@ -272,10 +275,8 @@ router.delete('/:id', async (req, res) => {
             if (dbProduct && dbProduct.stock) {
               const talla = String(prod.talla);
               const cantidadDevuelta = Number(prod.cantidad) || 1;
-              
               const stockActual = Number(dbProduct.stock[talla]) || 0;
               
-              // 🔥 REGLA DE ORO DE MONGOOSE: Reasignar el objeto completo para forzar el guardado
               dbProduct.stock = {
                 ...dbProduct.stock,
                 [talla]: stockActual + cantidadDevuelta
@@ -293,7 +294,6 @@ router.delete('/:id', async (req, res) => {
 
     await Sale.findByIdAndDelete(req.params.id);
 
-    // 🏆 REGISTRAR LA ELIMINACIÓN EN EL HISTORIAL
     await History.create({
       user: req.headers['x-user'] || 'Admin',
       action: 'eliminó venta',

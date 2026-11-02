@@ -11,6 +11,16 @@ import autoTable from 'jspdf-autotable';
 
 const API_BASE = "https://fut-store.onrender.com";
 
+// 🗓️ Función segura para obtener YYYY-MM en hora de Costa Rica
+const getMonthStringCR = (dateInput = new Date()) => {
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '';
+  const crDate = new Date(d.toLocaleString('en-US', { timeZone: 'America/Costa_Rica' }));
+  const year = crDate.getFullYear();
+  const month = String(crDate.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+};
+
 export default function BalancePage({ user }) {
   const navigate = useNavigate();
   const [sales, setSales] = useState([]);
@@ -18,15 +28,7 @@ export default function BalancePage({ user }) {
   const [apartadosActivos, setApartadosActivos] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // 🗓️ OBTENEMOS EL MES LOCAL CORRECTO
-  const getLocalMonthString = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  };
-
-  const [selectedMonth, setSelectedMonth] = useState(getLocalMonthString());
+  const [selectedMonth, setSelectedMonth] = useState(getMonthStringCR());
 
   // Estado del modal de gastos
   const [showAddModal, setShowAddModal] = useState(false);
@@ -50,8 +52,9 @@ export default function BalancePage({ user }) {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // 👇 Pedimos ?includeArchived=true para que el Balance NUNCA pierda datos aunque se resetee el mes
       const [resSales, resExpenses, resApartados] = await Promise.all([
-        fetch(`${API_BASE}/api/sales`),
+        fetch(`${API_BASE}/api/sales?includeArchived=true`),
         fetch(`${API_BASE}/api/expenses`),
         fetch(`${API_BASE}/api/apartados`)
       ]);
@@ -70,49 +73,60 @@ export default function BalancePage({ user }) {
     }
   };
   
-// 🧮 LÓGICA DE COSTOS POR PRODUCTO
-const getCategoriaCosto = (prod) => {
-  const tipo = (prod.type || '').toLowerCase();
-  const nombre = (prod.nombre || '').toLowerCase();
-  const talla = (prod.talla || '').toLowerCase();
+  // 🧮 LÓGICA DE COSTOS POR PRODUCTO (Blindada para Ventas Tienda, Web y Apartados)
+  const getCategoriaCosto = (prod) => {
+    const tipo = (prod.type || prod.version || '').toLowerCase();
+    const nombre = (prod.nombre || prod.productoNombre || prod.name || '').toLowerCase();
+    const talla = (prod.talla || prod.tallaVendida || prod.size || '').toLowerCase();
 
-  if (tipo.includes('nacional') || nombre.includes('saprissa') || nombre.includes('alajuelense') || nombre.includes('herediano') || nombre.includes('cartagines') || nombre.includes('costa rica')) {
-    return 'nacionales';
-  }
-  if (tipo.includes('tacos') || nombre.includes('tacos') || talla.includes('us')) {
-    return 'tacos';
-  }
-  if (tipo.includes('bola') || tipo.includes('balon') || nombre.includes('bola') || nombre.includes('balon')) {
-    return 'balones';
-  }
-  return 'generales';
-};
+    if (
+      tipo.includes('nacional') || 
+      nombre.includes('saprissa') || 
+      nombre.includes('alajuelense') || 
+      nombre.includes('liga') || 
+      nombre.includes('herediano') || 
+      nombre.includes('cartagines') || 
+      nombre.includes('costa rica') ||
+      nombre.includes('sele')
+    ) {
+      return 'nacionales';
+    }
+    if (tipo.includes('tacos') || nombre.includes('tacos') || talla.includes('us')) {
+      return 'tacos';
+    }
+    if (tipo.includes('bola') || tipo.includes('balon') || tipo.includes('balón') || nombre.includes('bola') || nombre.includes('balon') || nombre.includes('balón')) {
+      return 'balones';
+    }
+    return 'generales';
+  };
 
-const calcularCostoItem = (prod) => {
-  const cat = getCategoriaCosto(prod);
-  const cant = Number(prod.cantidad) || 1;
+  const calcularCostoItem = (prod) => {
+    const cat = getCategoriaCosto(prod);
+    const cant = Number(prod.cantidad || prod.quantity) || 1;
 
-  if (cat === 'nacionales') return 15000 * cant;
-  if (cat === 'tacos') return 20000 * cant;
-  if (cat === 'balones') return 11000 * cant;
-  return 9000 * cant;
-};
+    if (cat === 'nacionales') return 15000 * cant;
+    if (cat === 'tacos') return 20000 * cant;
+    if (cat === 'balones') return 11000 * cant;
+    return 9000 * cant;
+  };
 
-  // 🔍 FILTRADO POR MES SELECCIONADO
+  // 🔍 FILTRADO EXACTO POR MES EN ZONA HORARIA DE COSTA RICA
   const salesFiltradas = sales.filter(s => {
-    if (!s.fecha) return false;
-    return s.fecha.startsWith(selectedMonth);
+    const fechaRaw = s.fecha || s.createdAt;
+    if (!fechaRaw) return false;
+    return getMonthStringCR(fechaRaw) === selectedMonth;
   });
 
   const expensesFiltrados = expenses.filter(e => {
-    if (!e.fecha) return false;
-    return e.fecha.startsWith(selectedMonth);
+    const fechaRaw = e.fecha || e.createdAt;
+    if (!fechaRaw) return false;
+    return getMonthStringCR(fechaRaw) === selectedMonth;
   });
 
   const apartadosFiltrados = apartadosActivos.filter(ap => {
-    const fechaAComparar = ap.fecha || ap.fechaCreacion;
-    if (!fechaAComparar) return false;
-    return fechaAComparar.startsWith(selectedMonth);
+    const fechaRaw = ap.fecha || ap.fechaCreacion || ap.createdAt;
+    if (!fechaRaw) return false;
+    return getMonthStringCR(fechaRaw) === selectedMonth;
   });
   
   const totalAbonosMes = apartadosFiltrados.reduce((sum, ap) => sum + (Number(ap.abono) || 0), 0);
@@ -173,7 +187,11 @@ const calcularCostoItem = (prod) => {
 
     setSubmitting(true);
     try {
-      const fechaPersonalizada = `${selectedMonth}-01T12:00:00.000Z`;
+      // Usamos el día 15 al mediodía UTC para que en cualquier zona horaria caiga firme dentro del mes elegido
+      const currentMonthCR = getMonthStringCR();
+      const fechaPersonalizada = selectedMonth === currentMonthCR 
+        ? new Date().toISOString() 
+        : `${selectedMonth}-15T18:00:00.000Z`;
 
       const res = await fetch(`${API_BASE}/api/expenses`, {
         method: 'POST',
@@ -242,7 +260,7 @@ const calcularCostoItem = (prod) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(200, 200, 200);
     doc.text(`Período: ${selectedMonth}   |   Generado por: ${displayName}`, 14, 30);
-    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CR')}`, 14, 36);
+    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' })}`, 14, 36);
 
     doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
@@ -296,7 +314,7 @@ const calcularCostoItem = (prod) => {
 
     if (expensesFiltrados.length > 0) {
       const rows = expensesFiltrados.map(exp => [
-        new Date(exp.fecha).toLocaleDateString('es-CR'),
+        new Date(exp.fecha).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' }),
         exp.categoria.toUpperCase(),
         exp.descripcion,
         exp.registradoPor || 'Admin',
@@ -356,7 +374,7 @@ const calcularCostoItem = (prod) => {
 
           <div className="flex items-center gap-3 w-full sm:w-auto justify-end flex-wrap">
             
-            {/* 📅 NUEVO SELECTOR MENSUAL 100% COMPATIBLE CON CUALQUIER NAVEGADOR */}
+            {/* 📅 SELECTOR MENSUAL */}
             <div className="flex items-center gap-1.5 bg-black border border-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-inner">
               <FaCalendarAlt className="text-[#D4AF37]" />
               
@@ -413,6 +431,9 @@ const calcularCostoItem = (prod) => {
           <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
             <FaChartLine /> Balance General y Rendimiento
           </h1>
+          <p className="text-xs text-gray-400 mt-1">
+            Los datos financieros de cada mes se conservan de forma permanente aunque reinicies la caja mensual.
+          </p>
         </div>
 
         {loading ? (
@@ -526,7 +547,7 @@ const calcularCostoItem = (prod) => {
                         return (
                           <tr key={id} className="hover:bg-black/40 transition">
                             <td className="py-3 px-4 text-gray-400 font-mono text-[11px]">
-                              {new Date(exp.fecha).toLocaleDateString('es-CR')}
+                              {new Date(exp.fecha).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' })}
                             </td>
                             <td className="py-3 px-4">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${

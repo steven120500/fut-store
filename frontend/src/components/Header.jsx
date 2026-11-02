@@ -144,20 +144,20 @@ export default function Header({
                   <nav className="space-y-2">
                     
                     {/* 🔹 VISTO POR TODOS LOS USUARIOS LOGUEADOS (EMPLEADOS Y DUEÑOS) */}
-                    <button onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-zinc-800 transition shadow-lg mt-4 cursor-pointer">
+                    <button onClick={() => { navigate('/pedidos'); setSidebarOpen(false); }} className="w-full bg-black text-white font-black text-left px-4 py-3 rounded-xl flex items-center gap-3 hover:bg-gray-800 transition shadow-lg mt-4 cursor-pointer">
                       <FaBoxOpen size={18} /> GESTIÓN DE PEDIDOS
                     </button>
 
-                    <button onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                    <button onClick={() => { navigate('/apartados'); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                       <FaColumns size={16} /> Tablero de Apartados
                     </button>
 
-                    <button onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                    <button onClick={() => { navigate('/ventas'); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                       <FaCashRegister size={16} /> Registro de Ventas
                     </button>
 
                     {/* Historial de Cambios ahora está visible para los empleados también */}
-                    <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                    <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                       <FaHistory size={16} /> Historial de Cambios
                     </button>
 
@@ -168,19 +168,19 @@ export default function Header({
                           <p className="text-black/40 text-[10px] uppercase font-black tracking-widest px-2">Administración</p>
                         </div>
 
-                        <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
+                        <button onClick={() => { setShowRegisterUserModal(true); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Agregar Usuario
                         </button>
                         
-                        <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
+                        <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Lista de Usuarios
                         </button>
 
-                        <button onClick={() => { navigate('/balance'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                        <button onClick={() => { navigate('/balance'); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                           <FaBalanceScale size={16} /> Balance y Gastos
                         </button>
 
-                        <button onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                        <button onClick={() => { navigate('/reportes'); setSidebarOpen(false); }} className="w-full text-white font-bold text-left px-4 py-3 rounded-xl hover:bg-black transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
                           <FaChartLine size={16} /> Reporte Diario
                         </button>
                       </>
