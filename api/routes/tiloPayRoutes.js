@@ -2,6 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import Order from '../models/Order.js'; 
 import Product from '../models/Product.js'; 
+import Sale from '../models/Sale.js'; // 👈 Importamos el modelo de ventas
 import sendEmail from '../utils/sendEmail.js'; 
 
 const router = express.Router();
@@ -123,7 +124,6 @@ router.post('/confirm-payment', async (req, res) => {
     if (order.status === 'paid') return res.json({ message: "El pedido ya había sido procesado.", status: 'paid' });
 
     // 3. RESTAR STOCK (BLINDADO CON ESTRUCTURA MONGOOSE Y DOBLE DESCUENTO)
-    // ✅ Verificamos la bandera para no restar dos veces
     if (!order.stockDiscounted) {
         for (const item of order.items) {
           if (item.product_id) {
@@ -157,6 +157,31 @@ router.post('/confirm-payment', async (req, res) => {
     order.status = 'paid';
     await order.save();
     console.log(`✅ Pedido ${orderId} marcado como pagado exitosamente.`);
+
+    // 🌟 4.5. REGISTRAR LA VENTA AUTOMÁTICAMENTE EN EL PANEL GENERAL 🌟
+    try {
+      const nuevaVenta = new Sale({
+        cedula: "N/A - Compra Web",
+        nombre: order.customer.name || "Cliente Web",
+        numero: order.customer.phone || "00000000",
+        totalPago: order.total - (order.shipping?.cost || 0),
+        costoEnvio: order.shipping?.cost || 0,
+        direccionEnvio: order.customer.address || "N/A",
+        montoTotal: order.total,
+        productos: order.items.map(item => ({
+          productoNombre: item.name,
+          tallaVendida: item.size,
+          cantidad: item.quantity,
+          precio: item.price
+        })),
+        vendedor: 'Web - TiloPay' 
+      });
+
+      await nuevaVenta.save();
+      console.log(`💰 Venta Web registrada en la caja general por ₡${order.total}`);
+    } catch (saleErr) {
+      console.error("⚠️ Error registrando la venta en el panel general:", saleErr.message);
+    }
     
     // --- 5. ENVIAR CORREOS AUTOMÁTICOS ---
     const clienteHTML = `
@@ -189,7 +214,7 @@ router.post('/confirm-payment', async (req, res) => {
       </div>
     `;
 
-    // Disparamos los correos sin 'await' para que la respuesta web sea instantánea
+    // Disparamos los correos sin 'await' para que la respuesta web sea instantánea (Corregida la sintaxis del asunto del cliente)
     Promise.all([
       sendEmail({ 
         email: order.customer.email, 
@@ -197,7 +222,7 @@ router.post('/confirm-payment', async (req, res) => {
         message: clienteHTML 
       }),
       sendEmail({ 
-        email: 'futstorecrchemas@gmail.com', // ⚠️ O el correo admin oficial
+        email: 'futstorecrchemas@gmail.com',
         subject: `🚨 VENTA WEB PAGADA: ₡${order.total}`, 
         message: adminHTML 
       })

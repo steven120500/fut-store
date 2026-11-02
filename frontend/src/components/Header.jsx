@@ -17,7 +17,7 @@ export default function Header({
   onLogout,
   onLogoClick,
   user,
-  canSeeHistory, // Mantenemos el prop por si lo usas en otro lado, pero ya no controlará el menú admin
+  canSeeHistory, // Mantenemos el prop
   isSuperUser,
   setShowRegisterUserModal,
   setShowUserListModal,
@@ -156,6 +156,11 @@ export default function Header({
                       <FaCashRegister size={16} /> Registro de Ventas
                     </button>
 
+                    {/* Historial de Cambios ahora está visible para los empleados también */}
+                    <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
+                      <FaHistory size={16} /> Historial de Cambios
+                    </button>
+
                     {/* 🔒 EXCLUSIVO SUPER ADMIN: BALANCE, REPORTES Y USUARIOS */}
                     {isSuperUser && (
                       <>
@@ -169,10 +174,6 @@ export default function Header({
                         
                         <button onClick={() => { setShowUserListModal(true); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
                           <FaUser size={14}/> Lista de Usuarios
-                        </button>
-                        
-                        <button onClick={() => { navigate('/historial'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 cursor-pointer">
-                          <FaHistory size={14}/> Historial de Cambios
                         </button>
 
                         <button onClick={() => { navigate('/balance'); setSidebarOpen(false); }} className="w-full text-black font-bold text-left px-4 py-3 rounded-xl hover:bg-black/5 transition flex items-center gap-3 border border-black/10 mt-2 cursor-pointer">
