@@ -420,7 +420,7 @@ export default function Checkout() {
         
         {/* IZQUIERDA: FORMULARIO */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 mb-6 hover:text-black font-medium">
+          <button onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white text-gray-500 mb-6 hover:text-black font-medium">
             <FaArrowLeft /> Volver
           </button>
           

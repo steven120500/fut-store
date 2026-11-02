@@ -332,7 +332,7 @@ export default function ProductDetail({
       /> 
 
       <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-        <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black transition font-medium">
+        <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 flex bg-white items-center gap-2 text-gray-500 hover:text-black transition font-medium">
           <FaArrowLeft /> Volver al catálogo
         </button>
 
