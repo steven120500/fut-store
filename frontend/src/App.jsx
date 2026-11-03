@@ -19,11 +19,12 @@ import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
+import CatalogHeader from "./components/CatalogHeader"; 
 import FilterBar from "./components/FilterBar";
 import LoadingOverlay from "./components/LoadingOverlay"; 
 import ProtectedRoute from "./components/ProtectedRoute"; 
 import tallaPorTipo from "./utils/tallaPorTipo";
-import { FaPlus, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaPlus, FaChevronLeft, FaChevronRight, FaChevronRight as FaArrowRight } from "react-icons/fa";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
@@ -65,6 +66,58 @@ function ProductSkeleton() {
   );
 }
 
+// 🔥 COMPONENTE DE TIRA POR CATEGORÍA CON BOTÓN "VER MÁS"
+function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, user }) {
+  const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  
+  const filteredItems = products.filter((product) => {
+    const productType = normalize(product.type || "");
+    const productName = normalize(product.name || "");
+    const target = normalize(categoryKey);
+    
+    if (categoryKey === "Ofertas") {
+      const price = Number(product.price ?? 0);
+      const dp = Number(product.discountPrice ?? 0);
+      return dp > 0 && dp < price;
+    }
+    return productType.includes(target) || productName.includes(target);
+  }).slice(0, 5); // Muestra exactamente 5 tarjetas en la tira
+
+  if (filteredItems.length === 0) return null;
+
+  return (
+    <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 mb-12">
+      <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
+        <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black">
+          {title}
+        </h2>
+        
+        <button
+          onClick={() => onSelectCategory(categoryKey)}
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest fondo-plateado-redondo text-black hover:text-gray-600 transition group cursor-pointer"
+        >
+          Ver más 
+          <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center transition group-hover:translate-x-1">
+            <FaArrowRight size={9} />
+          </span>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        {filteredItems.map((product) => (
+          <ProductCard
+            canEdit={canEdit}
+            key={getPid(product)}
+            product={product}
+            user={user}
+            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MainApp() {
   const [products, setProducts] = useState([]);
 
@@ -74,8 +127,6 @@ function MainApp() {
 
   const [startedWithIntro] = useState(loading);
   const [isFiltering, setIsFiltering] = useState(false); 
-  
-  // 🔥 NUEVO ESTADO: Controla el Skeleton mientras cargan los productos
   const [isFetchingProducts, setIsFetchingProducts] = useState(true);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -185,22 +236,21 @@ function MainApp() {
     const currentSizes = opts.sizes ?? filterSizes; 
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
-    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
+    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0 || !currentActualFilter;
 
-    // 🔥 ACTIVAMOS EL SKELETON ANTES DE PEDIR DATOS
     setIsFetchingProducts(true);
     if (needsMassiveFetch) setIsFiltering(true); 
 
     try {
       const baseParams = {
-        limit: needsMassiveFetch ? "100" : "20", 
+        limit: "100", // Pedimos un lote amplio para asegurar que las tiras y filtros muestren contenido
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(mode ? { mode } : {}),
       };
 
       const params = new URLSearchParams({
-        page: needsMassiveFetch ? "1" : String(p),
+        page: "1",
         ...baseParams
       });
 
@@ -211,46 +261,21 @@ function MainApp() {
       let fetchedItems = json.items || [];
       let fetchedTotal = json.total || 0;
 
-      if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
-         const limitUsed = fetchedItems.length; 
-         const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
-
-         const fetchPromises = [];
-         const maxPages = Math.min(totalPagesToFetch, 50); 
-
-         for (let i = 2; i <= maxPages; i++) {
-           const loopParams = new URLSearchParams({ page: String(i), ...baseParams });
-           fetchPromises.push(
-             fetch(`${API_BASE}/api/products?${loopParams.toString()}`)
-               .then(r => r.ok ? r.json() : { items: [] })
-               .catch(() => ({ items: [] }))
-           );
-         }
-
-         const results = await Promise.all(fetchPromises);
-         results.forEach(result => {
-           if (result.items) fetchedItems = [...fetchedItems, ...result.items];
-         });
-      }
-
       fetchedItems.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
       setProducts(fetchedItems);
       setTotal(fetchedTotal);
-      if (json.page && json.page !== p && !needsMassiveFetch) setPage(json.page); 
 
     } catch (error) {
       console.error("Error cargando productos:", error);
       setProducts([]);
       setTotal(0);
     } finally {
-      // 🔥 APAGAMOS EL SKELETON SIEMPRE (HAYA ÉXITO O ERROR)
       setIsFiltering(false); 
       setIsFetchingProducts(false);
     }
   };
 
-  // 🔥 EFECTO UNIFICADO PARA EVITAR CONDICIONES DE CARRERA AL FILTRAR Y PAGINAR
   const prevFiltersRef = useRef({ searchTerm, filterType, filterSizes });
 
   useEffect(() => {
@@ -264,14 +289,13 @@ function MainApp() {
     prevFiltersRef.current = { searchTerm, filterType, filterSizes };
 
     if (filtersChanged && page !== 1) {
-      setPage(1); // Esto disparará nuevamente el efecto ya con page = 1
+      setPage(1);
       return;
     }
 
     fetchProducts({ page: filtersChanged ? 1 : page, q: searchTerm, type: filterType, sizes: filterSizes });
   }, [loading, page, searchTerm, filterType, filterSizes]);
 
-  // Scroll ligado a la carga de productos
   useEffect(() => {
     if (!loading && !isFetchingProducts && pendingScroll && products.length > 0) {
       setTimeout(() => {
@@ -349,6 +373,9 @@ function MainApp() {
 
   const listaFinalProductos = filteredProducts();
 
+  // Muestra las tiras cuando está en "TODOS" (sin filtro activo ni búsqueda)
+  const isViewingRows = !filterType && !searchTerm && filterSizes.length === 0;
+
   return (
     <CartProvider>
       <div className="w-full min-h-screen bg-white text-black antialiased">
@@ -395,7 +422,7 @@ function MainApp() {
                   transition={{ duration: 0.6, ease: "easeIn" }}
                   className="bg-white min-h-screen w-full relative" 
                 >
-                  {isFiltering && <LoadingOverlay message="Filtrando catálogo completo..." />}
+                  {isFiltering && <LoadingOverlay message="Cargando catálogo..." />}
                   {showRegisterUserModal && <RegisterUserModal onClose={() => setShowRegisterUserModal(false)} />}
                   {showUserListModal && <UserListModal open={showUserListModal} onClose={() => setShowUserListModal(false)} />}
                   {showMedidas && <Medidas open={showMedidas} onClose={() => setShowMedidas(false)} currentType={filterType || "Todos"} />}
@@ -427,10 +454,17 @@ function MainApp() {
                     </button>
                   )}
 
+                  {/* 🔥 CABECERA DE CAJITAS OSCURAS */}
+                  <CatalogHeader 
+                    filterType={filterType} 
+                    setFilterType={setFilterType} 
+                    setPage={setPage} 
+                  />
+
                   {/* CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
-                  <div id="catalogo-top" className="w-full bg-white flex flex-col items-center pb-16 pt-6">
+                  <div id="catalogo-top" className="w-full bg-white flex flex-col items-center pb-16 pt-8">
                     
-                    {/* 1. BARRA DE FILTROS */}
+                    {/* BARRA DE FILTROS */}
                     <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
                       <FilterBar 
                         searchTerm={searchTerm} 
@@ -442,49 +476,118 @@ function MainApp() {
                       />
                     </div>
 
-                    {/* 2. GRILLA DE PRODUCTOS O SKELETON */}
-                    <div 
-                      className="w-full px-4 sm:px-6 md:px-8" 
-                      style={{ maxWidth: "1800px" }}
-                    >
-                      <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                        {isFetchingProducts ? (
-                          // 🔥 MOSTRAMOS 8 TARJETAS SKELETON MIENTRAS CARGA
-                          Array.from({ length: 8 }).map((_, idx) => (
-                            <ProductSkeleton key={`skeleton-${idx}`} />
-                          ))
-                        ) : listaFinalProductos.length === 0 ? (
-                          // MENSAJE SI NO HAY RESULTADOS CUANDO YA TERMINÓ DE CARGAR
-                          <div className="col-span-full py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-sm">
-                            No se encontraron productos con estos filtros.
+                    {/* VISTA 1: TIRAS POR CATEGORÍA CON "VER MÁS" (CUANDO ESTÁ EN "TODOS") */}
+                    {isViewingRows ? (
+                      <div className="w-full">
+                        <CategoryRow 
+                          title="Player" 
+                          categoryKey="Player" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                        <CategoryRow 
+                          title="Retro" 
+                          categoryKey="Retro" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                        <CategoryRow 
+                          title="Fan" 
+                          categoryKey="Fan" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                        <CategoryRow 
+                          title="Mujer" 
+                          categoryKey="Mujer" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                        <CategoryRow 
+                          title="Nacional" 
+                          categoryKey="Nacional" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                        <CategoryRow 
+                          title="Ofertas" 
+                          categoryKey="Ofertas" 
+                          products={products} 
+                          onSelectCategory={(cat) => {
+                            setFilterType(cat);
+                            setPage(1);
+                          }} 
+                          canEdit={canEdit} 
+                          user={user} 
+                        />
+                      </div>
+                    ) : (
+                      /* VISTA 2: GRILLA COMPLETA CUANDO SE SELECCIONA UNA CATEGORÍA O SE BUSCA */
+                      <div 
+                        className="w-full px-4 sm:px-6 md:px-8" 
+                        style={{ maxWidth: "1800px" }}
+                      >
+                        <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                          {isFetchingProducts ? (
+                            Array.from({ length: 8 }).map((_, idx) => (
+                              <ProductSkeleton key={`skeleton-${idx}`} />
+                            ))
+                          ) : listaFinalProductos.length === 0 ? (
+                            <div className="col-span-full py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-sm">
+                              No se encontraron productos con estos filtros.
+                            </div>
+                          ) : (
+                            listaFinalProductos.map((product) => (
+                              <ProductCard
+                                canEdit={canEdit}
+                                key={getPid(product)}
+                                product={product}
+                                user={user}
+                                onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                              />
+                            ))
+                          )}
+                        </div>
+
+                        {/* Paginación */}
+                        {!isFetchingProducts && pages > 1 && (
+                          <div className="mt-12 flex flex-col items-center gap-3">
+                            <nav className="flex items-center justify-center gap-2">
+                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
+                              {buildPages(page, pages).map(n => (
+                                <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                              ))}
+                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
+                            </nav>
                           </div>
-                        ) : (
-                          // PRODUCTOS REALES
-                          listaFinalProductos.map((product) => (
-                            <ProductCard
-                              canEdit={canEdit}
-                              key={getPid(product)}
-                              product={product}
-                              user={user}
-                              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-                            />
-                          ))
                         )}
                       </div>
-
-                      {/* Paginación (Oculta mientras carga el skeleton) */}
-                      {!isFetchingProducts && pages > 1 && (
-                        <div className="mt-12 flex flex-col items-center gap-3">
-                          <nav className="flex items-center justify-center gap-2">
-                            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
-                            {buildPages(page, pages).map(n => (
-                              <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
-                            ))}
-                            <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
-                          </nav>
-                        </div>
-                      )}
-                    </div>
+                    )}
 
                   </div>
 

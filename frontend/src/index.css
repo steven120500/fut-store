@@ -539,3 +539,24 @@ button:focus-visible {
      no interfiera con la transparencia del texto y resalte sobre el estadio */
   filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.6));
 }
+
+.fondo-plateado-redondo {
+  background: linear-gradient(
+    145deg,
+    #f2f2f2 0%,
+    #d9d9d9 25%,
+    #bfbfbf 50%,
+    #e6e6e6 75%,
+    #ffffff 100%
+  );
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
+              0 0 20px rgba(200, 200, 200, 0.3);
+  border: 0px solid #bfbfbf;
+  border-radius: 9999px; /* 👈 Esto lo hace perfectamente redondo/píldora */
+  transition: all 0.3s ease;
+}
+
+.fondo-plateado-redondo:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7),
+              0 0 40px rgba(180, 180, 180, 0.5);
+}
