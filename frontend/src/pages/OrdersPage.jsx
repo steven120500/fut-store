@@ -82,42 +82,46 @@ const OrdersPage = ({ user }) => {
         setShowTrackingModal(true);
     };
 
-    // 🏆 FUNCIÓN ACTUALIZADA: Incluye el tipo de versión en el mapeo de camisetas
-    const handleCopiarGuia = (order) => {
-        const camisetas = order.items?.map(item => {
-            const versionText = item.version ? ` [${item.version.toUpperCase()}]` : '';
-            return `${item.quantity}x ${item.name}${versionText} (${item.size})`;
-        }).join(', ') || 'N/A';
-        
-        const cliente = order.customer?.name || 'N/A';
-        const numero = order.customer?.phone || 'N/A';
-        
-        let prov = "N/A", cant = "N/A", dist = "N/A", dirExacta = order.customer?.address || "N/A";
+    
+// 🏆 FUNCIÓN ACTUALIZADA: Incluye cédula y formatea las camisetas en forma de lista
+const handleCopiarGuia = (order) => {
+    // Formatear camisetas una por línea con viñeta para mayor claridad
+    const camisetas = order.items?.map(item => {
+        const versionText = item.version ? ` [${item.version.toUpperCase()}]` : '';
+        return `• ${item.quantity}x ${item.name}${versionText} (${item.size})`;
+    }).join('\n') || '• N/A';
+    
+    const cedula = order.customer?.cedula || 'N/A'; // 👈 Extrae la cédula
+    const cliente = order.customer?.name || 'N/A';
+    const numero = order.customer?.phone || 'N/A';
+    
+    let prov = "N/A", cant = "N/A", dist = "N/A", dirExacta = order.customer?.address || "N/A";
 
-        // Mapeo automático de la dirección estructurada
-        if (dirExacta !== "Recoger en el Local" && dirExacta.includes(",")) {
-            const parts = dirExacta.split(',');
-            if (parts.length >= 3) {
-                prov = parts[0].trim();
-                cant = parts[1].trim();
-                const distDir = parts.slice(2).join(',').split('.'); 
-                dist = distDir[0].trim();
-                dirExacta = distDir.slice(1).join('.').trim() || "N/A";
-            }
-        } else if (dirExacta === "Recoger en el Local") {
-            prov = "N/A";
-            cant = "N/A";
-            dist = "N/A";
+    // Mapeo automático de la dirección estructurada
+    if (dirExacta !== "Recoger en el Local" && dirExacta.includes(",")) {
+        const parts = dirExacta.split(',');
+        if (parts.length >= 3) {
+            prov = parts[0].trim();
+            cant = parts[1].trim();
+            const distDir = parts.slice(2).join(',').split('.'); 
+            dist = distDir[0].trim();
+            dirExacta = distDir.slice(1).join('.').trim() || "N/A";
         }
+    } else if (dirExacta === "Recoger en el Local") {
+        prov = "N/A";
+        cant = "N/A";
+        dist = "N/A";
+    }
 
-        const textoGuia = `Guia\n\nCamiseta: ${camisetas}\nCliente: ${cliente}\nNumero: ${numero}\nProvincia: ${prov}\nCanton: ${cant}\nDistrito: ${dist}\nDireccion: ${dirExacta}\n\nYA PAGO TODO POR WEB`;
+    // Estructura final con espacios limpios y lista de prendas
+    const textoGuia = `Guía\n\nCamisetas:\n${camisetas}\n\nCédula: ${cedula}\nCliente: ${cliente}\nNúmero: ${numero}\nProvincia: ${prov}\nCantón: ${cant}\nDistrito: ${dist}\nDirección: ${dirExacta}\n\nYA PAGÓ TODO POR WEB`;
 
-        navigator.clipboard.writeText(textoGuia).then(() => {
-            toast.success("📋 ¡Guía copiada al portapapeles!");
-        }).catch(() => {
-            toast.error("Hubo un error al copiar la guía.");
-        });
-    };
+    navigator.clipboard.writeText(textoGuia).then(() => {
+        toast.success("📋 ¡Guía copiada al portapapeles!");
+    }).catch(() => {
+        toast.error("Hubo un error al copiar la guía.");
+    });
+};
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col font-sans">
