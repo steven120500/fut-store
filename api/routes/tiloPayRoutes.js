@@ -34,6 +34,7 @@ router.post('/create-link', async (req, res) => {
         const newOrder = new Order({
             orderId: orderRef,
             customer: {
+                cedula: cliente?.cedula || "Sin Cédula", // 👈 AGREGADO AQUÍ
                 name: cliente?.nombre || "Cliente",
                 email: cliente?.correo || "sin_correo@email.com",
                 phone: cliente?.telefono || "",       
@@ -209,6 +210,7 @@ router.post('/confirm-payment', async (req, res) => {
       <div style="font-family: sans-serif; border: 4px solid #2ecc71; padding: 20px; color: #000;">
         <h2 style="color: #27ae60; margin-top: 0;">💰 ¡NUEVO PAGO EN WEB!</h2>
         <p><strong>Cliente:</strong> ${order.customer.name}</p>
+        <p><strong>Cédula:</strong> ${order.customer.cedula || "N/A"}</p>
         <p><strong>Monto PAGADO:</strong> ₡${order.total.toLocaleString()}</p>
         <p><strong>Orden:</strong> #${order.orderId}</p>
         <p><strong>Teléfono:</strong> ${order.customer.phone}</p>
@@ -239,4 +241,4 @@ router.post('/confirm-payment', async (req, res) => {
   }
 });
 
-export default router;
+export default router;  

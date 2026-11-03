@@ -330,7 +330,7 @@ export default function Checkout() {
           cart.forEach(item => {
             const version = item.type ? `[${item.type}]` : '';
             const precioItem = (item.discountPrice || item.price).toLocaleString();
-            mensaje += `*${item.quantity}x ${item.name}* ${version}\n`;
+            mensaje += `*${item.quantity}x ${item.name} ${version}*\n`;
             mensaje += `   └ Talla: ${item.selectedSize}\n`;
             mensaje += `   └ Precio c/u: ₡${precioItem}\n`;
           });
@@ -349,7 +349,7 @@ export default function Checkout() {
       if (metodoPago === 'tarjeta') {
           const orderData = {
             cliente: {
-              cedula: formData.cedula,
+              cedula: formData.cedula, // 👈 ¡LISTO! AHORA ENVIAMOS LA CÉDULA AL BACKEND
               nombre: formData.nombre,
               telefono: formData.telefono,
               correo: formData.correo,

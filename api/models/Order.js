@@ -4,6 +4,7 @@ const orderSchema = new mongoose.Schema({
   orderId: { type: String, required: true, unique: true },
   
   customer: {
+    cedula: { type: String, default: "" }, // 👈 ESTA ES LA LÍNEA AGREGADA
     name: String,
     email: String,
     phone: String,
@@ -16,7 +17,7 @@ const orderSchema = new mongoose.Schema({
       name: String,
       size: String,
       color: String,
-      version: String,  // ✅ Perfecto, coincide con lo que enviamos
+      version: String,  
       quantity: { type: Number, default: 1 },
       price: Number,
       image: String 
@@ -24,8 +25,8 @@ const orderSchema = new mongoose.Schema({
   ],
 
   shipping: {
-    method: { type: String, default: 'Estándar' }, // Ej: "Correos de Costa Rica"
-    cost: { type: Number, default: 0 }             // Ej: 3500
+    method: { type: String, default: 'Estándar' }, 
+    cost: { type: Number, default: 0 }             
   },
 
   total: Number,
@@ -37,7 +38,6 @@ const orderSchema = new mongoose.Schema({
   
   tiloPayToken: String,
 
-  // 👇 ESTO ES LO ÚNICO NUEVO QUE SE AGREGÓ 👇
   stockDiscounted: { 
     type: Boolean, 
     default: false 
