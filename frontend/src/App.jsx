@@ -66,24 +66,67 @@ function ProductSkeleton() {
   );
 }
 
-// 🔥 COMPONENTE DE TIRA POR CATEGORÍA CON BOTÓN "VER MÁS"
+// 🔥 COMPONENTE DE TIRA POR CATEGORÍA CON FETCH PROPIO Y RESPALDO LOCAL
 function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, user }) {
+  const [rowProducts, setRowProducts] = useState([]);
+  const [loadingRow, setLoadingRow] = useState(true);
+
   const normalize = (str) => str?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  
-  const filteredItems = products.filter((product) => {
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoadingRow(true);
+
+    const query = categoryKey === "Ofertas"
+      ? `limit=100`
+      : `type=${encodeURIComponent(categoryKey)}&limit=10`;
+
+    fetch(`${API_BASE}/api/products?${query}`)
+      .then((r) => (r.ok ? r.json() : { items: [] }))
+      .then((data) => {
+        if (!isMounted) return;
+        let items = data.items || [];
+
+        if (categoryKey === "Ofertas") {
+          items = items.filter((p) => {
+            const price = Number(p.price ?? 0);
+            const dp = Number(p.discountPrice ?? 0);
+            return dp > 0 && dp < price;
+          });
+        }
+
+        items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        setRowProducts(items.slice(0, 5));
+      })
+      .catch(() => {
+        if (isMounted) setRowProducts([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoadingRow(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [categoryKey]);
+
+  // Respaldo con los productos generales por si aún están cargando o se editaron en vivo
+  const fallbackItems = products.filter((product) => {
     const productType = normalize(product.type || "");
     const productName = normalize(product.name || "");
     const target = normalize(categoryKey);
-    
+
     if (categoryKey === "Ofertas") {
       const price = Number(product.price ?? 0);
       const dp = Number(product.discountPrice ?? 0);
       return dp > 0 && dp < price;
     }
     return productType.includes(target) || productName.includes(target);
-  }).slice(0, 5); // Muestra exactamente 5 tarjetas en la tira
+  }).slice(0, 5);
 
-  if (filteredItems.length === 0) return null;
+  const displayItems = rowProducts.length >= fallbackItems.length ? rowProducts : fallbackItems;
+
+  if (!loadingRow && displayItems.length === 0) return null;
 
   return (
     <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 mb-12">
@@ -94,7 +137,7 @@ function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, 
         
         <button
           onClick={() => onSelectCategory(categoryKey)}
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest fondo-plateado-redondo text-black hover:text-gray-600 transition group cursor-pointer"
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest fondo-plateado-redondo text-black hover:text-gray-600 transition group cursor-pointer px-4 py-1.5"
         >
           Ver más 
           <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center transition group-hover:translate-x-1">
@@ -104,15 +147,21 @@ function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, 
       </div>
 
       <div className="grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {filteredItems.map((product) => (
-          <ProductCard
-            canEdit={canEdit}
-            key={getPid(product)}
-            product={product}
-            user={user}
-            onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-          />
-        ))}
+        {loadingRow && displayItems.length === 0 ? (
+          Array.from({ length: 5 }).map((_, idx) => (
+            <ProductSkeleton key={`row-skel-${categoryKey}-${idx}`} />
+          ))
+        ) : (
+          displayItems.map((product) => (
+            <ProductCard
+              canEdit={canEdit}
+              key={getPid(product)}
+              product={product}
+              user={user}
+              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+            />
+          ))
+        )}
       </div>
     </div>
   );
@@ -236,21 +285,21 @@ function MainApp() {
     const currentSizes = opts.sizes ?? filterSizes; 
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
-    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0 || !currentActualFilter;
+    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
 
     setIsFetchingProducts(true);
     if (needsMassiveFetch) setIsFiltering(true); 
 
     try {
       const baseParams = {
-        limit: "100", // Pedimos un lote amplio para asegurar que las tiras y filtros muestren contenido
+        limit: needsMassiveFetch ? "100" : "20",
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(mode ? { mode } : {}),
       };
 
       const params = new URLSearchParams({
-        page: "1",
+        page: needsMassiveFetch ? "1" : String(p),
         ...baseParams
       });
 
@@ -261,10 +310,33 @@ function MainApp() {
       let fetchedItems = json.items || [];
       let fetchedTotal = json.total || 0;
 
+      if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
+        const limitUsed = fetchedItems.length; 
+        const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
+
+        const fetchPromises = [];
+        const maxPages = Math.min(totalPagesToFetch, 50); 
+
+        for (let i = 2; i <= maxPages; i++) {
+          const loopParams = new URLSearchParams({ page: String(i), ...baseParams });
+          fetchPromises.push(
+            fetch(`${API_BASE}/api/products?${loopParams.toString()}`)
+              .then(r => r.ok ? r.json() : { items: [] })
+              .catch(() => ({ items: [] }))
+          );
+        }
+
+        const results = await Promise.all(fetchPromises);
+        results.forEach(result => {
+          if (result.items) fetchedItems = [...fetchedItems, ...result.items];
+        });
+      }
+
       fetchedItems.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
       setProducts(fetchedItems);
       setTotal(fetchedTotal);
+      if (json.page && json.page !== p && !needsMassiveFetch) setPage(json.page);
 
     } catch (error) {
       console.error("Error cargando productos:", error);
