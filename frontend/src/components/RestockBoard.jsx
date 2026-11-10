@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useState, useEffect } from 'react';
 import { FaExclamationTriangle, FaImage, FaSearch, FaPlus, FaClipboardList, FaTrash, FaBoxOpen, FaTags, FaArrowDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
@@ -280,7 +281,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   <div className="flex gap-3 mb-3 pr-6">
                     <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden shrink-0">
                       {item.imagen1 ? (
-                        <img src={item.imagen1} className="w-full h-full object-cover" alt="miniatura" />
+                        <img src={cld(item.imagen1, "thumb")} className="w-full h-full object-cover" alt="miniatura" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><FaImage className="text-gray-700 text-xs" /></div>
                       )}
@@ -368,7 +369,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   <div className="flex-1">
                     <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Foto Ref 1</label>
                     <div className="w-full h-20 bg-black rounded-xl overflow-hidden border border-gray-700">
-                      <img src={modalItem.imagen1} className="w-full h-full object-cover" alt="ref1" />
+                      <img src={cld(modalItem.imagen1, "thumb")} className="w-full h-full object-cover" alt="ref1" />
                     </div>
                   </div>
                 )}
@@ -376,7 +377,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   <div className="flex-1">
                     <label className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-1 block">Foto Ref 2</label>
                     <div className="w-full h-20 bg-black rounded-xl overflow-hidden border border-gray-700">
-                      <img src={modalItem.imagen2} className="w-full h-full object-cover" alt="ref2" />
+                      <img src={cld(modalItem.imagen2, "thumb")} className="w-full h-full object-cover" alt="ref2" />
                     </div>
                   </div>
                 )}

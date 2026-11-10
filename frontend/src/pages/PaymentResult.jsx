@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 // src/pages/PaymentResult.jsx
 // Página a la que vuelve el cliente después de pagar con TiloPay.
 // Estados: verificando → aprobado / rechazado / error al confirmar.
@@ -222,7 +223,7 @@ export default function PaymentResult() {
                   {items.map((it, i) => (
                     <li key={i} className="flex items-center gap-3 px-5 py-3">
                       {it.image ? (
-                        <img src={it.image} alt="" className="h-12 w-10 shrink-0 rounded-lg object-cover" />
+                        <img src={cld(it.image, "thumb")} alt="" className="h-12 w-10 shrink-0 rounded-lg object-cover" />
                       ) : (
                         <span className="h-12 w-10 shrink-0 rounded-lg bg-white/10" />
                       )}

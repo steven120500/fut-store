@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import ModalShell from './ModalShell';
 import React from 'react';
 import { 
@@ -258,7 +259,7 @@ export default function QuickSaleModal({
                                     >
                                       <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                         {imgCat ? (
-                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border shrink-0" />
+                                          <img src={cld(imgCat, "thumb")} alt={cat.name} className="w-8 h-8 object-cover rounded-md border shrink-0" />
                                         ) : (
                                           <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 shrink-0">
                                             <FaTshirt size={12} />

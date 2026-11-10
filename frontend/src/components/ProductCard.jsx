@@ -1,16 +1,6 @@
+import { cld } from "../utils/cloudinary";
 import { motion } from "framer-motion";
 import { FaArrowRight } from "react-icons/fa";
-
-// 🔽 Helper para Cloudinary
-const cldUrl = (url, w, h) => {
-  if (!url || typeof url !== "string") return url;
-  if (!url.includes("res.cloudinary.com")) return url;
-
-  return url.replace(
-    /\/upload\/(?!.*(f_auto|q_auto|w_|h_))/,
-    `/upload/f_auto,q_auto:eco,c_fill,g_north,e_sharpen:60,w_${w},h_${h}/`
-  );
-};
 
 // 🛡️ HELPER INTELIGENTE: Busca el stock ignorando la diferencia entre puntos y comas
 const getStockDisponible = (stockObj, tallaBuscada) => {
@@ -34,25 +24,17 @@ export default function ProductCard({ product, onClick }) {
   // 1. IMAGEN PRINCIPAL (Frontal)
   const imgMain =
     Array.isArray(product.images) && product.images.length > 0
-      ? cldUrl(
-          typeof product.images[0] === "string"
+      ? cld(typeof product.images[0] === "string"
             ? product.images[0]
-            : product.images[0]?.url,
-          640,
-          H
-        )
+            : product.images[0]?.url, "card")
       : product.imageSrc || null;
 
   // 2. IMAGEN SECUNDARIA (Trasera/Hover)
   const imgHover =
     Array.isArray(product.images) && product.images.length > 1
-      ? cldUrl(
-          typeof product.images[1] === "string"
+      ? cld(typeof product.images[1] === "string"
             ? product.images[1]
-            : product.images[1]?.url,
-          640,
-          H
-        )
+            : product.images[1]?.url, "card")
       : null;
 
   const price = Number(product.price) || 0;

@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaMedal, FaTshirt, FaImage, FaCrown } from 'react-icons/fa';
 
@@ -122,7 +123,7 @@ export default function TopProductsBoard() {
                     {/* Contenedor de Imagen estricto (no se deforma) */}
                     <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden mt-3 mb-4 relative shrink-0 border border-gray-800">
                       {prod.imagen ? (
-                        <img src={prod.imagen} alt={prod.nombre} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
+                        <img src={cld(prod.imagen, "thumb")} alt={prod.nombre} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><FaImage className="text-gray-700 text-4xl" /></div>
                       )}

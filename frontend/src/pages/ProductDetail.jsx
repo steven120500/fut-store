@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -340,7 +341,7 @@ export default function ProductDetail({
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentSrc}
-                  src={currentSrc}
+                  src={cld(currentSrc, "detail")}
                   onError={(e) => { e.target.src = PLACEHOLDER_IMG; e.target.onerror = null; }}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="w-full h-full object-contain p-2"
@@ -357,7 +358,7 @@ export default function ProductDetail({
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {localImages.map((img, i) => (
                   <div key={i} className="relative shrink-0">
-                    <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
+                    <img src={cld(img.src, "thumb")} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
                       className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} 
                     />
                     {isEditing && <button onClick={() => handleImageRemove(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs"><FaTimes /></button>}

@@ -71,10 +71,18 @@ function diffProduct(prev, next) {
   return ch;
 }
 
+// Al subir, Cloudinary guarda una versión liviana (máx. 1400px, WebP, calidad automática)
+// en vez del archivo original pesado (había PNG de ~2 MB): menos almacenamiento y menos ancho de banda.
+const UPLOAD_OPTIONS = {
+  folder: 'products',
+  resource_type: 'image',
+  transformation: [{ width: 1400, height: 1400, crop: 'limit', quality: 'auto:good', fetch_format: 'webp' }],
+};
+
 function uploadToCloudinary(buffer) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: 'products', resource_type: 'image' },
+      UPLOAD_OPTIONS,
       (err, result) => (err ? reject(err) : resolve(result))
     );
     stream.end(buffer);
@@ -351,7 +359,7 @@ router.put('/:id', requireRole('edit'), async (req, res) => {
       for (const raw of incomingImages.slice(0, 5)) {
         if (!raw) continue;
         if (typeof raw === 'string' && raw.startsWith('data:')) {
-          const up = await cloudinary.uploader.upload(raw, { folder: 'products', resource_type: 'image' });
+          const up = await cloudinary.uploader.upload(raw, UPLOAD_OPTIONS);
           normalized.push({ public_id: up.public_id, url: up.secure_url });
         } else if (typeof raw === 'string') {
           const found = prevList.find((i) => i.url === raw);
@@ -366,6 +374,15 @@ router.put('/:id', requireRole('edit'), async (req, res) => {
     }
 
     const updated = await Product.findByIdAndUpdate(req.params.id, { $set: update }, { new: true, runValidators: true });
+
+    // Borrar de Cloudinary las fotos que se reemplazaron o quitaron (antes quedaban huérfanas ocupando espacio)
+    if (Array.isArray(update.images)) {
+      const kept = new Set(update.images.map((i) => i.public_id).filter(Boolean));
+      const removed = (prev.images || []).map((i) => i.public_id).filter((id) => id && !kept.has(id));
+      for (const id of removed) {
+        cloudinary.uploader.destroy(id).catch((e) => console.warn('No se pudo borrar imagen vieja de Cloudinary:', id, e.message));
+      }
+    }
     
     const changes = diffProduct(prev, updated.toObject());
     if (changes.length) {

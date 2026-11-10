@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { FaTimes, FaTrash, FaWhatsapp, FaShoppingBag } from 'react-icons/fa';
@@ -96,7 +97,7 @@ export default function CartDrawer() {
               ) : (
                 cart.map((item, index) => (
                   <div key={`${item._id}-${item.selectedSize}-${index}`} className="flex gap-4 rounded-2xl border border-zinc-100 p-3">
-                    <img src={item.imageSrc || "https://via.placeholder.com/100"} alt={item.name} className="h-20 w-16 rounded-xl object-cover" />
+                    <img src={cld(item.imageSrc, "thumb") || "https://via.placeholder.com/100"} alt={item.name} className="h-20 w-16 rounded-xl object-cover" />
                     <div className="min-w-0 flex-1">
                       <h3 className="line-clamp-2 text-xs font-bold uppercase leading-tight">{item.name}</h3>
                       <div className="mt-1.5 flex gap-1.5">

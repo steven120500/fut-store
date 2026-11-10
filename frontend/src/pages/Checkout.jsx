@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -563,7 +564,7 @@ export default function Checkout() {
 
               return (
                   <div key={`${item._id}-${index}`} className={`flex gap-4 items-start border-b pb-4 ${isExhausted ? 'bg-red-50 p-2 rounded border-red-200' : 'border-gray-50'}`}>
-                    <img src={item.imageSrc} className="w-16 h-16 object-contain rounded border bg-white" alt={item.name} />
+                    <img src={cld(item.imageSrc, "thumb")} className="w-16 h-16 object-contain rounded border bg-white" alt={item.name} />
                     <div className="flex-1">
                         <p className={`font-bold text-xs uppercase ${isExhausted ? 'text-red-700' : ''}`}>{item.name}</p>
                         <p className="text-[10px] text-gray-500">Talla: {item.selectedSize} | Cant: {item.quantity}</p>

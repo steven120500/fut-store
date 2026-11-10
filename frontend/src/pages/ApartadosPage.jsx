@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -862,11 +863,11 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
       <div className="flex gap-2 items-center mb-3">
         <div className="flex gap-1 shrink-0">
           <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center">
-            {imgSrc1 ? <img src={imgSrc1} alt="Ref 1" className="w-full h-full object-cover" /> : <FaImage className="text-gray-700" size={16} />}
+            {imgSrc1 ? <img src={cld(imgSrc1, "thumb")} alt="Ref 1" className="w-full h-full object-cover" /> : <FaImage className="text-gray-700" size={16} />}
           </div>
           {imgSrc2 && (
             <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden flex items-center justify-center">
-              <img src={imgSrc2} alt="Ref 2" className="w-full h-full object-cover" />
+              <img src={cld(imgSrc2, "thumb")} alt="Ref 2" className="w-full h-full object-cover" />
             </div>
           )}
         </div>

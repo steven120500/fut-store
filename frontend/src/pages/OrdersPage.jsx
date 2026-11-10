@@ -1,3 +1,4 @@
+import { cld } from "../utils/cloudinary";
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -265,7 +266,7 @@ const handleCopiarGuia = (order) => {
                                                         <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#22D3EE]/50 transition">
                                                             <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden shrink-0">
                                                                 {item.image ? (
-                                                                    <img src={item.image} alt="Producto" className="w-full h-full object-contain" />
+                                                                    <img src={cld(item.image, "thumb")} alt="Producto" className="w-full h-full object-contain" />
                                                                 ) : (
                                                                     <div className="w-full h-full flex items-center justify-center text-gray-700 text-[8px] uppercase font-black">N/A</div>
                                                                 )}
