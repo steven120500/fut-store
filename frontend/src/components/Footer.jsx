@@ -160,18 +160,30 @@ export default function Footer() {
           <div>
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300/70">Síguenos</p>
             <div className="flex gap-3">
-              {redes.map(({ href, Icon, label }) => (
+              {redes.map(({ href, Icon, label }, i) => (
                 <motion.a
                   key={label}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  whileHover={{ rotateY: 180, scale: 1.1 }}
-                  transition={{ duration: 0.5 }}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-white/5 text-white/80 hover:border-cyan-300 hover:text-cyan-300"
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.8 }}
+                  transition={{ duration: 0.45, delay: 0.15 + i * 0.1, ease: "easeOut" }}
+                  // El enlace NO gira (su área para el mouse queda fija): gira la "moneda" interna
+                  className="group relative block h-11 w-11 rounded-full outline-none [perspective:600px]"
                 >
-                  <Icon />
+                  <span className="relative block h-full w-full transition-transform duration-500 ease-out [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-focus-visible:[transform:rotateY(180deg)]">
+                    {/* Cara frontal */}
+                    <span className="absolute inset-0 grid place-items-center rounded-full border border-white/15 bg-white/5 text-white/80 [backface-visibility:hidden]">
+                      <Icon />
+                    </span>
+                    {/* Cara trasera (ya rotada, así el ícono se ve al derecho) */}
+                    <span className="absolute inset-0 grid place-items-center rounded-full bg-cyan-400 text-black shadow-[0_0_22px_rgba(34,211,238,0.55)] [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                      <Icon />
+                    </span>
+                  </span>
                 </motion.a>
               ))}
             </div>
