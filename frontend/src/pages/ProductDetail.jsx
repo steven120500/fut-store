@@ -7,7 +7,6 @@ import { useCart } from '../context/CartContext';
 
 // Componentes
 import Header from '../components/Header'; 
-import TopBanner from '../components/TopBanner'; 
 import Footer from '../components/Footer';
 import LoginModal from '../components/LoginModal'; 
 import RegisterUserModal from '../components/RegisterUserModal'; 
@@ -294,8 +293,6 @@ export default function ProductDetail({
 
   return (
     <>
-      <TopBanner/>
-      
       {showLogin && (
         <LoginModal 
           isOpen={showLogin} 
@@ -331,8 +328,8 @@ export default function ProductDetail({
         onLogoClick={() => navigate('/')}
       /> 
 
-      <div className="min-h-screen bg-white pt-36 sm:pt-56 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-        <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 flex bg-white items-center gap-2 text-gray-500 hover:text-black transition font-medium">
+      <div className="min-h-screen bg-white pb-24 px-4 md:px-8 max-w-7xl mx-auto" style={{ paddingTop: "calc(var(--nav-h) + 28px)" }}>
+        <button onClick={() => { if (isEditing) unlockProduct(); navigate(-1); }} className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-600 transition hover:border-black hover:text-black">
           <FaArrowLeft /> Volver al catálogo
         </button>
 
@@ -359,7 +356,7 @@ export default function ProductDetail({
             {localImages.length > 1 && (
               <div className="flex gap-3 overflow-x-auto pb-2">
                 {localImages.map((img, i) => (
-                  <div key={i} className="relative flex-shrink-0">
+                  <div key={i} className="relative shrink-0">
                     <img src={img.src} onClick={() => setIdx(i)} onError={(e) => e.target.src = PLACEHOLDER_IMG}
                       className={`w-20 h-20 object-cover rounded-lg cursor-pointer border-2 transition ${idx === i ? 'border-black' : 'border-gray-100'}`} 
                     />
@@ -402,7 +399,7 @@ export default function ProductDetail({
                                       <input type="checkbox" checked={editedIsNew} onChange={e => setEditedIsNew(e.target.checked)} />
                                       <span className="text-xs">¿Etiqueta Nuevo?</span>
                                   </label>
-                                  <label className="flex items-center gap-2 cursor-pointer select-none text-amber-700 font-bold">
+                                  <label className="flex items-center gap-2 cursor-pointer select-none text-cyan-700 font-bold">
                                       <input type="checkbox" checked={editedIsMundial} onChange={e => setEditedIsMundial(e.target.checked)} />
                                       <span className="text-xs">¿Colección Mundial 2026?</span>
                                   </label>
@@ -421,7 +418,7 @@ export default function ProductDetail({
                       </div>
                       <div>
                           <label className="text-xs font-bold text-gray-500">UBICACIÓN / CAJA</label>
-                          <input type="text" value={editedUbicacion} onChange={e => setEditedUbicacion(e.target.value)} placeholder="Ej: Caja 1 (S-M), Caja 3 (L-XL)" className="w-full border p-2 rounded bg-blue-50/30 text-blue-900 font-medium focus:outline-none focus:border-black" maxLength={100} />
+                          <input type="text" value={editedUbicacion} onChange={e => setEditedUbicacion(e.target.value)} placeholder="Ej: Caja 1 (S-M), Caja 3 (L-XL)" className="w-full border p-2 rounded bg-cyan-50/30 text-cyan-900 font-medium focus:outline-none focus:border-black" maxLength={100} />
                       </div>
                   </div>
                   
@@ -458,10 +455,10 @@ export default function ProductDetail({
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 font-bold text-[10px] uppercase rounded tracking-widest">{product.type}</span>
                       {product.isNew && <span className="px-2 py-1 bg-black text-white font-bold text-[10px] uppercase rounded tracking-widest">NUEVO</span>}
-                      {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-yellow-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
+                      {product.isMundial && <span className="px-2 py-1 bg-gradient-to-r from-cyan-500 to-cyan-400 text-black font-black text-[10px] uppercase rounded tracking-widest shadow">MUNDIAL 2026</span>}
                       
                       {isSuperUser && product.ubicacion && (
-                        <span className="px-2 py-1 bg-blue-50 text-blue-700 font-bold text-[10px] uppercase rounded tracking-widest border border-blue-200 shadow-sm flex items-center gap-1">
+                        <span className="px-2 py-1 bg-cyan-50 text-cyan-700 font-bold text-[10px] uppercase rounded tracking-widest border border-cyan-200 shadow-sm flex items-center gap-1">
                           📍 {product.ubicacion}
                         </span>
                       )}
@@ -481,8 +478,8 @@ export default function ProductDetail({
 
                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-100">
                   {product.type === "Player" && (
-                    <div className="mb-4 flex items-center gap-3 bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800 shadow-sm">
-                      <FaExclamationTriangle className="flex-shrink-0 text-blue-400" />
+                    <div className="mb-4 flex items-center gap-3 bg-cyan-50 border border-cyan-200 p-3 rounded-lg text-cyan-800 shadow-sm">
+                      <FaExclamationTriangle className="shrink-0 text-cyan-400" />
                       <p className="text-xs font-bold leading-relaxed">
                         VERSIÓN PLAYER (Corte Ajustado): Se recomienda elegir una talla más de la habitual para un ajuste óptimo.
                       </p>
@@ -490,8 +487,8 @@ export default function ProductDetail({
                   )}
 
                   {product.type === "Mujer" && (
-                    <div className="mb-4 flex items-center gap-3 bg-pink-50 border border-pink-200 p-3 rounded-lg text-pink-900 shadow-sm">
-                      <FaExclamationTriangle className="flex-shrink-0 text-pink-400" />
+                    <div className="mb-4 flex items-center gap-3 bg-zinc-50 border border-zinc-200 p-3 rounded-lg text-zinc-900 shadow-sm">
+                      <FaExclamationTriangle className="shrink-0 text-zinc-400" />
                       <p className="text-xs font-bold leading-relaxed">
                         VERSIÓN MUJER (Corte Estilizado): Diseño sileteado con cintura definida. pedir una talla más si prefieres un ajuste holgado.
                       </p>
@@ -525,7 +522,7 @@ export default function ProductDetail({
                   </div>
                   <AnimatePresence>
                     {selectedSize && stockRestante > 0 && stockRestante < 15 && (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 flex items-center gap-2 text-orange-600 bg-orange-50 p-2 rounded-md border border-orange-100">
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-3 flex items-center gap-2 text-cyan-600 bg-cyan-50 p-2 rounded-md border border-cyan-100">
                         <p className="font-bold text-xs">¡Date prisa! Solo quedan pocas unidades en talla {selectedSize}.</p>
                       </motion.div>
                     )}
@@ -560,11 +557,11 @@ export default function ProductDetail({
           {showDecisionModal && (
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+              className="fs-modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md"
             >
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"
+                className="fs-dialog bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center"
               >
                 <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-black">
                   <FaShoppingCart size={30} />
@@ -593,8 +590,8 @@ export default function ProductDetail({
         
         <AnimatePresence>
           {showConfirmDelete && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fs-modal fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+              <div className="fs-dialog bg-white p-6 rounded-2xl shadow-2xl max-w-xs w-full text-center">
                 <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><FaTrash size={24} /></div>
                 <h3 className="text-lg font-bold mb-2 text-black">¿Eliminar producto viejo?</h3>
                 <p className="text-gray-500 text-xs mb-6">Esta acción no se puede deshacer.</p>

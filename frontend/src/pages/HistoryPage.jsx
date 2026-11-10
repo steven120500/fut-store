@@ -80,7 +80,7 @@ export default function HistoryPage({ user }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <div className="flex-grow pt-32 sm:pt-44 px-4 md:px-8 max-w-6xl mx-auto w-full box-border">
+      <div className="grow pt-32 sm:pt-44 px-4 md:px-8 max-w-6xl mx-auto w-full box-border">
         
         {/* BOTÓN VOLVER */}
         <div className="flex justify-start mb-6">
@@ -95,7 +95,7 @@ export default function HistoryPage({ user }) {
         {/* HEADER Y FILTROS */}
         <div className="flex flex-col mb-10 border-b border-zinc-800 pb-8 gap-6">
           <div className="flex items-center gap-4">
-            <div className="bg-[#D4AF37] p-3 rounded-2xl flex-shrink-0">
+            <div className="bg-[#22D3EE] p-3 rounded-2xl shrink-0">
                 <FaHistory className="text-black text-xl" />
             </div>
             <h1 className="text-2xl sm:text-4xl font-black italic uppercase tracking-tighter truncate">Bitácora de Cambios</h1>
@@ -112,7 +112,7 @@ export default function HistoryPage({ user }) {
                 placeholder="Buscar producto o admin..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="w-full bg-white border border-zinc-300 rounded-xl pl-11 pr-4 py-3 text-sm text-black font-bold outline-none focus:border-[#D4AF37] transition-all box-border"
+                className="w-full bg-white border border-zinc-300 rounded-xl pl-11 pr-4 py-3 text-sm text-black font-bold outline-none focus:border-[#22D3EE] transition-all box-border"
               />
             </div>
 
@@ -122,7 +122,7 @@ export default function HistoryPage({ user }) {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="flex-grow bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-[#D4AF37] font-bold outline-none box-border"
+                    className="grow bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-[#22D3EE] font-bold outline-none box-border"
                     style={{ colorScheme: 'dark' }} 
                 />
 
@@ -142,7 +142,7 @@ export default function HistoryPage({ user }) {
         {/* LISTADO */}
         {loading ? (
           <div className="text-center py-20 flex flex-col items-center">
-             <div className="w-8 h-8 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+             <div className="w-8 h-8 border-4 border-[#22D3EE] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
              <p className="text-zinc-500 font-black text-[10px] uppercase tracking-widest">Sincronizando registros...</p>
           </div>
         ) : filteredLogs.length === 0 ? (
@@ -151,7 +151,7 @@ export default function HistoryPage({ user }) {
               {selectedDate ? `No hay cambios registrados para el ${new Date(selectedDate).toLocaleDateString()}` : "No hay actividad registrada"}
             </p>
             {selectedDate && (
-                <button onClick={() => setSelectedDate("")} className="mt-4 text-[#D4AF37] text-[10px] font-black uppercase tracking-widest underline">Ver todo el historial</button>
+                <button onClick={() => setSelectedDate("")} className="mt-4 text-[#22D3EE] text-[10px] font-black uppercase tracking-widest underline">Ver todo el historial</button>
             )}
           </div>
         ) : (
@@ -161,7 +161,7 @@ export default function HistoryPage({ user }) {
                 <div className="flex flex-col gap-4">
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/50 pb-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center text-[#D4AF37] flex-shrink-0">
+                        <div className="w-8 h-8 bg-zinc-800 rounded-lg flex items-center justify-center text-[#22D3EE] shrink-0">
                             <FaUser size={12} />
                         </div>
                         <p className="font-black uppercase text-[10px] tracking-widest text-zinc-400">
@@ -171,7 +171,7 @@ export default function HistoryPage({ user }) {
                     <span className="text-[8px] font-mono text-zinc-700 bg-black px-2 py-1 rounded border border-zinc-800 uppercase">ID: {log.productId?.substring(0,8) || log._id?.substring(16)}</span>
                   </div>
 
-                  <h2 className="text-white font-bold text-lg sm:text-xl italic leading-tight group-hover:text-[#D4AF37] transition-colors break-words">
+                  <h2 className="text-white font-bold text-lg sm:text-xl italic leading-tight group-hover:text-[#22D3EE] transition-colors break-words">
                     {log.item || log.productName}
                   </h2>
 

@@ -1,113 +1,54 @@
 // src/components/Medidas.jsx
-import React, { useEffect } from "react";
-import { createPortal } from "react-dom";
-import { FaTimes } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion"; 
-
-// 🔽 Importamos las imágenes
+import React, { useState } from "react";
+import { LiaRulerSolid } from "react-icons/lia";
+import ModalShell from "./ModalShell";
 import fanImg from "../assets/Fan.png";
 import playerImg from "../assets/Player.png";
 
-// 🎨 Gradiente Plateado
-const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
+const CATALOG = [
+  { key: "Player", label: "Player", sub: "Corte ajustado", img: playerImg, desc: "Corte pegado al cuerpo, como lo usan los jugadores. Recomendamos pedir una talla más de la habitual." },
+  { key: "Fan", label: "Fan", sub: "Corte estándar", img: fanImg, desc: "Corte recto y cómodo para el día a día. Pide tu talla habitual." },
+];
 
-export default function Medidas({ open, onClose }) {
-  
-  // Bloquear scroll del body (fondo de la web)
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "auto";
-    }
-    return () => { document.body.style.overflow = "auto"; };
-  }, [open]);
-
+export default function Medidas({ open, onClose, currentType }) {
+  const [tab, setTab] = useState(String(currentType || "").toLowerCase() === "fan" ? "Fan" : "Player");
   if (!open) return null;
+  const active = CATALOG.find((c) => c.key === tab) || CATALOG[0];
 
-  const CATALOG = [
-    { key: "Player", label: "Versión Player (Ajustada)", img: playerImg, desc: "Corte más pegado al cuerpo." },
-    { key: "Fan", label: "Versión Fan (Estándar)", img: fanImg, desc: "Corte recto y cómodo." },
-  ];
-
-  const modal = (
-    // 1. Contenedor PRINCIPAL con scroll (overflow-y-auto)
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm">
-      
-      {/* 2. Wrapper para centrar y dar margen (min-h-screen permite scroll) */}
-      <div 
-        className="flex min-h-full items-center justify-center p-4 py-12"
-        onClick={onClose} // Cerrar al hacer click fuera
-      >
-        
-        {/* 📦 3. TARJETA DEL MODAL (Sin límite de altura, crece con el contenido) */}
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
-          onClick={(e) => e.stopPropagation()} // Evitar cierre al clickear dentro
-        >
-          
-          {/* ❌ BOTÓN CERRAR */}
+  return (
+    <ModalShell
+      onClose={onClose}
+      title="Guía de tallas"
+      subtitle="Revisa las medidas para tu ajuste perfecto"
+      icon={LiaRulerSolid}
+      size="lg"
+      footer={
+        <button onClick={onClose} className="fs-btn fs-btn-primary w-full">Entendido</button>
+      }
+    >
+      {/* Selector de versión */}
+      <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-zinc-100 p-1">
+        {CATALOG.map((c) => (
           <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-20 bg-gray-100 hover:bg-gray-200 text-black p-2 rounded-full transition-all shadow-sm"
-            title="Cerrar"
+            key={c.key}
+            type="button"
+            onClick={() => setTab(c.key)}
+            className={`rounded-xl px-3 py-2.5 text-left transition ${tab === c.key ? "bg-black text-white shadow-lg" : "bg-transparent text-zinc-600 hover:bg-white"}`}
           >
-            <FaTimes size={18} />
+            <span className="block font-display text-lg uppercase leading-none tracking-wide">{c.label}</span>
+            <span className={`block text-[10px] font-bold uppercase tracking-widest ${tab === c.key ? "text-cyan-300" : "text-zinc-400"}`}>{c.sub}</span>
           </button>
-
-          {/* HEADER */}
-          <div className="text-center pt-8 pb-4 px-6 border-b border-gray-100 bg-white">
-            <h3 className="text-2xl font-black uppercase tracking-tight text-gray-900">
-              Guía de Tallas
-            </h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Revisa las medidas para asegurar tu ajuste perfecto.
-            </p>
-          </div>
-
-          {/* 📜 BODY (Ahora fluye natural, sin scrolleo interno forzado) */}
-          <div className="p-6 space-y-8 bg-white">
-            {CATALOG.map(({ key, label, img, desc }) => (
-              <div key={key} className="bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                
-                {/* Título de Sección Plateado */}
-                <div 
-                  className="py-2 px-4 text-center font-bold text-gray-800 uppercase tracking-wider text-sm shadow-sm"
-                  style={{ background: silverGradient }}
-                >
-                  {label}
-                </div>
-
-                {/* Contenido e Imagen */}
-                <div className="p-4 flex flex-col items-center">
-                  <p className="text-xs text-gray-500 mb-3 italic">{desc}</p>
-                  <div className="w-full bg-white rounded-lg p-2 border border-gray-100">
-                    <img
-                      src={img}
-                      alt={`Guía de medidas ${label}`}
-                      className="w-full h-auto object-contain"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Botón Cerrar Inferior */}
-            <button
-              onClick={onClose}
-              className="w-full py-3 rounded-xl font-bold bg-black text-white hover:bg-gray-800 transition-all shadow-lg"
-            >
-              Entendido
-            </button>
-          </div>
-        </motion.div>
+        ))}
       </div>
-    </div>
-  );
 
-  return createPortal(modal, document.body);
+      <p className="mb-3 flex items-start gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-3 py-2.5 text-xs text-cyan-900">
+        <span className="mt-1 h-1.5 w-1.5 shrink-0 rotate-45 bg-cyan-500" />
+        {active.desc}
+      </p>
+
+      <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-white p-2">
+        <img src={active.img} alt={`Guía de medidas ${active.label}`} className="h-auto w-full object-contain" />
+      </div>
+    </ModalShell>
+  );
 }

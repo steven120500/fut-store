@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { FiEye, FiEyeOff, FiLock } from 'react-icons/fi';
+import { API_URL } from '../config';
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://fut-store.onrender.com";
+const API_BASE = API_URL;
 
 export default function ResetPassword() {
   const { token } = useParams(); // Captura el token de la URL

@@ -96,12 +96,12 @@ export default function HistoryPage({ user }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      <div className="flex-grow pt-44 px-4 md:px-8 max-w-6xl mx-auto w-full">
+      <div className="grow pt-44 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
         {/* BOTÓN VOLVER */}
         <button 
           onClick={() => navigate(-1)} 
-          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] transition font-bold text-sm mb-6"
+          className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#22D3EE] transition font-bold text-sm mb-6"
         >
           <FaArrowLeft /> Volver
         </button>
@@ -109,7 +109,7 @@ export default function HistoryPage({ user }) {
         {/* HEADER DE PÁGINA */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-gray-800 pb-6 gap-4">
           <h1 className="text-3xl font-black italic uppercase flex items-center gap-3">
-            <FaHistory className="text-[#D4AF37]" /> Bitácora de Cambios
+            <FaHistory className="text-[#22D3EE]" /> Bitácora de Cambios
           </h1>
 
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
@@ -121,7 +121,7 @@ export default function HistoryPage({ user }) {
                 placeholder="Buscar producto o admin..."
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="w-full bg-[#111] border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#D4AF37] outline-none"
+                className="w-full bg-[#111] border border-gray-800 rounded-lg pl-10 pr-4 py-2 text-sm focus:border-[#22D3EE] outline-none"
               />
             </div>
 
@@ -130,7 +130,7 @@ export default function HistoryPage({ user }) {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-[#111] border border-gray-800 rounded-lg px-4 py-2 text-sm text-[#D4AF37] font-bold outline-none"
+              className="bg-[#111] border border-gray-800 rounded-lg px-4 py-2 text-sm text-[#22D3EE] font-bold outline-none"
             />
 
             {isSuperUser && (
@@ -153,15 +153,15 @@ export default function HistoryPage({ user }) {
         ) : (
           <div className="grid gap-4 mb-20">
             {filteredLogs.map((log, idx) => (
-              <div key={log._id || idx} className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-xl hover:border-[#D4AF37]/40 transition group">
+              <div key={log._id || idx} className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-xl hover:border-[#22D3EE]/40 transition group">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-[#111] rounded-full flex items-center justify-center border border-gray-800 text-[#D4AF37] group-hover:border-[#D4AF37] transition flex-shrink-0">
+                  <div className="w-12 h-12 bg-[#111] rounded-full flex items-center justify-center border border-gray-800 text-[#22D3EE] group-hover:border-[#22D3EE] transition shrink-0">
                     <FaUser size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2">
                       <p className="font-black uppercase text-xs tracking-wider truncate">
-                        {log.user} <span className="font-normal text-gray-500 lowercase mx-1">realizó un</span> <span className="text-[#D4AF37]">{log.action}</span>
+                        {log.user} <span className="font-normal text-gray-500 lowercase mx-1">realizó un</span> <span className="text-[#22D3EE]">{log.action}</span>
                       </p>
                       <span className="text-[10px] font-mono text-gray-700 hidden sm:block">REF: {log._id?.substring(18)}</span>
                     </div>

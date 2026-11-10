@@ -5,8 +5,9 @@ import { FaBoxOpen, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
+import { API_URL } from '../config';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://fut-store.onrender.com/api';
+
 
 const OrdersPage = ({ user }) => {
     const [orders, setOrders] = useState([]);
@@ -125,20 +126,20 @@ const handleCopiarGuia = (order) => {
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-            <div className="flex-grow pt-24 px-4 md:px-8">
+            <div className="grow pt-24 px-4 md:px-8">
                 <div className="max-w-6xl mx-auto">
                     
                     <div className="flex justify-start mb-4">
                         <button 
                             onClick={() => navigate(-1)} 
-                            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-lg text-gray-400 hover:text-[#22D3EE] hover:border-[#22D3EE] transition font-bold text-sm"
                         >
                             <FaArrowLeft /> Volver
                         </button>
                     </div>
 
                     <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-gray-800 pb-6 gap-4">
-                        <h1 className="text-3xl font-bold text-[#D4AF37] flex items-center gap-3">
+                        <h1 className="text-3xl font-bold text-[#22D3EE] flex items-center gap-3">
                             <FaBoxOpen /> Gestión de Pedidos
                         </h1>
                         
@@ -165,17 +166,17 @@ const handleCopiarGuia = (order) => {
                                 const esEnvioCorreos = order.shipping?.method?.toLowerCase().includes('correo');
 
                                 return (
-                                <div key={order._id} className="bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative border-[#D4AF37]/50 shadow-[0_0_20px_rgba(212,175,55,0.05)]">
+                                <div key={order._id} className="bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative border-[#22D3EE]/50 shadow-[0_0_20px_rgba(34, 211, 238,0.05)]">
                                     
                                     <div className="bg-[#111] px-6 py-4 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 relative">
                                         <div className="flex flex-col pr-12 md:pr-0">
                                             <span className="text-xs text-gray-500 uppercase tracking-widest font-bold">Referencia de Orden</span>
-                                            <span className="text-[#D4AF37] font-mono text-lg font-bold">{order.orderId}</span>
+                                            <span className="text-[#22D3EE] font-mono text-lg font-bold">{order.orderId}</span>
                                             <span className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString()}</span>
                                         </div>
                                         <div className="mt-4 md:mt-0 text-left md:text-right">
                                             <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2  ${
-                                                order.status === 'sent' ? 'bg-blue-500 text-white' : 'bg-green-500 text-black'
+                                                order.status === 'sent' ? 'bg-cyan-500 text-white' : 'bg-green-500 text-black'
                                             }`}>
                                                 {order.status === 'sent' ? 'ENVIADO' : 'PAGADO'}
                                             </span>
@@ -206,7 +207,7 @@ const handleCopiarGuia = (order) => {
                                                     </p>
                                                     
                                                     {order.customer?.phone && (
-                                                        <p className="flex items-center gap-3 font-mono font-bold text-[#D4AF37]">
+                                                        <p className="flex items-center gap-3 font-mono font-bold text-[#22D3EE]">
                                                             <span className="text-gray-400 w-5"><FaPhone /></span>
                                                             {order.customer?.phone}
                                                         </p>
@@ -229,7 +230,7 @@ const handleCopiarGuia = (order) => {
                                                             <p className="text-gray-500 text-[10px] uppercase font-black mb-1 flex items-center gap-1 tracking-widest">
                                                                 <FaTruck size={10}/> Método:
                                                             </p>
-                                                            <p className="text-[#D4AF37] font-black text-xs uppercase tracking-widest">
+                                                            <p className="text-[#22D3EE] font-black text-xs uppercase tracking-widest">
                                                                 {order.shipping.method}
                                                             </p>
                                                         </div>
@@ -261,8 +262,8 @@ const handleCopiarGuia = (order) => {
                                                 </h3>
                                                 <div className="space-y-3 mb-6">
                                                     {order.items?.map((item, index) => (
-                                                        <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#D4AF37]/50 transition">
-                                                            <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden flex-shrink-0">
+                                                        <div key={index} className="flex items-start gap-4 bg-zinc-900/30 p-3 rounded-xl border border-gray-800 hover:border-[#22D3EE]/50 transition">
+                                                            <div className="w-14 h-14 bg-black rounded-lg border border-gray-800 overflow-hidden shrink-0">
                                                                 {item.image ? (
                                                                     <img src={item.image} alt="Producto" className="w-full h-full object-contain" />
                                                                 ) : (
@@ -302,8 +303,8 @@ const handleCopiarGuia = (order) => {
 
             {/* MODAL DE GUÍA */}
             {showTrackingModal && (
-                <div className="fixed inset-0 z-500 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
+                <div className="fs-modal fixed inset-0 z-[500] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+                    <div className="fs-dialog bg-white p-8 rounded-[2rem] shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-200">
                         <button 
                             onClick={() => setShowTrackingModal(false)}
                             className="absolute bg-black text-white top-5 right-5 text-zinc-400 hover:text-black transition"

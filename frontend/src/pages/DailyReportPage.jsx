@@ -190,7 +190,7 @@ export default function DailyReportPage({ user, onLogout }) {
       head: [['#', 'Hora', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Prendas', 'Cant.', 'Prendas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
+      headStyles: { fillColor: [0, 0, 0], textColor: [34, 211, 238], fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { fontSize: 7, textColor: [30, 30, 30] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { horizontal: 10 },
@@ -255,7 +255,7 @@ export default function DailyReportPage({ user, onLogout }) {
       head: [['#', 'Fecha', 'Vendedor', 'Cliente', 'Cedula', 'Telefono', 'Dirección', 'Detalle Prendas', 'Cant.', 'Prendas (CRC)', 'Envio (CRC)', 'Caja (CRC)']],
       body: tableData,
       theme: 'grid',
-      headStyles: { fillColor: [0, 0, 0], textColor: [212, 175, 55], fontStyle: 'bold', fontSize: 8 },
+      headStyles: { fillColor: [0, 0, 0], textColor: [34, 211, 238], fontStyle: 'bold', fontSize: 8 },
       bodyStyles: { fontSize: 7, textColor: [30, 30, 30] },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { horizontal: 10 },
@@ -335,12 +335,12 @@ export default function DailyReportPage({ user, onLogout }) {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
       
-      <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
+      <div className="grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#22D3EE] hover:border-[#22D3EE] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -353,12 +353,12 @@ export default function DailyReportPage({ user, onLogout }) {
                 type="month"
                 value={selectedMonth === 'ALL' ? '' : selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value || getCurrentMonthCR())}
-                className="bg-transparent text-[#D4AF37] font-black text-xs outline-none cursor-pointer"
+                className="bg-transparent text-[#22D3EE] font-black text-xs outline-none cursor-pointer"
               />
               <button
                 onClick={() => setSelectedMonth(selectedMonth === 'ALL' ? getCurrentMonthCR() : 'ALL')}
                 className={`text-[10px] px-2 py-1 rounded font-black uppercase transition cursor-pointer ${
-                  selectedMonth === 'ALL' ? 'bg-[#D4AF37] text-black' : 'bg-zinc-800 text-gray-400 hover:text-white'
+                  selectedMonth === 'ALL' ? 'bg-[#22D3EE] text-black' : 'bg-zinc-800 text-gray-400 hover:text-white'
                 }`}
                 title="Ver todos los meses o solo el mes actual"
               >
@@ -393,7 +393,7 @@ export default function DailyReportPage({ user, onLogout }) {
 
         <div className="border-b border-gray-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
-            <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
+            <h1 className="text-3xl font-black italic uppercase text-[#22D3EE] flex items-center gap-3 tracking-tighter">
               <FaCalendarAlt /> Historial y Reportes de Caja
             </h1>
             <p className="text-gray-400 text-xs mt-1">
@@ -413,9 +413,9 @@ export default function DailyReportPage({ user, onLogout }) {
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaTshirt className="text-[#D4AF37]"/> Chemas
+              <FaTshirt className="text-[#22D3EE]"/> Chemas
             </span>
-            <span className="text-2xl font-black text-[#D4AF37]">{countChemas} <span className="text-xs font-normal text-gray-500">unds</span></span>
+            <span className="text-2xl font-black text-[#22D3EE]">{countChemas} <span className="text-xs font-normal text-gray-500">unds</span></span>
           </div>
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
@@ -427,9 +427,9 @@ export default function DailyReportPage({ user, onLogout }) {
 
           <div className="bg-[#0a0a0a] border border-gray-800 p-5 rounded-2xl shadow-lg">
             <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block flex items-center gap-1.5 mb-1">
-              <FaTruck className="text-blue-400"/> Envíos
+              <FaTruck className="text-cyan-400"/> Envíos
             </span>
-            <span className="text-2xl font-black text-blue-400">₡{totalDineroEnvios.toLocaleString()}</span>
+            <span className="text-2xl font-black text-cyan-400">₡{totalDineroEnvios.toLocaleString()}</span>
           </div>
 
           <div className="bg-[#111] border border-green-500/50 p-5 rounded-2xl shadow-[0_0_20px_rgba(34,197,94,0.1)] col-span-2 md:col-span-1">
@@ -479,12 +479,12 @@ export default function DailyReportPage({ user, onLogout }) {
                           <span className="font-bold text-white block">
                             {dateString ? new Date(dateString).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' }) : 'N/A'}
                           </span>
-                          <span className="text-[10px] text-[#D4AF37] font-black uppercase tracking-widest flex items-center gap-1">
-                            {isWebSale && <FaGlobe size={10} className="text-blue-400" />}
+                          <span className="text-[10px] text-[#22D3EE] font-black uppercase tracking-widest flex items-center gap-1">
+                            {isWebSale && <FaGlobe size={10} className="text-cyan-400" />}
                             {item.vendedor}
                           </span>
                           {isApartado && (
-                            <span className="text-[9px] bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded border border-purple-500/30 mt-1 inline-block font-black uppercase tracking-wider">
+                            <span className="text-[9px] bg-zinc-500/20 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-500/30 mt-1 inline-block font-black uppercase tracking-wider">
                               APARTADO
                             </span>
                           )}
@@ -496,7 +496,7 @@ export default function DailyReportPage({ user, onLogout }) {
                         
                         <td className="p-4">
                           <div className="flex items-start gap-1">
-                            {item.direccionEnvio ? <FaMapMarkerAlt className="text-gray-500 mt-0.5 flex-shrink-0" size={10} /> : null}
+                            {item.direccionEnvio ? <FaMapMarkerAlt className="text-gray-500 mt-0.5 shrink-0" size={10} /> : null}
                             <span className="text-[10px] text-gray-400 block max-w-[140px] truncate" title={item.direccionEnvio || 'No requiere'}>
                               {item.direccionEnvio || 'No requiere'}
                             </span>
@@ -515,7 +515,7 @@ export default function DailyReportPage({ user, onLogout }) {
                           ₡{(isApartado ? item.precioTotal : item.totalPago)?.toLocaleString()}
                           {isApartado && <span className="block text-[9px] text-gray-500 font-normal">Valor Total</span>}
                         </td>
-                        <td className="p-4 text-right font-bold text-blue-400">
+                        <td className="p-4 text-right font-bold text-cyan-400">
                           {isApartado ? 'N/A' : `₡${(item.costoEnvio || 0).toLocaleString()}`}
                         </td>
                         <td className="p-4 text-right font-black text-green-500 text-sm">
@@ -564,8 +564,8 @@ export default function DailyReportPage({ user, onLogout }) {
       </div>
 
       {showResetModal && (
-        <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
+        <div className="fs-modal fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
             <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
               <FaExclamationTriangle size={24} />
             </div>

@@ -1,10 +1,12 @@
 import express from 'express';
-import { crearApartado, entregarApartado } from '../controllers/apartadoController.js';
+import { crearApartado, entregarApartado, cambiarEstadoApartado, eliminarApartado } from '../controllers/apartadoController.js';
 import Apartado from '../models/Apartado.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
+router.use(requireAuth); // todo el tablero de apartados es solo para personal
 
-// 1. OBTENER TODOS LOS APARTADOS (Que no estén entregados)
+// 1. OBTENER TODOS LOS APARTADOS (que no estén entregados)
 router.get('/', async (req, res) => {
   try {
     const apartados = await Apartado.find({ estado: { $ne: 'ENTREGADO' } });
@@ -17,30 +19,13 @@ router.get('/', async (req, res) => {
 // 2. CREAR UN NUEVO APARTADO Y REGISTRAR ABONO
 router.post('/', crearApartado);
 
-// 3. ENTREGAR APARTADO, COBRAR FALTANTE Y SUMAR A VENTAS (CHEMAS)
+// 3. ENTREGAR APARTADO, COBRAR FALTANTE Y SUMAR A VENTAS
 router.post('/:id/entregar', entregarApartado);
 
-// 4. CAMBIAR EL ESTADO DEL APARTADO (Ej: EN_CAMINO, PARA_ENTREGAR)
-router.put('/:id/estado', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { estado } = req.body;
-    await Apartado.findByIdAndUpdate(id, { estado });
-    res.json({ mensaje: 'Estado actualizado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al actualizar el estado' });
-  }
-});
+// 4. CAMBIAR EL ESTADO (PENDIENTE, EN_CAMINO, PARA_ENTREGAR)
+router.put('/:id/estado', cambiarEstadoApartado);
 
-// 5. ELIMINAR UN APARTADO POR COMPLETO
-router.delete('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    await Apartado.findByIdAndDelete(id);
-    res.json({ mensaje: 'Apartado eliminado correctamente' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al eliminar el apartado' });
-  }
-});
+// 5. ELIMINAR: devuelve el stock y borra SOLO el abono de este apartado
+router.delete('/:id', eliminarApartado);
 
 export default router;

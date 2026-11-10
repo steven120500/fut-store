@@ -1,18 +1,23 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import sendEmail from '../utils/sendEmail.js';
+import { asString, escapeHtml } from '../utils/security.js';
+import { signToken, requireSuper } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+const emailLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 5, message: 'Demasiadas solicitudes. Intenta más tarde.' });
 
 /**
  * 1️⃣ REGISTRO DE USUARIOS
  */
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, password, roles } = req.body;
+    const { firstName, lastName, phone, password, roles } = req.body;
+    const email = asString(req.body.email).trim().toLowerCase();
 
     if (!firstName || !lastName || !email || !phone || !password) {
       return res.status(400).json({ message: 'Todos los campos son obligatorios' });
@@ -24,7 +29,7 @@ router.post('/register', async (req, res) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: 'Este correo ya está registrado' });
+      return res.status(400).json({ message: 'No se pudo crear la cuenta con ese correo. Si ya tienes cuenta, inicia sesión o recupera tu contraseña.' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -36,7 +41,8 @@ router.post('/register', async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      roles: roles || [],
+      // Solo el superadmin puede asignar roles; un registro público siempre queda sin permisos
+      roles: req.user?.isSuperUser && Array.isArray(roles) ? roles.filter((r) => typeof r === 'string') : [],
       isSuperUser: false 
     });
 
@@ -52,9 +58,13 @@ router.post('/register', async (req, res) => {
 /**
  * 2️⃣ LOGIN DE USUARIOS
  */
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = asString(req.body.email).trim().toLowerCase();
+    const password = asString(req.body.password);
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Correo y contraseña son obligatorios' });
+    }
 
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
@@ -66,11 +76,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
-    const token = jwt.sign(
-      { id: user._id, isSuperUser: user.isSuperUser, roles: user.roles },
-      process.env.JWT_SECRET || 'secreto_super_seguro', 
-      { expiresIn: '30d' }
-    );
+    let token;
+    try {
+      token = signToken(user);
+    } catch (e) {
+      console.error('🚨 Login bloqueado:', e.message);
+      return res.status(500).json({ message: 'El servidor no está configurado para iniciar sesión. Contacta al administrador.' });
+    }
 
     res.json({
       token, 
@@ -92,13 +104,15 @@ router.post('/login', async (req, res) => {
 /**
  * 3️⃣ SOLICITAR RECUPERACIÓN
  */
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', emailLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
+    const email = asString(req.body.email).trim().toLowerCase();
+    if (!email) return res.status(400).json({ message: 'Correo inválido' });
     const user = await User.findOne({ email });
 
+    // Respuesta genérica: no revelar qué correos están registrados
     if (!user) {
-      return res.status(404).json({ message: 'No existe un usuario con ese correo' });
+      return res.json({ message: 'Si el correo está registrado, te enviamos un enlace.' });
     }
 
     const resetToken = crypto.randomBytes(20).toString('hex');
@@ -113,7 +127,7 @@ router.post('/forgot-password', async (req, res) => {
     const message = `
       <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
         <h2 style="color: #333; text-align: center;">FutStore - Recuperación</h2>
-        <p>Hola, <strong>${user.firstName || 'Usuario'}</strong>.</p>
+        <p>Hola, <strong>${escapeHtml(user.firstName || 'Usuario')}</strong>.</p>
         <p>Has solicitado restablecer tu contraseña. Haz clic abajo:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${resetUrl}" style="background-color: #000; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold;">RESTABLECER CONTRASEÑA</a>
@@ -140,7 +154,12 @@ router.post('/forgot-password', async (req, res) => {
  */
 router.post('/reset-password/:token', async (req, res) => {
   try {
-    const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+    const newPassword = asString(req.body.password);
+    if (newPassword.length < 6 || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      return res.status(400).json({ message: 'La contraseña debe tener al menos 6 caracteres, una mayúscula y un número' });
+    }
+
+    const resetPasswordToken = crypto.createHash('sha256').update(String(req.params.token)).digest('hex');
 
     const user = await User.findOne({
       resetPasswordToken,
@@ -151,7 +170,7 @@ router.post('/reset-password/:token', async (req, res) => {
       return res.status(400).json({ message: 'El enlace es inválido o ha expirado' });
     }
 
-    user.password = await bcrypt.hash(req.body.password, 10);
+    user.password = await bcrypt.hash(newPassword, 10);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
 
@@ -168,7 +187,7 @@ router.post('/reset-password/:token', async (req, res) => {
  */
 
 // Obtener todos los usuarios
-router.get('/users', async (req, res) => {
+router.get('/users', requireSuper, async (req, res) => {
   try {
     const users = await User.find({}, '-password').sort({ createdAt: -1 }); 
     res.json(users);
@@ -178,7 +197,7 @@ router.get('/users', async (req, res) => {
 });
 
 // Eliminar usuario (100% BLINDADO) 🛡️
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', requireSuper, async (req, res) => {
   try {
     const { id } = req.params;
     

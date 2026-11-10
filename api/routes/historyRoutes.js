@@ -1,9 +1,10 @@
 import express from 'express';
 const router = express.Router();
 import History from '../models/History.js'; 
+import { requireAuth, requireSuper } from '../middleware/auth.js';
 
 // GET: Obtener historial con filtro de fecha opcional
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
     try {
         const { date } = req.query; // 👈 Capturamos la fecha que manda el frontend
         let query = {};
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
 });
 
 /* ========= DELETE: Limpiar historial (solo super) ========= */
-router.delete('/', async (req, res) => {
+router.delete('/', requireSuper, async (req, res) => {
     try {
         await History.deleteMany({});
         res.json({ ok: true, message: "Historial eliminado" });

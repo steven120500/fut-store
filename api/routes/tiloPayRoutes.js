@@ -4,8 +4,21 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js'; 
 import Sale from '../models/Sale.js'; 
 import sendEmail from '../utils/sendEmail.js'; 
+import { escapeHtml, asString } from '../utils/security.js';
+import { adjustMany } from '../utils/stock.js';
+import crypto from 'crypto';
 
 const router = express.Router();
+
+// Resumen seguro para la página de confirmación (sin dirección, teléfono, cédula ni correo)
+const resumenPedido = (order) => ({
+  orderId: order.orderId,
+  firstName: String(order.customer?.name || '').trim().split(' ')[0] || '',
+  total: order.total,
+  shipping: { method: order.shipping?.method || '', cost: order.shipping?.cost || 0 },
+  items: (order.items || []).map((i) => ({ name: i.name, size: i.size, quantity: i.quantity, price: i.price, image: i.image })),
+  status: order.status,
+});
 
 // Función auxiliar para login en Tilopay (reutilizable)
 const getTiloPayToken = async () => {
@@ -23,11 +36,51 @@ const getTiloPayToken = async () => {
 // --- RUTA 1: CREAR LINK DE PAGO Y DEJAR ORDEN PENDIENTE ---
 router.post('/create-link', async (req, res) => {
   try {
-    const { cliente, total, productos, envio } = req.body;
+    const { cliente, productos, envio } = req.body;
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
     
     const FRONTEND = process.env.FRONTEND_URL || "https://fut-store.onrender.com";
-    const orderRef = `ORD-${Date.now()}`; 
+    // Número de pedido NO adivinable (antes era solo la hora en milisegundos)
+    const orderRef = `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`; 
+
+    // --- 0. RECALCULAR EL TOTAL EN EL SERVIDOR ---
+    // Nunca se confía en los precios/total que manda el navegador (se podían manipular).
+    // Misma regla que el checkout: (discountPrice || price) × cantidad + envío.
+    const ENVIOS_PERMITIDOS = new Set([0, 3500, 4000, 5000]);
+    if (!Array.isArray(productos) || productos.length === 0 || productos.length > 50) {
+      return res.status(400).json({ message: "El carrito está vacío o es inválido" });
+    }
+
+    const itemsVerificados = [];
+    let subtotal = 0;
+    for (const prod of productos) {
+      const productId = asString(String(prod?._id || prod?.id || ""));
+      const dbProduct = productId
+        ? await Product.findById(productId).select('name price discountPrice').lean().catch(() => null)
+        : null;
+      if (!dbProduct) {
+        return res.status(400).json({ message: "Uno de los productos ya no está disponible" });
+      }
+      const cantidad = Math.min(Math.max(parseInt(prod.cantidad, 10) || 1, 1), 20);
+      const precioUnitario = Number(dbProduct.discountPrice) || Number(dbProduct.price) || 0;
+      subtotal += precioUnitario * cantidad;
+      itemsVerificados.push({
+        product_id: productId,
+        name: dbProduct.name,
+        size: asString(prod.tallaSeleccionada) || "Estándar",
+        version: asString(prod.version),
+        quantity: cantidad,
+        price: precioUnitario,
+        image: Array.isArray(prod.imgs) ? asString(prod.imgs[0]) : "",
+      });
+    }
+
+    const costoEnvio = Number(envio?.precio) || 0;
+    if (!ENVIOS_PERMITIDOS.has(costoEnvio)) {
+      return res.status(400).json({ message: "Método de envío inválido" });
+    }
+    const total = subtotal + costoEnvio;
+    if (total <= 0) return res.status(400).json({ message: "Total inválido" });
 
     // --- 1. GUARDAR ORDEN EN ESTADO PENDIENTE ---
     try {
@@ -40,18 +93,10 @@ router.post('/create-link', async (req, res) => {
                 phone: cliente?.telefono || "",       
                 address: cliente?.direccion || ""     
             },
-            items: productos.map(prod => ({
-                product_id: prod._id || prod.id, 
-                name: prod.nombre || prod.title,
-                size: prod.tallaSeleccionada || "Estándar",
-                version: prod.version || "",             
-                quantity: prod.cantidad || 1,
-                price: prod.precio,
-                image: prod.imgs ? prod.imgs[0] : "" 
-            })),
+            items: itemsVerificados,
             shipping: {
-                method: envio?.metodo || "Estándar",
-                cost: envio?.precio || 0
+                method: asString(envio?.metodo) || "Estándar",
+                cost: costoEnvio
             },
             total: total,
             status: 'pending' 
@@ -103,7 +148,7 @@ router.post('/create-link', async (req, res) => {
         return res.json({ url: linkResponse.data.url });
     } catch (appError) {
         console.error("❌ Error TiloPay al generar link:", JSON.stringify(appError.response?.data));
-        res.status(500).json({ message: "Error en la pasarela de pago", detalle: appError.response?.data });
+        res.status(500).json({ message: "Error en la pasarela de pago" });
     }
   } catch (error) { 
     console.error("Error general en create-link:", error);
@@ -114,43 +159,31 @@ router.post('/create-link', async (req, res) => {
 // --- RUTA 2: CONFIRMAR PAGO, RESTAR STOCK Y ENVIAR CORREOS ---
 router.post('/confirm-payment', async (req, res) => {
   try {
-    const { orderId } = req.body;
-    
-    const order = await Order.findOne({ orderId });
-    if (!order) return res.status(404).json({ message: "Orden no encontrada" });
-    if (order.status === 'paid') return res.json({ message: "El pedido ya había sido procesado.", status: 'paid' });
+    const orderId = asString(req.body.orderId);
+    if (!orderId) return res.status(400).json({ message: "Orden inválida" });
 
-    // 3. RESTAR STOCK (BLINDADO CON ESTRUCTURA MONGOOSE Y DOBLE DESCUENTO)
-    if (!order.stockDiscounted) {
-        for (const item of order.items) {
-          if (item.product_id) {
-            try {
-              const product = await Product.findById(item.product_id);
-              if (product && product.stock && product.stock[item.size] !== undefined) {
-                   const talla = String(item.size);
-                   const currentStock = Number(product.stock[talla]) || 0;
-                   
-                   product.stock = {
-                     ...product.stock,
-                     [talla]: Math.max(0, currentStock - item.quantity)
-                   };
-                   
-                   product.markModified('stock');
-                   await product.save();
-                   console.log(`📉 Stock actualizado por pago web: ${product.name} (Talla: ${talla})`);
-              }
-            } catch (err) {
-              console.error(`Aviso: Error restando stock del producto ${item.product_id} tras pago.`, err.message);
-            }
-          }
-        }
-        order.stockDiscounted = true;
+    // Transición atómica pendiente → pagado: si llegan dos confirmaciones a la vez, solo UNA
+    // descuenta stock, registra la venta y manda correos. (El pago aún se debe revisar en TiloPay.)
+    const order = await Order.findOneAndUpdate(
+      { orderId, status: 'pending' },
+      { $set: { status: 'paid', stockDiscounted: true } },
+      { new: false }
+    );
+    if (!order) {
+      const existente = await Order.findOne({ orderId });
+      if (!existente) return res.status(404).json({ message: "Orden no encontrada" });
+      if (existente.status === 'cancelled') return res.status(409).json({ message: "Este pedido fue cancelado." });
+      return res.json({ message: "El pedido ya había sido procesado.", status: 'paid', order: resumenPedido(existente) });
     }
-    
-    // 4. MARCAR COMO PAGADO
+
+    // 3. RESTAR STOCK (atómico) — solo si este pedido no lo había descontado antes
+    if (!order.stockDiscounted) {
+      const ajustes = await adjustMany(order.items.map((item) => ({ productId: item.product_id, talla: item.size, delta: -(Number(item.quantity) || 1), nombre: item.name })));
+      const fallidos = ajustes.filter((x) => !x.ok);
+      if (fallidos.length) console.warn(`⚠️ Pedido ${orderId}: sin descontar stock en`, fallidos.map((f) => `${f.nombre} (${f.talla}): ${f.reason}`).join(' | '));
+    }
     order.status = 'paid';
-    await order.save();
-    console.log(`✅ Pedido ${orderId} marcado como pagado exitosamente.`);
+    console.log(`✅ Pedido ${orderId} marcado como pagado (verificar en TiloPay).`);
 
     // 🌟 4.5. REGISTRAR LA VENTA AUTOMÁTICAMENTE EN EL PANEL GENERAL (BLINDADO) 🌟
     try {
@@ -175,8 +208,11 @@ router.post('/confirm-payment', async (req, res) => {
           tallaVendida: item.size,     // ✅ Respaldo
           version: item.version || "", // ✅ Lee la versión (Player / Fan)
           cantidad: item.quantity || 1,
-          precio: item.price
+          precio: item.price,
+          tipoVenta: 'stock',          // ✅ Si se elimina la venta, el stock se devuelve
+          productoId: item.product_id ? String(item.product_id) : undefined
         })),
+        orderId: order.orderId,
         vendedor: 'Web - TiloPay',
         archivado: false
       });
@@ -192,13 +228,13 @@ router.post('/confirm-payment', async (req, res) => {
       <div style="background-color: #000; color: #fff; padding: 30px; font-family: 'Helvetica', Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #9E8F91;">
         <h1 style="text-align: center; letter-spacing: 3px; color: #fff;">FUTSTORE</h1>
         <hr style="border-color: #333;" />
-        <p>¡Hola <strong>${order.customer.name}</strong>!</p>
+        <p>¡Hola <strong>${escapeHtml(order.customer.name)}</strong>!</p>
         <p>Tu pago ha sido aprobado y tu pedido <strong>#${order.orderId}</strong> está confirmado.</p>
         
         <div style="background-color: #111; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <h3 style="color: #9E8F91; margin-top: 0;">Detalle de Compra:</h3>
           <p>Total pagado: <strong>₡${order.total.toLocaleString()}</strong></p>
-          <p>Dirección: ${order.customer.address}</p>
+          <p>Dirección: ${escapeHtml(order.customer.address)}</p>
         </div>
         
         <p style="font-size: 13px; color: #999;">Nos prepararemos para despachar tu paquete lo antes posible.</p>
@@ -209,11 +245,11 @@ router.post('/confirm-payment', async (req, res) => {
     const adminHTML = `
       <div style="font-family: sans-serif; border: 4px solid #2ecc71; padding: 20px; color: #000;">
         <h2 style="color: #27ae60; margin-top: 0;">💰 ¡NUEVO PAGO EN WEB!</h2>
-        <p><strong>Cliente:</strong> ${order.customer.name}</p>
-        <p><strong>Cédula:</strong> ${order.customer.cedula || "N/A"}</p>
+        <p><strong>Cliente:</strong> ${escapeHtml(order.customer.name)}</p>
+        <p><strong>Cédula:</strong> ${escapeHtml(order.customer.cedula || "N/A")}</p>
         <p><strong>Monto PAGADO:</strong> ₡${order.total.toLocaleString()}</p>
         <p><strong>Orden:</strong> #${order.orderId}</p>
-        <p><strong>Teléfono:</strong> ${order.customer.phone}</p>
+        <p><strong>Teléfono:</strong> ${escapeHtml(order.customer.phone)}</p>
         <br />
         <a href="https://futstorecr.com/pedidos" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">VER EN TABLERO</a>
       </div>
@@ -233,7 +269,7 @@ router.post('/confirm-payment', async (req, res) => {
       })
     ]).catch(err => console.error("Error silencioso enviando correos:", err.message));
 
-    res.json({ success: true, message: "Transacción aprobada. Pedido en proceso." });
+    res.json({ success: true, message: "Transacción aprobada. Pedido en proceso.", order: resumenPedido(order) });
 
   } catch (error) { 
     console.error("Error confirmando pago:", error);

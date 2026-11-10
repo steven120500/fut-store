@@ -10,6 +10,7 @@ const ingresoSchema = new mongoose.Schema({
     default: 'Abono Apartado'
   },
   vendedor: { type: String, required: true },
+  apartadoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Apartado', index: true }, // enlace exacto al apartado
   fecha: { type: Date, default: Date.now }
 }, {
   timestamps: true 

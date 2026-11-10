@@ -1,4 +1,3 @@
-import { Toaster } from "react-hot-toast";
 import React, { useEffect, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useSearchParams, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -15,7 +14,6 @@ import LoginModal from "./components/LoginModal";
 import RegisterUserModal from "./components/RegisterUserModal";
 import Footer from "./components/Footer";
 import InicioOverlay from "./components/InicioOverlay"; 
-import TopBanner from "./components/TopBanner";
 import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
@@ -24,15 +22,18 @@ import FilterBar from "./components/FilterBar";
 import LoadingOverlay from "./components/LoadingOverlay"; 
 import ProtectedRoute from "./components/ProtectedRoute"; 
 import tallaPorTipo from "./utils/tallaPorTipo";
-import { FaPlus, FaChevronLeft, FaChevronRight, FaChevronRight as FaArrowRight } from "react-icons/fa";
-import { ToastContainer, toast } from "react-toastify";
+import { FaPlus, FaChevronLeft, FaChevronRight, FaArrowRight } from "react-icons/fa";
+import { toast } from "react-toastify";
+import FutToaster from "./components/FutToaster";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
+import { AUTH_EXPIRED_EVENT } from "./authFetch";
 
 // Páginas
 import ResetPassword from "./pages/ResetPassword";
 import ProductDetail from "./pages/ProductDetail.jsx";
 import Checkout from "./pages/Checkout.jsx"; 
+import PaymentResult from "./pages/PaymentResult.jsx";
 import OrdersPage from "./pages/OrdersPage.jsx"; 
 import HistoryPage from "./pages/HistoryPage.jsx"; 
 import SalesPage from "./pages/SalesPage.jsx"; 
@@ -41,7 +42,6 @@ import BalancePage from "./pages/BalancePage.jsx";
 import ApartadosPage from './pages/ApartadosPage';
 
 const API_BASE = "https://fut-store.onrender.com"; 
-const GOLD = "#9E8F91";
 
 function buildPages(page, pages) {
   const out = new Set([1, pages, page, page - 1, page - 2, page + 1, page + 2]);
@@ -53,14 +53,14 @@ const getPid = (p) => String(p?._id ?? p?.id ?? "");
 // 🔥 COMPONENTE SKELETON PARA TARJETAS DE PRODUCTO
 function ProductSkeleton() {
   return (
-    <div className="flex flex-col bg-white rounded-2xl p-3 border border-gray-100 shadow-sm animate-pulse">
-      <div className="w-full aspect-square bg-gray-200 rounded-xl mb-3" />
-      <div className="h-3 bg-gray-200 rounded w-1/3 mb-2" />
-      <div className="h-4 bg-gray-300 rounded w-4/5 mb-1.5" />
-      <div className="h-4 bg-gray-200 rounded w-2/4 mb-4" />
-      <div className="mt-auto pt-2 border-t border-gray-100 flex justify-between items-center">
-        <div className="h-5 bg-gray-300 rounded w-1/3" />
-        <div className="h-8 w-8 bg-gray-200 rounded-full" />
+    <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-100 bg-white">
+      <div className="relative w-full overflow-hidden bg-zinc-100" style={{ aspectRatio: "4/5" }}>
+        <div className="absolute inset-0 animate-[shimmer_1.4s_infinite] bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+      </div>
+      <div className="space-y-2 p-3 sm:p-4">
+        <div className="h-3.5 w-4/5 rounded bg-zinc-200" />
+        <div className="h-3.5 w-1/2 rounded bg-zinc-100" />
+        <div className="h-5 w-1/3 rounded bg-zinc-200 pt-2" />
       </div>
     </div>
   );
@@ -128,42 +128,44 @@ function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, 
 
   if (!loadingRow && displayItems.length === 0) return null;
 
+  const cardWrap = "w-[46vw] max-w-[230px] shrink-0 snap-start sm:w-[38vw] md:w-auto md:max-w-none";
+
   return (
-    <div className="w-full max-w-[1800px] mx-auto px-4 sm:px-8 mb-12">
-      <div className="flex justify-between items-end mb-4 border-b border-gray-200 pb-2">
-        <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-black">
-          {title}
-        </h2>
-        
+    <section className="mx-auto mb-14 w-full max-w-[1600px] sm:mb-16">
+      <div className="mb-5 flex items-end justify-between gap-4 px-4 sm:px-8">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600">Colección</p>
+          <h2 className="font-display text-3xl uppercase leading-none tracking-wide text-black sm:text-4xl">{title}</h2>
+        </div>
+
         <button
           onClick={() => onSelectCategory(categoryKey)}
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest fondo-plateado-redondo text-black hover:text-gray-600 transition group cursor-pointer px-4 py-1.5"
+          className="group flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-widest text-black transition hover:border-black hover:bg-black hover:text-cyan-300"
         >
-          Ver más 
-          <span className="w-5 h-5 rounded-full bg-black text-white flex items-center justify-center transition group-hover:translate-x-1">
-            <FaArrowRight size={9} />
-          </span>
+          Ver todo
+          <FaArrowRight size={10} className="transition group-hover:translate-x-0.5" />
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-y-6 gap-x-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        {loadingRow && displayItems.length === 0 ? (
-          Array.from({ length: 5 }).map((_, idx) => (
-            <ProductSkeleton key={`row-skel-${categoryKey}-${idx}`} />
-          ))
-        ) : (
-          displayItems.map((product) => (
-            <ProductCard
-              canEdit={canEdit}
-              key={getPid(product)}
-              product={product}
-              user={user}
-              onClick={() => window.location.assign(`/product/${getPid(product)}`)}
-            />
-          ))
-        )}
+      <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 sm:gap-4 sm:px-8 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
+        {loadingRow && displayItems.length === 0
+          ? Array.from({ length: 5 }).map((_, idx) => (
+              <div key={`row-skel-${categoryKey}-${idx}`} className={`${cardWrap} ${idx === 4 ? "md:hidden lg:block" : ""}`}>
+                <ProductSkeleton />
+              </div>
+            ))
+          : displayItems.map((product, idx) => (
+              <div key={getPid(product)} className={`${cardWrap} ${idx === 4 ? "md:hidden lg:block" : ""}`}>
+                <ProductCard
+                  canEdit={canEdit}
+                  product={product}
+                  user={user}
+                  onClick={() => window.location.assign(`/product/${getPid(product)}`)}
+                />
+              </div>
+            ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -260,7 +262,13 @@ function MainApp() {
   const [user, setUser] = useState(() => {
     try {
       const storedUser = localStorage.getItem("user");
-      return storedUser ? JSON.parse(storedUser) : null;
+      const parsed = storedUser ? JSON.parse(storedUser) : null;
+      // Sesiones antiguas sin token ya no sirven: el backend ahora exige token
+      if (parsed && !parsed.token) {
+        localStorage.removeItem("user");
+        return null;
+      }
+      return parsed;
     } catch { return null; }
   });
 
@@ -268,6 +276,16 @@ function MainApp() {
   const canSeeHistory = user?.isSuperUser || user?.roles?.includes("history");
   const canAdd = user?.isSuperUser || user?.roles?.includes("add");
   const canEdit = user?.isSuperUser || user?.roles?.includes("edit");
+
+  // Sesión vencida o revocada → cerrar sesión limpiamente
+  useEffect(() => {
+    const onExpired = () => {
+      setUser(null);
+      toast.info("Tu sesión expiró. Inicia sesión de nuevo.");
+    };
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+  }, []);
 
   const handleLogout = () => {
     setUser(null);
@@ -450,7 +468,7 @@ function MainApp() {
 
   return (
     <CartProvider>
-      <div className="w-full min-h-screen bg-white text-black antialiased">
+      <div className="min-h-screen w-full bg-white text-black antialiased">
         <CartDrawer />
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -471,6 +489,7 @@ function MainApp() {
           />
 
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/pago" element={<PaymentResult />} />
 
           <Route path="/pedidos" element={<ProtectedRoute user={user}><OrdersPage user={user} onLogout={handleLogout} setShowUserListModal={setShowUserListModal} /></ProtectedRoute>} /> 
           <Route path="/historial" element={<ProtectedRoute user={user}><HistoryPage user={user} onLogout={handleLogout} /></ProtectedRoute>} />
@@ -501,8 +520,7 @@ function MainApp() {
                   {showAddModal && <AddProductModal user={user} tallaPorTipo={tallaPorTipo} onAdd={(newProduct) => { setProducts(prev => [newProduct, ...prev]); setShowAddModal(false); toast.success("Producto agregado"); }} onCancel={() => setShowAddModal(false)} />}
                   {showLogin && <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} onLoginSuccess={(userData) => { setUser(userData); localStorage.setItem("user", JSON.stringify(userData)); setShowLogin(false); toast.success("Bienvenido"); }} onRegisterClick={() => setTimeout(() => setShowRegisterUserModal(true), 100)} />}
 
-                  <div className="fixed top-0 left-0 w-full z-50">
-                    <Header
+                  <Header
                       onLoginClick={() => setShowLogin(true)}
                       onLogout={handleLogout}
                       onLogoClick={() => { setFilterType(""); setSearchTerm(""); setFilterSizes([]); setPage(1); }}
@@ -514,14 +532,11 @@ function MainApp() {
                       setShowUserListModal={setShowUserListModal}
                       setFilterType={setFilterType}
                     />
-                    <TopBanner />
-                  </div>
 
-                  <div className="h-[120px]" />
                   <Bienvenido />
                   
                   {canAdd && (
-                    <button className="fixed bottom-6 right-6 fondo-plateado text-black p-4 rounded-full shadow-lg transition z-50 cursor-pointer" onClick={() => setShowAddModal(true)}>
+                    <button aria-label="Agregar producto" className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-black text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] ring-1 ring-white/20 transition hover:scale-105" onClick={() => setShowAddModal(true)}>
                       <FaPlus />
                     </button>
                   )}
@@ -534,10 +549,10 @@ function MainApp() {
                   />
 
                   {/* CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
-                  <div id="catalogo-top" className="w-full bg-white flex flex-col items-center pb-16 pt-8">
+                  <div id="catalogo-top" className="flex w-full flex-col items-center bg-gradient-to-b from-zinc-50 to-white pb-8 pt-8 sm:pt-10">
                     
                     {/* BARRA DE FILTROS */}
-                    <div className="w-full px-4 sm:px-8 md:px-16 mb-8">
+                    <div className="mb-10 w-full max-w-[1600px] px-4 sm:px-8">
                       <FilterBar 
                         searchTerm={searchTerm} 
                         setSearchTerm={setSearchTerm} 
@@ -620,18 +635,33 @@ function MainApp() {
                       </div>
                     ) : (
                       /* VISTA 2: GRILLA COMPLETA CUANDO SE SELECCIONA UNA CATEGORÍA O SE BUSCA */
-                      <div 
-                        className="w-full px-4 sm:px-6 md:px-8" 
-                        style={{ maxWidth: "1800px" }}
-                      >
-                        <div ref={pageTopRef} className="grid grid-cols-2 gap-y-10 gap-x-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                      <div className="w-full max-w-[1600px] px-4 sm:px-8">
+                        {!isFetchingProducts && (
+                          <div className="mb-5 flex items-end justify-between">
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600">{searchTerm ? "Resultados" : "Colección"}</p>
+                              <h2 className="font-display text-3xl uppercase leading-none tracking-wide text-black sm:text-4xl">
+                                {searchTerm ? `“${searchTerm}”` : filterType || "Catálogo"}
+                              </h2>
+                            </div>
+                            <span className="text-xs font-semibold text-zinc-400">{listaFinalProductos.length} productos</span>
+                          </div>
+                        )}
+                        <div ref={pageTopRef} className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                           {isFetchingProducts ? (
                             Array.from({ length: 8 }).map((_, idx) => (
                               <ProductSkeleton key={`skeleton-${idx}`} />
                             ))
                           ) : listaFinalProductos.length === 0 ? (
-                            <div className="col-span-full py-20 text-center text-gray-400 font-bold uppercase tracking-widest text-sm">
-                              No se encontraron productos con estos filtros.
+                            <div className="col-span-full flex flex-col items-center gap-3 rounded-3xl border border-dashed border-zinc-200 py-20 text-center">
+                              <span className="font-display text-4xl uppercase text-zinc-300">Sin resultados</span>
+                              <p className="text-sm text-zinc-500">No se encontraron productos con estos filtros.</p>
+                              <button
+                                onClick={() => { setSearchTerm(""); setFilterType(""); setFilterSizes([]); }}
+                                className="mt-2 rounded-full bg-black px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-zinc-800"
+                              >
+                                Ver todo el catálogo
+                              </button>
                             </div>
                           ) : (
                             listaFinalProductos.map((product) => (
@@ -649,12 +679,21 @@ function MainApp() {
                         {/* Paginación */}
                         {!isFetchingProducts && pages > 1 && (
                           <div className="mt-12 flex flex-col items-center gap-3">
-                            <nav className="flex items-center justify-center gap-2">
-                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronLeft /></button>
-                              {buildPages(page, pages).map(n => (
-                                <button key={n} onClick={() => setPage(n)} className={`px-2 text-sm py-0.5 rounded border cursor-pointer ${n === page ? "text-black fondo-plateado" : "hover:bg-green-700"}`} style={{ backgroundColor: n === page ? GOLD : "transparent", borderColor: n === page ? GOLD : "#ccc" }}>{n}</button>
+                            <nav className="flex items-center justify-center gap-1.5" aria-label="Paginación">
+                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronLeft size={12} /></button>
+                              {buildPages(page, pages).map((n, i, arr) => (
+                                <React.Fragment key={n}>
+                                  {i > 0 && n - arr[i - 1] > 1 && <span className="px-1 text-zinc-400">…</span>}
+                                  <button
+                                    onClick={() => setPage(n)}
+                                    aria-current={n === page ? "page" : undefined}
+                                    className={`grid h-10 min-w-10 place-items-center rounded-full border px-3 text-sm font-bold transition ${n === page ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-700 hover:border-black"}`}
+                                  >
+                                    {n}
+                                  </button>
+                                </React.Fragment>
                               ))}
-                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} className="px-2 py-1 text-sm text-black fondo-plateado rounded border disabled:opacity-50 cursor-pointer"><FaChevronRight /></button>
+                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronRight size={12} /></button>
                             </nav>
                           </div>
                         )}
@@ -669,7 +708,7 @@ function MainApp() {
             </AnimatePresence>
           } />
         </Routes>
-        <ToastContainer />
+        <FutToaster />
       </div>
     </CartProvider>
   );

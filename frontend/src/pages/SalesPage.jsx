@@ -401,8 +401,14 @@ export default function SalesPage({ user, onLogout }) {
         body: JSON.stringify(salePayload),
       });
       
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         toast.success(`Venta registrada con éxito. ¡Inventario actualizado!`);
+        const avisos = (data?.stockWarnings || []);
+        if (avisos.length) {
+          toast.warning(`Ojo: no se descontó stock de ${avisos.map((a) => `${a.nombre} (${a.talla})`).join(", ")}. Revisa ese inventario.`, { autoClose: 8000 });
+        }
+
         setShowQuickSaleModal(false);
         setQuickForm({
           cedula: "",
@@ -418,10 +424,10 @@ export default function SalesPage({ user, onLogout }) {
         fetchCatalogoProductos();
         fetchAllSalesList();
       } else {
-        throw new Error("Error al guardar");
+        throw new Error(data.error || "Error al registrar la venta rápida.");
       }
     } catch (error) {
-      toast.error("Error al registrar la venta rápida.");
+      toast.error(error.message || "Error al registrar la venta rápida.");
     } finally {
       setSubmitting(false);
     }
@@ -440,11 +446,11 @@ export default function SalesPage({ user, onLogout }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
+      <div className="grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#22D3EE] hover:border-[#22D3EE] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -469,7 +475,7 @@ export default function SalesPage({ user, onLogout }) {
         
         <div className="border-b border-gray-800 pb-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
-            <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
+            <h1 className="text-3xl font-black italic uppercase text-[#22D3EE] flex items-center gap-3 tracking-tighter">
               <FaTrophy /> Ventas & Estadísticas
             </h1>
             <p className="text-gray-400 text-xs mt-1">Monitoreo de rendimiento del equipo y productos más vendidos.</p>
@@ -479,7 +485,7 @@ export default function SalesPage({ user, onLogout }) {
             <div className="bg-[#111] border border-gray-800 p-4 rounded-xl flex-1 md:w-44 text-center shadow-lg">
               <span className="text-[10px] text-gray-500 uppercase font-black tracking-widest block">Prendas Movidas</span>
               <span className="text-2xl font-black text-white mt-1 block">
-                {globalChemas + globalTacos} <span className="text-xs text-[#D4AF37] font-normal">unds</span>
+                {globalChemas + globalTacos} <span className="text-xs text-[#22D3EE] font-normal">unds</span>
               </span>
               <div className="flex justify-center gap-3 mt-1 text-[10px] text-gray-500 font-bold">
                 <span>👕 {globalChemas}</span>
@@ -487,8 +493,8 @@ export default function SalesPage({ user, onLogout }) {
               </div>
             </div>
             
-            <div className="bg-[#111] border border-[#D4AF37]/40 p-4 rounded-xl flex-1 md:w-52 text-center shadow-[0_0_15px_rgba(212,175,55,0.08)]">
-              <span className="text-[10px] text-[#D4AF37] uppercase font-black tracking-widest block">Ingreso Bruto Total</span>
+            <div className="bg-[#111] border border-[#22D3EE]/40 p-4 rounded-xl flex-1 md:w-52 text-center shadow-[0_0_15px_rgba(34, 211, 238,0.08)]">
+              <span className="text-[10px] text-[#22D3EE] uppercase font-black tracking-widest block">Ingreso Bruto Total</span>
               <span className="text-2xl font-black text-green-500 mt-1 block">₡{totalDineroIngresado.toLocaleString()}</span>
             </div>
           </div>
@@ -501,7 +507,7 @@ export default function SalesPage({ user, onLogout }) {
             className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
               activeTab === 'empleados' ? 'text-black shadow-md' : 'bg-transparent text-gray-500 hover:text-white'
             }`}
-            style={activeTab === 'empleados' ? { backgroundColor: '#D4AF37' } : {}}
+            style={activeTab === 'empleados' ? { backgroundColor: '#22D3EE' } : {}}
           >
             Empleados
           </button>
@@ -510,7 +516,7 @@ export default function SalesPage({ user, onLogout }) {
             className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
               activeTab === 'productos' ? 'text-black shadow-md' : 'bg-transparent text-gray-500 hover:text-white'
             }`}
-            style={activeTab === 'productos' ? { backgroundColor: '#D4AF37' } : {}}
+            style={activeTab === 'productos' ? { backgroundColor: '#22D3EE' } : {}}
           >
             <FaStar className={activeTab === 'productos' ? 'text-black' : 'text-gray-600'}/> Top Chemas
           </button>
@@ -544,9 +550,9 @@ export default function SalesPage({ user, onLogout }) {
                   <div
                     key={emp._id}
                     className={`bg-[#0a0a0a] rounded-2xl p-6 border transition-all relative overflow-hidden flex flex-col justify-between ${
-                      esOro ? 'border-[#D4AF37] shadow-[0_0_25px_rgba(212,175,55,0.15)] bg-gradient-to-b from-[#1a1813] to-[#0a0a0a]' :
+                      esOro ? 'border-[#22D3EE] shadow-[0_0_25px_rgba(34, 211, 238,0.15)] bg-gradient-to-b from-[#0d1a1d] to-[#0a0a0a]' :
                       esPlata ? 'border-gray-400 shadow-lg' :
-                      esBronce ? 'border-amber-700/60 shadow-md' : 'border-gray-800'
+                      esBronce ? 'border-cyan-700/60 shadow-md' : 'border-gray-800'
                     }`}
                   >
                     <div className="absolute top-4 right-4 text-2xl">
@@ -558,7 +564,7 @@ export default function SalesPage({ user, onLogout }) {
                     
                     <div>
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-black border border-gray-700 flex items-center justify-center text-[#D4AF37] font-black text-lg shadow-inner">
+                        <div className="w-12 h-12 rounded-full bg-black border border-gray-700 flex items-center justify-center text-[#22D3EE] font-black text-lg shadow-inner">
                           <FaUserTie />
                         </div>
                         <div>
@@ -574,15 +580,15 @@ export default function SalesPage({ user, onLogout }) {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400 flex items-center gap-2"><FaTshirt className="text-gray-600"/> Chemas movidas:</span>
-                          <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalChemas} unds</span>
+                          <span className="font-black text-[#22D3EE] text-sm">{statsVendedor.totalChemas} unds</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400 flex items-center gap-2">👟 Tacos movidos:</span>
-                          <span className="font-black text-[#D4AF37] text-sm">{statsVendedor.totalTacos} prs</span>
+                          <span className="font-black text-[#22D3EE] text-sm">{statsVendedor.totalTacos} prs</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400 flex items-center gap-2"><FaTruck className="text-gray-600"/> Envíos cobrados:</span>
-                          <span className="font-bold text-blue-400">₡{emp.enviosGenerados?.toLocaleString() || 0}</span>
+                          <span className="font-bold text-cyan-400">₡{emp.enviosGenerados?.toLocaleString() || 0}</span>
                         </div>
                       </div>
                     </div>
@@ -604,7 +610,7 @@ export default function SalesPage({ user, onLogout }) {
                             });
                             setShowComisionModal(true);
                           }}
-                          className="w-full mt-3 py-2.5 bg-amber-600/15 hover:bg-amber-600 text-amber-400 hover:text-white border border-amber-500/30 hover:border-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                          className="w-full mt-3 py-2.5 bg-cyan-600/15 hover:bg-cyan-600 text-cyan-400 hover:text-white border border-cyan-500/30 hover:border-cyan-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                         >
                           Sacar Comisión
                         </button>
@@ -621,14 +627,14 @@ export default function SalesPage({ user, onLogout }) {
         )}
         
         {showComisionModal && (
-          <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
-              <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-inner">
+          <div className="fs-modal fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+            <div className="fs-dialog bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
+              <div className="w-14 h-14 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-cyan-200 shadow-inner">
                 <FaMoneyBillWave size={24} />
               </div>
               
               <h3 className="font-black uppercase text-base tracking-tight mb-1">
-                Comisión para: <span className="text-amber-600">{vendedorComision?.nombre || 'Vendedor'}</span>
+                Comisión para: <span className="text-cyan-600">{vendedorComision?.nombre || 'Vendedor'}</span>
               </h3>
               
               <p className="text-xs text-gray-600 font-medium mb-4 px-2">
@@ -699,8 +705,8 @@ export default function SalesPage({ user, onLogout }) {
         )}
         
         {showResetModal && (
-          <div className="fixed inset-0 z-[300] bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
+          <div className="fs-modal fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+            <div className="fs-dialog bg-white text-black p-6 rounded-[2rem] shadow-2xl max-w-sm w-full text-center relative animate-in zoom-in-95 duration-200">
               <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-200">
                 <FaExclamationTriangle size={24} />
               </div>

@@ -19,7 +19,9 @@ const saleSchema = new Schema({
 
   vendedor: { type: String, required: true, default: 'Sistema' },
   fecha: { type: Date, default: Date.now },
-  archivado: { type: Boolean, default: false }
+  archivado: { type: Boolean, default: false },
+  orderId: { type: String }, // pedido web (TiloPay) que originó la venta
+  apartadoId: { type: Schema.Types.ObjectId, ref: 'Apartado' } // apartado entregado que originó la venta
 }, {
   timestamps: true
 });

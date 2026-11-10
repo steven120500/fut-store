@@ -252,11 +252,15 @@ export default function ApartadosPage({ user }) {
         body: JSON.stringify(payload)
       });
 
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        const data = await res.json();
         setApartados([...apartados, data.apartado]);
         setShowAddModal(false);
         toast.success(`Apartado creado a nombre de ${form.vendedor}. Abono de ₡${Number(form.abono).toLocaleString()} registrado.`);
+        const avisos = (data?.stockWarnings || []);
+        if (avisos.length) {
+          toast.warning(`Ojo: no se descontó stock de ${avisos.map((a) => `${a.nombre} (${a.talla})`).join(", ")}. Revisa ese inventario.`, { autoClose: 8000 });
+        }
 
         setForm({ 
           vendedor: currentUser, cliente: '', cedula: '', telefono: '', abono: '',
@@ -269,7 +273,7 @@ export default function ApartadosPage({ user }) {
           }] 
         });
       } else {
-        toast.error("Error al guardar en el servidor.");
+        toast.error(data.error || "Error al guardar en el servidor.");
       }
     } catch (error) {
       console.error(error);
@@ -348,15 +352,22 @@ export default function ApartadosPage({ user }) {
   };
 
   const moverApartado = async (id, nuevoEstado) => {
+    const previo = apartados;
     setApartados(prev => prev.map(ap => (ap._id === id || ap.id === id) ? { ...ap, estado: nuevoEstado } : ap));
     try {
-      await fetch(`${API_BASE}/api/apartados/${id}/estado`, {
+      const res = await fetch(`${API_BASE}/api/apartados/${id}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ estado: nuevoEstado })
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "No se pudo cambiar el estado");
+      }
     } catch (error) {
       console.error("Error cambiando estado", error);
+      setApartados(previo); // revertir: la pantalla nunca muestra algo que no se guardó
+      toast.error(error.message || "No se pudo cambiar el estado");
     }
   };
 
@@ -368,17 +379,24 @@ export default function ApartadosPage({ user }) {
   const ejecutarBorrado = async () => {
     if (!apartadoToDelete) return;
     const id = apartadoToDelete;
+    const previo = apartados;
     setApartados(prev => prev.filter(ap => (ap._id !== id && ap.id !== id)));
     setShowDeleteModal(false);
     setApartadoToDelete(null);
 
     try {
       const res = await fetch(`${API_BASE}/api/apartados/${id}`, { method: 'DELETE' });
-      if (res.ok) toast.info("Apartado eliminado exitosamente.");
-      else throw new Error("Error en servidor");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Error en servidor");
+      toast.success(
+        data.stockDevuelto > 0
+          ? `Apartado eliminado. Se devolvieron ${data.stockDevuelto} producto(s) al stock.`
+          : "Apartado eliminado."
+      );
     } catch (error) {
       console.error("Error eliminando", error);
-      toast.error("Hubo un problema al eliminar.");
+      setApartados(previo); // revertir si el servidor no lo eliminó
+      toast.error(error.message || "Hubo un problema al eliminar.");
     }
   };
 
@@ -394,7 +412,8 @@ export default function ApartadosPage({ user }) {
         setApartadoSeleccionado(null);
         toast.success(`¡Entregado exitosamente! Ganancia sumada a Chemas.`);
       } else {
-        toast.error("Error al procesar la entrega en el servidor.");
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Error al procesar la entrega en el servidor.");
       }
     } catch (error) {
       console.error(error);
@@ -478,7 +497,7 @@ export default function ApartadosPage({ user }) {
       doc.setFillColor(17, 17, 17);
       doc.rect(0, 0, pageWidth, 42, 'F');
 
-      doc.setFillColor(212, 175, 55); 
+      doc.setFillColor(34, 211, 238); 
       doc.rect(0, 42, pageWidth, 3, 'F');
 
       doc.setTextColor(255, 255, 255);
@@ -509,7 +528,7 @@ export default function ApartadosPage({ user }) {
         body: rows,
         theme: 'grid',
         headStyles: { 
-          fillColor: [17, 17, 17], textColor: [212, 175, 55], halign: 'center', valign: 'middle', 
+          fillColor: [17, 17, 17], textColor: [34, 211, 238], halign: 'center', valign: 'middle', 
           fontStyle: 'bold', fontSize: 9
         },
         bodyStyles: { 
@@ -594,7 +613,7 @@ export default function ApartadosPage({ user }) {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 bg-[#111] border border-gray-800 rounded-xl text-gray-300 hover:text-[#22D3EE] hover:border-[#22D3EE] transition font-bold text-xs uppercase cursor-pointer shadow-sm"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -606,7 +625,7 @@ export default function ApartadosPage({ user }) {
               className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all cursor-pointer ${
                 activeTab === 'pedidos' ? 'text-black shadow-sm' : 'bg-transparent text-gray-500 hover:text-white'
               }`}
-              style={activeTab === 'pedidos' ? { backgroundColor: '#D4AF37' } : {}}
+              style={activeTab === 'pedidos' ? { backgroundColor: '#22D3EE' } : {}}
             >
               <FaBoxOpen size={12} /> Pedidos
             </button>
@@ -628,7 +647,7 @@ export default function ApartadosPage({ user }) {
             {/* ENCABEZADO Y BUSCADOR GENERAL (Solo en Pedidos) */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-gray-800 pb-6 animate-in fade-in duration-300">
               <div>
-                <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3">
+                <h1 className="text-3xl font-black italic uppercase text-[#22D3EE] flex items-center gap-3">
                   Tablero de Apartados
                 </h1>
               </div>
@@ -661,7 +680,7 @@ export default function ApartadosPage({ user }) {
                 <div className="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
                   <div>
                     <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                      <FaStore className="text-blue-500" /> Hacer Pedido ({pendientes.length})
+                      <FaStore className="text-cyan-500" /> Hacer Pedido ({pendientes.length})
                     </h2>
                     <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
                       <span>👕 {conteoPendientes.chemas}</span>
@@ -686,7 +705,7 @@ export default function ApartadosPage({ user }) {
               <div className="bg-[#111] border border-gray-800 rounded-2xl p-4 min-h-[500px]">
                 <div className="mb-4 border-b border-gray-800 pb-2">
                   <h2 className="font-black uppercase text-gray-300 flex items-center gap-2 text-sm tracking-wider">
-                    <FaTruck className="text-amber-500" /> En Proceso / Camino ({enCamino.length})
+                    <FaTruck className="text-cyan-500" /> En Proceso / Camino ({enCamino.length})
                   </h2>
                   <div className="flex gap-3 mt-1 text-[10px] text-gray-500 font-bold">
                     <span>👕 {conteoCamino.chemas}</span>
@@ -747,8 +766,8 @@ export default function ApartadosPage({ user }) {
       />
 
       {showDeliverModal && apartadoSeleccionado && (
-        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
+        <div className="fs-modal fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
 
             <div className="w-14 h-14 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
               <FaCheck size={24} />
@@ -779,8 +798,8 @@ export default function ApartadosPage({ user }) {
       )}
 
       {showDeleteModal && (
-        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
+        <div className="fs-modal fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 text-center">
 
             <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
               <FaTrash size={24} />
@@ -832,7 +851,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
         <FaTrash size={12} />
       </button>
 
-      <div className="flex items-center justify-between gap-1 text-[#D4AF37] mb-3 border-b border-gray-800 pb-2 pr-8">
+      <div className="flex items-center justify-between gap-1 text-[#22D3EE] mb-3 border-b border-gray-800 pb-2 pr-8">
         <div className="flex items-center gap-1">
           <FaUserTie size={10} />
           <span className="text-[9px] font-black uppercase tracking-wider">Vendió: {data.vendedor.split(' ')[0]}</span>
@@ -865,8 +884,8 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
       </div>
 
       {data.costoEnvio > 0 && !isRestock && (
-        <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-2 mb-3">
-          <p className="text-[9px] font-black text-blue-400 uppercase flex items-center gap-1 mb-1">
+        <div className="bg-cyan-900/20 border border-cyan-800/50 rounded-lg p-2 mb-3">
+          <p className="text-[9px] font-black text-cyan-400 uppercase flex items-center gap-1 mb-1">
             <FaTruck size={10}/> Requiere Envío (₡{data.costoEnvio})
           </p>
           <p className="text-[10px] text-gray-300 font-medium leading-tight">
@@ -887,7 +906,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
           {data.productos.map((prod, idx) => (
             <div key={idx} className="bg-gray-900 border border-gray-800 rounded p-2">
               <div className="flex justify-between items-start mb-1">
-                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${prod.tipoPedido === 'stock' ? 'bg-blue-900/50 text-blue-400' : 'bg-purple-900/50 text-purple-400'}`}>
+                <span className={`text-[8px] px-1.5 py-0.5 rounded font-black uppercase ${prod.tipoPedido === 'stock' ? 'bg-cyan-900/50 text-cyan-400' : 'bg-zinc-900/50 text-zinc-400'}`}>
                   {prod.tipoPedido === 'stock' ? 'Stock' : 'Pedido'}
                 </span>
                 <span className="text-[9px] font-bold text-gray-400">Talla: <span className="text-white">{prod.talla}</span> x{prod.cantidad}</span>
@@ -903,7 +922,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
                     Ver: {prod.version}
                   </span>
                   {prod.parches && (
-                    <span className="text-[8px] bg-indigo-900/40 text-indigo-300 px-1 py-0.5 rounded uppercase font-bold border border-indigo-800/50 flex items-center gap-1">
+                    <span className="text-[8px] bg-zinc-900/40 text-zinc-300 px-1 py-0.5 rounded uppercase font-bold border border-zinc-800/50 flex items-center gap-1">
                       <FaTags size={7}/> {prod.parches}
                     </span>
                   )}
@@ -911,7 +930,7 @@ function TarjetaApartado({ data, accion, btnTexto, btnIcon, colorBtn, onDelete }
               )}
 
               {prod.tipoPedido === 'nuevo' && (prod.nombreCamiseta || prod.numeroCamiseta) && (
-                <p className="text-[9px] font-black text-[#D4AF37] uppercase tracking-wider mt-1.5 border-t border-gray-800 pt-1">
+                <p className="text-[9px] font-black text-[#22D3EE] uppercase tracking-wider mt-1.5 border-t border-gray-800 pt-1">
                   Dorsal: {prod.nombreCamiseta || 'SIN NOMBRE'} {prod.numeroCamiseta ? `- #${prod.numeroCamiseta}` : ''}
                 </p>
               )}

@@ -44,7 +44,7 @@ export default function TopProductsBoard() {
   return (
     <div className="bg-[#111] p-4 sm:p-6 rounded-2xl border border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <h2 className="text-xl font-black italic uppercase flex items-center gap-2" style={{ color: '#D4AF37' }}>
+        <h2 className="text-xl font-black italic uppercase flex items-center gap-2" style={{ color: '#22D3EE' }}>
           <FaMedal /> Ranking de Modelos
         </h2>
         <div className="flex items-center gap-3 bg-black p-2 rounded-xl border border-gray-700 w-full sm:w-auto justify-between">
@@ -85,9 +85,9 @@ export default function TopProductsBoard() {
                 const isPlata = index === 1;
                 const isBronce = index === 2;
 
-                const badgeBgColor = isOro ? '#D4AF37' : isPlata ? '#9CA3AF' : '#B45309';
+                const badgeBgColor = isOro ? '#22D3EE' : isPlata ? '#9CA3AF' : '#0E7490';
                 const badgeTextColor = isOro || isPlata ? '#000000' : '#FFFFFF';
-                const borderColor = isOro ? '#D4AF37' : isPlata ? '#9CA3AF' : '#B45309';
+                const borderColor = isOro ? '#22D3EE' : isPlata ? '#9CA3AF' : '#0E7490';
 
                 let orderClass = "";
                 let transformClass = "";
@@ -109,7 +109,7 @@ export default function TopProductsBoard() {
                     key={index}
                     // h-full asegura que las 3 tarjetas midan exactamente igual
                     className={`relative flex flex-col bg-[#0a0a0a] rounded-2xl p-4 border transition-transform duration-300 shadow-lg h-full ${orderClass} ${transformClass}`}
-                    style={{ borderColor: borderColor, boxShadow: isOro ? '0 10px 30px rgba(212,175,55,0.15)' : 'none' }}
+                    style={{ borderColor: borderColor, boxShadow: isOro ? '0 10px 30px rgba(34, 211, 238,0.15)' : 'none' }}
                   >
                     {/* Medalla */}
                     <div 
@@ -120,7 +120,7 @@ export default function TopProductsBoard() {
                     </div>
 
                     {/* Contenedor de Imagen estricto (no se deforma) */}
-                    <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden mt-3 mb-4 relative flex-shrink-0 border border-gray-800">
+                    <div className="w-full aspect-square bg-gray-900 rounded-xl overflow-hidden mt-3 mb-4 relative shrink-0 border border-gray-800">
                       {prod.imagen ? (
                         <img src={prod.imagen} alt={prod.nombre} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" />
                       ) : (
@@ -175,7 +175,7 @@ export default function TopProductsBoard() {
                     className="flex items-center justify-between p-3.5 sm:p-4 rounded-xl border transition-all hover:bg-gray-900 bg-[#0a0a0a] border-gray-800"
                   >
                     <div className="flex items-center gap-4 min-w-0 pr-4">
-                      <div className="w-9 h-9 flex items-center justify-center rounded-full font-black text-sm shadow-inner bg-gray-800 text-gray-400 flex-shrink-0">
+                      <div className="w-9 h-9 flex items-center justify-center rounded-full font-black text-sm shadow-inner bg-gray-800 text-gray-400 shrink-0">
                         #{indexFinal + 1}
                       </div>
 
@@ -189,7 +189,7 @@ export default function TopProductsBoard() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4 sm:gap-6 text-right flex-shrink-0">
+                    <div className="flex items-center gap-4 sm:gap-6 text-right shrink-0">
                       <div className="hidden sm:block">
                         <span className="text-[9px] text-gray-600 uppercase font-black block">Generado</span>
                         <span className="text-gray-400 font-bold text-xs flex items-center gap-1 justify-end">

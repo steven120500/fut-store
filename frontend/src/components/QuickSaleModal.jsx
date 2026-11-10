@@ -1,3 +1,4 @@
+import ModalShell from './ModalShell';
 import React from 'react';
 import { 
   FaTimes, FaCashRegister, FaUserTie, FaIdCard, 
@@ -24,39 +25,29 @@ export default function QuickSaleModal({
 }) {
   if (!showQuickSaleModal) return null;
 
-  return (
-    <div 
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-4 sm:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500"
-      onClick={() => setShowQuickSaleModal(false)}
-    >
-      <div 
-        className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-lg flex flex-col relative animate-in zoom-in-95 duration-200 mt-10 mb-20"
-        onClick={e => e.stopPropagation()} 
-      >
-        
-        {/* ENCABEZADO NORMAL */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-[2rem]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-black text-green-500 flex items-center justify-center shadow-md flex-shrink-0">
-              <FaCashRegister size={18} />
-            </div>
-            <div>
-              <h3 className="font-black uppercase text-sm tracking-tight">Registro de Venta Rápida</h3>
-              <p className="text-[10px] text-gray-500 font-bold uppercase">Sesión: {displayName}</p>
-            </div>
-          </div>
+  const close = () => setShowQuickSaleModal(false);
 
-          <button 
-            type="button"
-            onClick={() => setShowQuickSaleModal(false)}
-            className="w-9 h-9 rounded-full bg-gray-200 hover:bg-black hover:text-white text-black flex items-center justify-center transition-all cursor-pointer shadow-sm flex-shrink-0"
-          >
-            <FaTimes size={14} />
+  return (
+    <ModalShell
+      onClose={close}
+      title="Venta rápida"
+      subtitle={`Sesión: ${displayName}`}
+      icon={FaCashRegister}
+      size="lg"
+      zIndex={9999}
+      closeOnBackdrop={false}
+      footer={
+        <div className="flex gap-2">
+          <button type="button" onClick={close} className="fs-btn fs-btn-ghost w-1/3">Cancelar</button>
+          <button type="submit" form="quick-sale-form" disabled={submitting || loadingCedula} className="fs-btn fs-btn-primary w-2/3">
+            {submitting && <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />}
+            {submitting ? "Guardando…" : "Confirmar venta"}
           </button>
         </div>
-
+      }
+    >
         {/* CUERPO DEL FORMULARIO */}
-        <div className="p-4 sm:p-6 space-y-4">
+        <div className="space-y-4">
           <form id="quick-sale-form" onSubmit={handleQuickSaleSubmit} className="space-y-4">
             
             <div>
@@ -112,7 +103,7 @@ export default function QuickSaleModal({
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre Completo *</label>
-                  {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando...</span>}
+                  {loadingCedula && <span className="text-[9px] font-bold text-cyan-600 animate-pulse">Buscando...</span>}
                 </div>
                 <div className="relative">
                   <input 
@@ -210,17 +201,17 @@ export default function QuickSaleModal({
                         </div>
                         
                         {/* 🚨 ALERTA DE STOCK MEJORADA Y UBICACIÓN */}
-                        <div className="flex flex-col items-end flex-shrink-0">
+                        <div className="flex flex-col items-end shrink-0">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
                             (prod.stockDisponible ?? 0) > 2 ? 'text-green-600 bg-green-50' : 
-                            (prod.stockDisponible ?? 0) > 0 ? 'text-amber-600 bg-amber-50 animate-pulse' : 
+                            (prod.stockDisponible ?? 0) > 0 ? 'text-cyan-600 bg-cyan-50 animate-pulse' : 
                             'text-red-600 bg-red-100 font-black'
                           }`}>
                             {prod.stockDisponible > 0 ? `Stock: ${prod.stockDisponible} unds` : '🚨 AGOTADA'}
                           </span>
                           
                           {productoVinculado?.ubicacion && (
-                            <span className="text-[9px] text-blue-600 font-bold mt-1 bg-blue-50 px-1.5 py-0.5 rounded">
+                            <span className="text-[9px] text-cyan-600 font-bold mt-1 bg-cyan-50 px-1.5 py-0.5 rounded">
                               📍 {productoVinculado.ubicacion}
                             </span>
                           )}
@@ -267,9 +258,9 @@ export default function QuickSaleModal({
                                     >
                                       <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                         {imgCat ? (
-                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border shrink-0" />
                                         ) : (
-                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 shrink-0">
                                             <FaTshirt size={12} />
                                           </div>
                                         )}
@@ -279,7 +270,7 @@ export default function QuickSaleModal({
                                               {tipoCat}
                                             </span>
                                             {cat.ubicacion && (
-                                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                                              <span className="text-[8px] uppercase font-black px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded">
                                                 📍 {cat.ubicacion}
                                               </span>
                                             )}
@@ -288,13 +279,13 @@ export default function QuickSaleModal({
                                           
                                           {/* 🚨 SEMÁFORO DE STOCK EN LA LISTA */}
                                           <span className="text-[10px] text-gray-500 font-medium">
-                                            Bodega: <strong className={totalEnBodega > 2 ? 'text-green-600' : totalEnBodega > 0 ? 'text-amber-500' : 'text-red-600'}>
+                                            Bodega: <strong className={totalEnBodega > 2 ? 'text-green-600' : totalEnBodega > 0 ? 'text-cyan-500' : 'text-red-600'}>
                                               {totalEnBodega > 0 ? `${totalEnBodega} unds` : 'AGOTADO 🚨'}
                                             </strong>
                                           </span>
                                         </div>
                                       </div>
-                                      <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                      <span className="font-black text-green-700 whitespace-nowrap text-xs shrink-0">
                                         ₡{precioCat.toLocaleString()}
                                       </span>
                                     </button>
@@ -318,7 +309,7 @@ export default function QuickSaleModal({
                           value={prod.nombre} 
                           onChange={e => handleProductoChange(index, 'nombre', e.target.value)} 
                           placeholder="Escribe el nombre del pedido especial..." 
-                          className="w-full border p-2 rounded-lg text-xs font-bold bg-blue-50/40 border-blue-300 text-blue-900 outline-none focus:border-blue-500"
+                          className="w-full border p-2 rounded-lg text-xs font-bold bg-cyan-50/40 border-cyan-300 text-cyan-900 outline-none focus:border-cyan-500"
                         />
                       </div>
                     )}
@@ -367,7 +358,7 @@ export default function QuickSaleModal({
                               }
                             }
                           }} 
-                          className="w-full border p-1.5 rounded-lg text-xs font-black text-center focus:border-black outline-none bg-amber-50 h-8" 
+                          className="w-full border p-1.5 rounded-lg text-xs font-black text-center focus:border-black outline-none bg-cyan-50 h-8" 
                         />
                       </div>
                       <div className="col-span-5">
@@ -413,7 +404,7 @@ export default function QuickSaleModal({
               </div>
 
               {quickForm.requiereEnvio && (
-                <div className="space-y-3 bg-blue-50/40 p-3 rounded-xl border border-blue-100 mb-2 animate-in fade-in zoom-in duration-200">
+                <div className="space-y-3 bg-cyan-50/40 p-3 rounded-xl border border-cyan-100 mb-2 animate-in fade-in zoom-in duration-200">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Dirección de Envío *</label>
                     <textarea 
@@ -422,7 +413,7 @@ export default function QuickSaleModal({
                       value={quickForm.direccionEnvio} 
                       onChange={e => setQuickForm({...quickForm, direccionEnvio: e.target.value})} 
                       placeholder="Ej: San José, Escazú, 100m sur del parque..." 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
                     />
                   </div>
                   <div>
@@ -433,7 +424,7 @@ export default function QuickSaleModal({
                       value={quickForm.costoEnvio} 
                       onChange={e => setQuickForm({...quickForm, costoEnvio: e.target.value})} 
                       placeholder="0" 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold text-blue-600 focus:border-black outline-none bg-white" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold text-cyan-600 focus:border-black outline-none bg-white" 
                     />
                   </div>
                 </div>
@@ -441,12 +432,12 @@ export default function QuickSaleModal({
             </div>
 
             {/* TOTAL GENERAL */}
-            <div className="bg-green-50 border border-green-200 p-2.5 rounded-xl flex justify-between items-center text-xs mt-2 mb-2">
+            <div className="mt-2 mb-2 flex items-center justify-between rounded-2xl bg-black px-4 py-3 text-xs text-white shadow-lg">
               <div>
-                <span className="font-bold text-green-800">TOTAL PEDIDO:</span>
-                <span className="text-[10px] text-green-600 block">{totalCantidadChemas} chemas en total</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60">Total pedido</span>
+                <span className="block text-[11px] text-cyan-300">{totalCantidadChemas} chemas en total</span>
               </div>
-              <span className="font-black text-green-700 text-base">
+              <span className="font-display text-2xl tracking-wide text-cyan-300">
                 ₡{granTotalConEnvio.toLocaleString()}
               </span>
             </div>
@@ -454,26 +445,6 @@ export default function QuickSaleModal({
           </form>
         </div>
 
-        {/* PIE NORMAL AL FINAL DEL FORMULARIO */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 rounded-b-[2rem]">
-          <button 
-            type="button" 
-            onClick={() => setShowQuickSaleModal(false)} 
-            className="w-1/3 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-200 transition cursor-pointer bg-white shadow-sm"
-          >
-            Cancelar
-          </button>
-          <button 
-            type="submit" 
-            form="quick-sale-form"
-            disabled={submitting || loadingCedula} 
-            className="w-2/3 py-3 bg-black hover:bg-zinc-800 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-wider cursor-pointer"
-          >
-            {submitting ? 'Guardando...' : 'CONFIRMAR VENTA '}
-          </button>
-        </div>
-
-      </div>
-    </div>
+    </ModalShell>
   );
 }

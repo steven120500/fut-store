@@ -2,60 +2,48 @@
 import { FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa";
 import { motion } from "framer-motion";
 
-// 🎨 El mismo plateado que usas en el resto de la app
-const silverGradient = "linear-gradient(135deg, #e0e0e0 0%, #ffffff 50%, #d1d1d1 100%)";
+export const WHATSAPP_URL = "https://wa.me/50672327096";
+export const INSTAGRAM_URL = "https://www.instagram.com/futstore.chemas/";
+export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61559013514708&locale=es_LA";
+
+const redes = [
+  { href: FACEBOOK_URL, label: "Facebook", Icon: FaFacebookF, hover: "group-hover:text-[#1877F2]" },
+  { href: INSTAGRAM_URL, label: "Instagram", Icon: FaInstagram, hover: "group-hover:text-[#E1306C]" },
+];
 
 export default function Contacto() {
   return (
-    <div className="w-full py-6 flex flex-col items-center gap-4">
-      
-      {/* Texto opcional (puedes borrarlo si prefieres solo iconos) */}
-      <p className="text-gray-500 text-xs uppercase tracking-widest font-bold">
-        Síguenos en redes
-      </p>
+    <div className="flex w-full flex-col items-center gap-5 py-5">
+      <motion.a
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.97 }}
+        className="flex w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-5 py-3.5 text-sm font-black uppercase tracking-wider text-white shadow-lg shadow-green-600/25 transition hover:bg-[#1ebe5a]"
+      >
+        <FaWhatsapp className="text-xl" /> Escríbenos por WhatsApp
+      </motion.a>
 
-      {/* Íconos sociales */}
-      <div className="flex justify-center gap-6">
-        
-        {/* FACEBOOK */}
-        <motion.a
-          href="https://www.facebook.com/profile.php?id=61559013514708&locale=es_LA"
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.15, y: -2 }}
-          whileTap={{ scale: 0.9 }}
-          className="w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-colors duration-300 group"
-          style={{ background: silverGradient }}
-        >
-          <FaFacebookF className="text-2xl text-gray-800 group-hover:text-[#1877F2] transition-colors" />
-        </motion.a>
+      <div className="flex w-full items-center gap-3 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+        <span className="h-px flex-1 bg-zinc-200" /> Síguenos <span className="h-px flex-1 bg-zinc-200" />
+      </div>
 
-        {/* INSTAGRAM */}
-        <motion.a
-          href="https://www.instagram.com/futstore.chemas/"
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.15, y: -2 }}
-          whileTap={{ scale: 0.9 }}
-          className="w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-colors duration-300 group"
-          style={{ background: silverGradient }}
-        >
-          <FaInstagram className="text-2xl text-gray-800 group-hover:text-[#E1306C] transition-colors" />
-        </motion.a>
-
-        {/* WHATSAPP */}
-        <motion.a
-          href="https://wa.me/50672327096"
-          target="_blank"
-          rel="noopener noreferrer"
-          whileHover={{ scale: 1.15, y: -2 }}
-          whileTap={{ scale: 0.9 }}
-          className="w-14 h-14 flex items-center justify-center rounded-full shadow-lg transition-colors duration-300 group"
-          style={{ background: silverGradient }}
-        >
-          <FaWhatsapp className="text-2xl text-gray-800 group-hover:text-[#25D366] transition-colors" />
-        </motion.a>
-
+      <div className="flex justify-center gap-4">
+        {redes.map(({ href, label, Icon, hover }) => (
+          <motion.a
+            key={label}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={label}
+            whileHover={{ scale: 1.1, y: -2 }}
+            whileTap={{ scale: 0.9 }}
+            className="group grid h-12 w-12 place-items-center rounded-full border border-zinc-200 bg-silver shadow-md"
+          >
+            <Icon className={`text-xl text-zinc-800 transition-colors ${hover}`} />
+          </motion.a>
+        ))}
       </div>
     </div>
   );

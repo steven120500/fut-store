@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaPlus, FaCloudUploadAlt, FaSave, FaMapMarkerAlt } from "react-icons/fa";
+import ModalShell from "./ModalShell";
+import { API_ORIGIN } from "../config";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import tallaPorTipo from "../utils/tallaPorTipo";
 
-const API_BASE = import.meta.env.VITE_API_BASE || "https://fut-store.onrender.com";
+const API_BASE = API_ORIGIN;
 const MAX_IMAGES = 2;
 const MAX_WIDTH = 1000;
 const QUALITY = 0.75;
@@ -226,170 +228,142 @@ export default function AddProductModal({ onAdd, onCancel, user }) {
   };
 
   return (
-    <div
-      ref={modalRef}
-      className="fixed inset-0 bg-black/60 overflow-y-auto flex justify-center px-4 py-10 sm:pt-24 sm:pb-12"
-      style={{ zIndex: 99999 }} 
+    <ModalShell
+      onClose={onCancel}
+      title="Agregar producto"
+      subtitle={`Hasta ${MAX_IMAGES} imágenes · se convierten a WebP`}
+      icon={FaPlus}
+      size="lg"
+      zIndex={99999}
+      footer={
+        <div className="flex gap-3">
+          <button type="button" onClick={onCancel} className="fs-btn fs-btn-ghost px-5">Cancelar</button>
+          <button type="button" onClick={handleSubmit} disabled={loading} className="fs-btn fs-btn-primary flex-1">
+            {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <FaSave />}
+            {loading ? "Guardando…" : "Guardar producto"}
+          </button>
+        </div>
+      }
     >
-      <div className="relative bg-white p-6 sm:p-8 rounded-lg shadow-2xl max-w-md w-full h-fit my-auto shrink-0">
-        
-        <button
-          onClick={onCancel}
-          className="absolute top-4 right-4 text-black hover:text-red-600 transition-colors"
-        >
-          <FaTimes size={24} />
-        </button>
-
-        <h2 className="text-xl font-bold mb-2">Agregar producto</h2>
-
-        <p className="text-sm text-gray-500 mb-6 leading-tight">
-          Arrastrá y soltá hasta {MAX_IMAGES} imagen(es) o hacé clic para seleccionar (se convertirán a WebP)
-        </p>
-
-        <div className="flex gap-2 justify-center flex-wrap mb-4">
-          {images.map((img, i) => (
-            <div key={`preview-${i}`} className="relative">
-              <img src={img.previewUrl} alt={`preview-${i}`} className="w-24 h-24 object-cover rounded shadow-md border" />
+      <div ref={modalRef} className="space-y-6">
+        {/* Imágenes */}
+        <section>
+          <p className="fs-label">Imágenes</p>
+          <div className="grid grid-cols-2 gap-3">
+            {images.map((img, i) => (
+              <div key={`preview-${i}`} className="group relative aspect-[4/5] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+                <img src={img.previewUrl} alt={`preview-${i}`} className="h-full w-full object-cover" />
+                <span className="absolute left-2 top-2 rounded-full bg-black/75 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-white">
+                  {i === 0 ? "Frontal" : "Trasera"}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
+                  aria-label="Quitar imagen"
+                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-red-600 text-white shadow-lg transition hover:bg-red-700"
+                >
+                  <FaTimes size={11} />
+                </button>
+              </div>
+            ))}
+            {images.length < MAX_IMAGES && (
               <button
-                onClick={(e) => { e.stopPropagation(); handleRemoveImage(i); }}
-                className="absolute -top-2 -right-2 text-white text-xs rounded-full p-1 shadow-lg bg-red-500 hover:bg-red-600"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex aspect-[4/5] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-300 bg-zinc-50 text-zinc-500 transition hover:border-cyan-400 hover:bg-cyan-50/50 hover:text-cyan-700"
               >
-                <FaTimes />
+                <FaCloudUploadAlt size={26} />
+                <span className="text-xs font-bold uppercase tracking-wider">Subir imagen</span>
+                <span className="text-[10px] text-zinc-400">{images.length === 0 ? "Frontal" : "Trasera"}</span>
               </button>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+        </section>
+
+        {/* Datos */}
+        <section className="space-y-3">
+          <div>
+            <label className="fs-label">Nombre</label>
+            <input type="text" placeholder="Ej: Messi Argentina Local 2026" value={name} onChange={(e) => setName(e.target.value)} className="fs-input" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="fs-label">Precio normal</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">₡</span>
+                <input type="text" inputMode="numeric" placeholder="25000" value={price} onChange={(e) => setPrice(e.target.value)} className="fs-input pl-7" />
+              </div>
             </div>
-          ))}
-        </div>
-
-        {images.length < MAX_IMAGES && (
-          <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 text-gray-600 border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-medium py-3 rounded-lg w-full text-center transition-colors"
-            >
-              Seleccionar imagen
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <div>
+              <label className="fs-label">Precio oferta</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-red-400">₡</span>
+                <input type="text" inputMode="numeric" placeholder="Opcional" value={discountPrice} onChange={(e) => setDiscountPrice(e.target.value)} className="fs-input pl-7" />
+              </div>
+            </div>
           </div>
-        )}
-
-        <div className="space-y-3 mb-6">
-          <input
-            type="text"
-            placeholder="Nombre del producto"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-          />
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Precio normal (Ej. 25000)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-            />
-            <input
-              type="text"
-              placeholder="Precio descuento"
-              value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="fs-label">Tipo</label>
+              <select value={type} onChange={(e) => setType(e.target.value)} className="fs-input font-semibold">
+                {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="fs-label">Ubicación / caja</label>
+              <div className="relative">
+                <FaMapMarkerAlt className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-cyan-500" />
+                <input type="text" placeholder="Ej: A5 - 3" value={ubicacion} onChange={(e) => setUbicacion(e.target.value)} maxLength={100} className="fs-input pl-8" />
+              </div>
+            </div>
           </div>
+        </section>
 
-          <div className="flex gap-2">
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black font-semibold"
-            >
-              {Object.keys({ ...tallaPorTipo, Balón: ["3", "4", "5"], Tacos: [] }).map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-            
-            {/* 📍 NUEVO INPUT: UBICACIÓN DE LA CAJA */}
-            <input
-              type="text"
-              placeholder="Ubicación / Caja (Ej: A5 - 3)"
-              value={ubicacion}
-              onChange={(e) => setUbicacion(e.target.value)}
-              maxLength={100}
-              className="w-1/2 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black placeholder-gray-400 font-medium bg-blue-50/30 text-blue-900"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2 mb-6 border bg-gray-50 p-4 rounded-lg">
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isNew}
-              onChange={(e) => setIsNew(e.target.checked)}
-              className="w-4 h-4 text-black border-gray-300 rounded"
-            />
-            <span className="text-sm text-gray-800">
-              Mostrar etiqueta <strong>NUEVO</strong>
-            </span>
-          </label>
-
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={isMundial}
-              onChange={(e) => setIsMundial(e.target.checked)}
-              className="w-4 h-4 text-amber-600 border-gray-300 rounded"
-            />
-            <span className="text-sm text-amber-700 font-bold">
-              Asignar Colección MUNDIAL 2026
-            </span>
-          </label>
-        </div>
-
-        <h3 className="text-sm font-bold text-gray-700 mb-3 uppercase tracking-wider">Inventario por talla</h3>
-        <div className={`grid gap-3 mb-8 ${type === 'Tacos' ? 'grid-cols-3' : 'grid-cols-4 sm:grid-cols-5'}`}>
-          {tallas.map((size) => (
-            <label key={size} className="text-center flex flex-col justify-end h-full">
-              <span className="block mb-1 text-[11px] font-bold text-gray-600 leading-tight flex items-end justify-center">{size}</span>
-              <input
-                type="number"
-                min="0"
-                value={stock[size] ?? ""}
-                onChange={(e) => handleInvChange(size, e.target.value)}
-                className="w-full px-2 py-2 border border-gray-300 rounded-lg text-center bg-gray-50 focus:border-black focus:bg-white outline-none font-medium"
-                inputMode="numeric"
-              />
+        {/* Etiquetas */}
+        <section className="grid grid-cols-2 gap-2">
+          {[
+            { checked: isNew, set: setIsNew, label: "Etiqueta NUEVO", sub: "Se muestra en la tarjeta" },
+            { checked: isMundial, set: setIsMundial, label: "Mundial 2026", sub: "Colección especial" },
+          ].map((t) => (
+            <label key={t.label} className={`flex cursor-pointer select-none items-center gap-3 rounded-xl border p-3 transition ${t.checked ? "border-cyan-400 bg-cyan-50/60 ring-2 ring-cyan-400/25" : "border-zinc-200 hover:border-zinc-300"}`}>
+              <input type="checkbox" checked={t.checked} onChange={(e) => t.set(e.target.checked)} className="h-4 w-4" />
+              <span>
+                <span className="block text-xs font-black text-zinc-900">{t.label}</span>
+                <span className="block text-[10px] text-zinc-500">{t.sub}</span>
+              </span>
             </label>
           ))}
-        </div>
+        </section>
 
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="flex-1 fondo-plateado font-bold text-black py-3 rounded-lg hover:brightness-105 shadow-sm transition disabled:opacity-50"
-          >
-            {loading ? "Agregando..." : "GUARDAR PRODUCTO"}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-6 py-3 border bg-red-50 font-bold text-red-600 hover:bg-red-100 rounded-lg transition"
-          >
-            Cerrar
-          </button>
-        </div>
-
+        {/* Inventario */}
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="fs-label mb-0">Inventario por talla</p>
+            <span className="text-[10px] font-bold text-zinc-400">
+              Total: <span className="text-zinc-900">{Object.values(stock).reduce((a, n) => a + (Number(n) || 0), 0)}</span>
+            </span>
+          </div>
+          <div className={`grid gap-2 ${type === "Tacos" ? "grid-cols-3" : "grid-cols-4 sm:grid-cols-5"}`}>
+            {tallas.map((size) => (
+              <label key={size} className="flex flex-col rounded-xl border border-zinc-200 bg-zinc-50 p-1.5 text-center focus-within:border-cyan-400 focus-within:bg-white">
+                <span className="mb-1 text-[10px] font-black leading-tight text-zinc-600">{size}</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={stock[size] ?? ""}
+                  onChange={(e) => handleInvChange(size, e.target.value)}
+                  inputMode="numeric"
+                  placeholder="0"
+                  className="w-full rounded-lg border border-transparent bg-white py-1.5 text-center text-sm font-bold"
+                />
+              </label>
+            ))}
+          </div>
+        </section>
       </div>
-    </div>
+    </ModalShell>
   );
 }

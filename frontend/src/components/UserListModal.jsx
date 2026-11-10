@@ -1,5 +1,6 @@
+import ModalShell from "./ModalShell";
 import React, { useEffect, useState } from "react";
-import { toast as toastHOT } from "react-hot-toast";
+import { toast } from "react-toastify";
 import { 
   FaTimes, 
   FaTrash, 
@@ -44,7 +45,7 @@ export default function UserListModal({ open, onClose, user }) {
       setUsers(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error(e);
-      toastHOT.error("No se pudo cargar la lista de usuarios");
+      toast.error("No se pudo cargar la lista de usuarios");
     } finally {
       setLoading(false);
     }
@@ -52,11 +53,11 @@ export default function UserListModal({ open, onClose, user }) {
 
   function startDeleteConfirm(u) {
     if (currentUser?.email === u.email) {
-      toastHOT.error("No puedes eliminar tu propia cuenta.");
+      toast.error("No puedes eliminar tu propia cuenta.");
       return;
     }
     if (u.isSuperUser) {
-      toastHOT.error("No se puede eliminar al Superadmin.");
+      toast.error("No se puede eliminar al Superadmin.");
       return;
     }
     setConfirmingId(u._id);
@@ -66,14 +67,14 @@ export default function UserListModal({ open, onClose, user }) {
     const targetId = userToDelete._id || userToDelete.id;
 
     if (!targetId) {
-      toastHOT.error("Error: ID no encontrado.");
+      toast.error("Error: ID no encontrado.");
       return;
     }
 
     setDeletingId(targetId);
     setConfirmingId(null); 
     
-    toastHOT.loading("Borrando usuario...", { id: "borrando" });
+    const toastId = toast.loading("Borrando usuario…");
 
     try {
       const freshUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -95,11 +96,11 @@ export default function UserListModal({ open, onClose, user }) {
 
       setUsers((prev) => prev.filter((u) => u._id !== targetId));
       
-      toastHOT.success(`Usuario eliminado correctamente`, { id: "borrando" });
+      toast.update(toastId, { render: "Usuario eliminado correctamente", type: "success", isLoading: false, autoClose: 3000 });
 
     } catch (e) {
       console.error("🔴 Error:", e);
-      toastHOT.error(e.message || "Error al eliminar usuario", { id: "borrando" });
+      toast.update(toastId, { render: e.message || "Error al eliminar usuario", type: "error", isLoading: false, autoClose: 4000 });
     } finally {
       setDeletingId(null);
     }
@@ -123,7 +124,7 @@ export default function UserListModal({ open, onClose, user }) {
     if (u.isSuperUser) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase bg-black text-white border border-gray-700 shadow-sm">
-          <FaShieldAlt size={10} className="text-amber-400" /> Superadmin
+          <FaShieldAlt size={10} className="text-cyan-400" /> Superadmin
         </span>
       );
     }
@@ -133,7 +134,7 @@ export default function UserListModal({ open, onClose, user }) {
       return (
         <div className="flex flex-wrap gap-1">
           {u.roles.map((r) => (
-            <span key={r} className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            <span key={r} className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
               {mapRoles[r] || r}
             </span>
           ))}
@@ -158,46 +159,22 @@ export default function UserListModal({ open, onClose, user }) {
   };
 
   return (
-    // 🔥 FIX 1: Cambiamos items-center por items-start y agregamos pt-[130px] para evadir el Header
-    <div 
-      className="fixed inset-0 flex items-start justify-center bg-black/75 backdrop-blur-md px-4 pt-[130px] pb-6 sm:pt-[140px]"
-      style={{ zIndex: 99999 }}
-    >
-      
-      {/* Fondo transparente clickeable para cerrar */}
-      <div className="absolute inset-0" onClick={handleCerrar} />
-
-      {/* 🔥 FIX 2: maxHeight calculado dinámicamente para garantizar que no se salga por abajo */}
-      <div 
-        className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg border border-gray-100 flex flex-col overflow-hidden relative z-10 shrink-0"
-        style={{ maxHeight: "calc(100vh - 160px)" }}
-      >
-        
-        {/* Encabezado fijo */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center shadow-md">
-              <FaUserShield size={18} />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-gray-900 tracking-tight">Gestión de Usuarios</h2>
-              <p className="text-[11px] text-gray-400 font-medium">Administra accesos y roles del sistema</p>
-            </div>
-          </div>
-          
-          {/* Botón X con evento directo y garantizado */}
-          <button 
-            type="button"
-            onClick={handleCerrar} 
-            className="w-10 h-10 rounded-full bg-gray-200 hover:bg-black hover:text-white text-black flex items-center justify-center transition-all cursor-pointer shadow-md"
-            title="Cerrar ventana"
-          >
-            <FaTimes size={16} />
-          </button>
+    <ModalShell
+      onClose={handleCerrar}
+      title="Usuarios"
+      subtitle="Administra accesos y roles del sistema"
+      icon={FaUserShield}
+      size="lg"
+      zIndex={99999}
+      bodyClassName="space-y-2.5"
+      footer={
+        <div className="flex items-center justify-between text-xs text-zinc-500">
+          <span>Total: <strong className="text-zinc-900">{users.length}</strong> usuarios</span>
+          <button type="button" onClick={handleCerrar} className="fs-btn fs-btn-ghost px-4 py-2">Cerrar</button>
         </div>
-
+      }
+    >
         {/* Lista de Usuarios */}
-        <div className="p-4 md:p-5 overflow-y-auto space-y-2.5 flex-1 scrollbar-thin scrollbar-thumb-gray-300">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400">
               <FaSpinner className="animate-spin text-black" size={28} />
@@ -224,11 +201,11 @@ export default function UserListModal({ open, onClose, user }) {
                 return (
                   <div key={u._id} className="flex flex-col sm:flex-row items-center justify-between p-3.5 rounded-2xl bg-red-50 border-2 border-red-200 gap-3 shadow-inner">
                     <div className="flex items-center gap-2 text-red-800 text-xs font-bold min-w-0">
-                      <FaExclamationTriangle className="text-red-500 flex-shrink-0" size={16} />
+                      <FaExclamationTriangle className="text-red-500 shrink-0" size={16} />
                       <span className="truncate">¿Eliminar a <strong className="underline">{displayName}</strong>?</span>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
                       <button 
                         type="button"
                         onClick={() => setConfirmingId(null)} 
@@ -249,9 +226,9 @@ export default function UserListModal({ open, onClose, user }) {
               }
 
               return (
-                <div key={u._id} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${isMe ? 'bg-gray-50/80 border-gray-300 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-md'}`}>
+                <div key={u._id} className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all ${isMe ? 'bg-gray-50/80 border-gray-300 shadow-sm' : 'bg-white border-gray-100 hover:border-cyan-200 hover:shadow-md'}`}>
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${isSuper ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 text-black font-extrabold' : isMe ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    <div className={`w-10 h-10 rounded-full shrink-0 flex items-center justify-center font-black text-xs shadow-sm ${isSuper ? 'bg-gradient-to-tr from-cyan-500 to-cyan-300 text-black font-extrabold' : isMe ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}>
                       {initials}
                     </div>
 
@@ -264,7 +241,7 @@ export default function UserListModal({ open, onClose, user }) {
                     </div>
                   </div>
 
-                  <div className="pl-3 flex-shrink-0">
+                  <div className="pl-3 shrink-0">
                     {canDelete ? (
                       <button 
                         type="button"
@@ -284,21 +261,6 @@ export default function UserListModal({ open, onClose, user }) {
               );
             })
           )}
-        </div>
-
-        {/* Pie de página con botón de cierre garantizado */}
-        <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex justify-between items-center text-xs text-gray-500 font-medium flex-shrink-0">
-          <span>Total: <strong className="text-gray-900">{users.length}</strong> usuarios</span>
-          <button 
-            type="button"
-            onClick={handleCerrar}
-            className="text-xs font-bold bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800 transition cursor-pointer"
-          >
-            Cerrar ventana
-          </button>
-        </div>
-
-      </div>
-    </div>
+    </ModalShell>
   );
 }

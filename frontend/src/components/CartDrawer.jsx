@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
-import { FaTimes, FaTrash, FaWhatsapp } from 'react-icons/fa';
+import { FaTimes, FaTrash, FaWhatsapp, FaShoppingBag } from 'react-icons/fa';
+import { API_ORIGIN } from '../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify'; // 🏆 Importamos toast para las alertas
 
-const API_BASE = "https://fut-store.onrender.com"; // Conexión a tu backend
+const API_BASE = API_ORIGIN;
 
 export default function CartDrawer() {
   const { cart, removeFromCart, isCartOpen, toggleCart, cartTotal } = useCart();
@@ -59,50 +60,54 @@ export default function CartDrawer() {
     <AnimatePresence>
       {isCartOpen && (
         <>
-          {/* Fondo oscuro (Overlay) */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm"
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md"
             onClick={toggleCart}
           />
-          
-          {/* Panel del Carrito */}
-          <motion.div 
+
+          <motion.aside
             initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white z-[101] shadow-2xl flex flex-col"
+            transition={{ type: "spring", stiffness: 300, damping: 32 }}
+            className="fixed right-0 top-0 z-[101] flex h-full w-full flex-col bg-white shadow-2xl sm:w-[420px]"
           >
-            {/* Header del Carrito */}
-            <div className="p-5 bg-black text-white flex justify-between items-center shadow-md">
-              <h2 className="text-xl font-black italic uppercase">Tu Carrito 🛒</h2>
-              <button onClick={toggleCart} className="p-2 hover:bg-gray-800 rounded-full transition">
-                <FaTimes size={20} />
+            <div className="relative overflow-hidden bg-black px-6 pb-5 pt-6 text-white">
+              <div className="pointer-events-none absolute -right-12 -top-16 h-40 w-40 rounded-full bg-cyan-400/15 blur-3xl" />
+              <div className="relative flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/30"><FaShoppingBag size={15} /></span>
+                <div>
+                  <h2 className="font-display text-2xl uppercase leading-none tracking-wide text-silver">Tu carrito</h2>
+                  <p className="mt-1 text-xs text-white/55">{cart.length} {cart.length === 1 ? "producto" : "productos"}</p>
+                </div>
+              </div>
+              <button onClick={toggleCart} aria-label="Cerrar" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20 hover:text-cyan-300">
+                <FaTimes size={14} />
               </button>
+              <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-cyan-400/0 via-cyan-400 to-cyan-400/0" />
             </div>
 
-            {/* Lista de Productos */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
+            <div className="flex-1 space-y-3 overflow-y-auto p-5">
               {cart.length === 0 ? (
-                <div className="text-center text-gray-400 mt-20">
-                  <p className="text-6xl mb-4">🛒</p>
-                  <p>Tu carrito está vacío.</p>
-                  <button onClick={toggleCart} className="mt-4 text-black font-bold underline">Volver a la tienda</button>
+                <div className="mt-20 flex flex-col items-center text-center">
+                  <span className="mb-4 grid h-20 w-20 place-items-center rounded-full bg-zinc-100 text-zinc-300"><FaShoppingBag size={30} /></span>
+                  <p className="font-display text-2xl uppercase text-zinc-300">Carrito vacío</p>
+                  <button onClick={toggleCart} className="fs-btn fs-btn-ghost mt-5">Volver a la tienda</button>
                 </div>
               ) : (
                 cart.map((item, index) => (
-                  <div key={`${item._id}-${item.selectedSize}-${index}`} className="flex gap-4 border-b pb-4">
-                    <img src={item.imageSrc || "https://via.placeholder.com/100"} alt={item.name} className="w-20 h-20 object-cover rounded-md border" />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-sm uppercase">{item.name}</h3>
-                      <p className="text-xs text-gray-500">Talla: <span className="font-bold text-black">{item.selectedSize}</span></p>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="font-bold text-green-700">₡{((item.discountPrice || item.price) * item.quantity).toLocaleString()}</span>
-                        <div className="flex items-center gap-3">
-                           <span className="text-xs font-bold bg-gray-100 px-2 py-1 rounded">x{item.quantity}</span>
-                           <button onClick={() => removeFromCart(item._id || item.id, item.selectedSize)} className="text-red-500 hover:text-red-700">
-                             <FaTrash size={14} />
-                           </button>
-                        </div>
+                  <div key={`${item._id}-${item.selectedSize}-${index}`} className="flex gap-4 rounded-2xl border border-zinc-100 p-3">
+                    <img src={item.imageSrc || "https://via.placeholder.com/100"} alt={item.name} className="h-20 w-16 rounded-xl object-cover" />
+                    <div className="min-w-0 flex-1">
+                      <h3 className="line-clamp-2 text-xs font-bold uppercase leading-tight">{item.name}</h3>
+                      <div className="mt-1.5 flex gap-1.5">
+                        <span className="bg-silver rounded-full border border-zinc-200 px-2 py-0.5 text-[10px] font-black">{item.selectedSize}</span>
+                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black">x{item.quantity}</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-sm font-black">₡{((item.discountPrice || item.price) * item.quantity).toLocaleString()}</span>
+                        <button onClick={() => removeFromCart(item._id || item.id, item.selectedSize)} aria-label="Quitar" className="grid h-8 w-8 place-items-center rounded-lg text-zinc-400 transition hover:bg-red-50 hover:text-red-600">
+                          <FaTrash size={12} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -110,30 +115,19 @@ export default function CartDrawer() {
               )}
             </div>
 
-            {/* Footer con Total y Botón */}
             {cart.length > 0 && (
-              <div className="p-6 bg-gray-50 border-t">
-                <div className="flex justify-between items-center mb-4 text-xl font-black">
-                  <span>TOTAL:</span>
-                  <span>₡{cartTotal.toLocaleString()}</span>
+              <div className="border-t border-zinc-100 bg-zinc-50 p-5">
+                <div className="mb-4 flex items-end justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Total</span>
+                  <span className="font-display text-3xl tracking-wide">₡{cartTotal.toLocaleString()}</span>
                 </div>
-                <button 
-                  onClick={handleCheckout}
-                  disabled={isValidating}
-                  className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg 
-                    ${isValidating ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white active:scale-95'}`}
-                >
-                  {isValidating ? (
-                    "VERIFICANDO STOCK..."
-                  ) : (
-                    <>
-                      <FaWhatsapp size={24} /> COMPLETAR PEDIDO
-                    </>
-                  )}
+                <button onClick={handleCheckout} disabled={isValidating} className="fs-btn w-full bg-[#25D366] py-4 text-white hover:bg-[#1ebe5a]">
+                  {isValidating ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> : <FaWhatsapp size={18} />}
+                  {isValidating ? "Verificando stock…" : "Completar pedido"}
                 </button>
               </div>
             )}
-          </motion.div>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>

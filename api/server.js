@@ -16,6 +16,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import salesRoutes from './routes/sales.js'; 
 import expensesRoutes from './routes/expenses.js';
 import apartadosRoutes from './routes/apartados.js'; // 👈 1. IMPORTACIÓN DE LA RUTA DE APARTADOS
+import { attachAuth, getJwtSecret } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -24,6 +25,9 @@ const requiredEnvs = ['MONGO_URI', 'RESEND_API_KEY', 'FRONTEND_URL', 'TILOPAY_US
 requiredEnvs.forEach((env) => {
   if (!process.env[env]) console.warn(`⚠️ FALTA VARIABLE: ${env}`);
 });
+if (!getJwtSecret()) {
+  console.error('🚨 FALTA JWT_SECRET (mínimo 32 caracteres). Nadie podrá iniciar sesión hasta configurarlo.');
+}
 
 const app = express();
 
@@ -53,8 +57,11 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// Límite de 1 MB en general; solo productos y apartados (que llevan fotos en base64) aceptan más
+app.use(['/api/products', '/api/apartados'], express.json({ limit: '12mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(attachAuth); // lee el token (si viene) y carga el usuario real desde la BD
 
 /* -------- DB & RUTAS -------- */
 try { await connectDB(); } catch (e) { console.error("Error DB:", e.message); }

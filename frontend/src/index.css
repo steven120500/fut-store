@@ -1,344 +1,249 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "tailwind-scrollbar";
 
-/* Scrollbar personalizada (compatible sin plugin) */
-.scroll-custom {
-  scrollbar-width: thin;
-  scrollbar-color: #a0aec0 transparent;
+/* ===========================================================
+   🎨 TOKENS DE MARCA — negro, plateado y blanco
+   =========================================================== */
+@theme {
+  --font-poppins: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Poppins", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Anton", "Poppins", ui-sans-serif, system-ui, sans-serif;
+
+  --color-gold: #9e8f91;
+  --color-halloween: #ff7518;
+  --color-ink: #0a0a0a;
+  --color-ink-2: #121212;
+  --color-ink-3: #1c1c1c;
+  --color-silver-100: #f4f4f5;
+  --color-silver-200: #e4e4e7;
+  --color-silver-300: #c9c9cf;
+  --color-silver-400: #a1a1aa;
+
+  /* Terciario: cian */
+  --color-accent: #22d3ee;
+  --color-accent-strong: #06b6d4;
+  --color-accent-soft: #a5f3fc;
+
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-shine: shine 3.5s ease-in-out infinite;
 }
 
-.scroll-custom::-webkit-scrollbar {
-  width: 8px;
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 
-.scroll-custom::-webkit-scrollbar-thumb {
-  background-color: #a0aec0; /* gray-400 */
-  border-radius: 9999px;
-}
-
-.scroll-custom::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Estilos base */
-:root {
-  font-family: 'Poppins', sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #ffffff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #ffffff;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-.fondo-plateado {
-  background: linear-gradient(
-    145deg,
-    #f2f2f2 0%,
-    #d9d9d9 25%,
-    #bfbfbf 50%,
-    #e6e6e6 75%,
-    #ffffff 100%
-  );
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
-              0 0 20px rgba(200, 200, 200, 0.3);
-  border: 0px solid #bfbfbf;
-  border-radius: 0px;
-  transition: all 0.3s ease;
-}
-
-.fondo-plateado:hover {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7),
-              0 0 40px rgba(180, 180, 180, 0.5);
-}
-
-
-/* ❤️ Rojo vino brillante metálico (elegante y llamativo) */
-.text-vino-brillante {
-  color: #b3003c; /* base vino oscuro */
-  font-weight: 800;
-  text-shadow:
-    0 0 6px rgba(179, 0, 60, 0.6),
-    0 0 12px rgba(255, 50, 90, 0.4),
-    0 0 20px rgba(120, 0, 30, 0.3);
-  background: linear-gradient(
-    90deg,
-    #8b0000 0%,
-    #ff3355 40%,
-    #ff6680 50%,
-    #ff3355 60%,
-    #8b0000 100%
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-size: 200% auto;
-  animation: brilloVino 5s linear infinite;
-}
-
-/* ✨ Animación de reflejo suave */
-@keyframes brilloVino {
-  0% {
-    background-position: -150px 0;
-  }
-  100% {
-    background-position: 150px 0;
-  }
-}
-
-/* ⚫🤍 Texto blanco con borde negro y leve brillo */
-.text-blanco-borde-negro {
-  color: #ffffff; /* letras blancas */
-  font-weight: 900;
-  text-shadow:
-    /* contorno negro grueso */
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000,
-    /* brillo suave */
-    0 0 8px rgba(255, 255, 255, 0.6),
-    0 0 14px rgba(255, 255, 255, 0.4);
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #9E8F91;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-/* Modo claro */
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-
-  a:hover {
-    color: #9E8F91;
-  }
-
-  button {
-    background-color: #f9f9f9;
-  }
-}
-
-@keyframes typing {
-  from { width: 0 }
-  to { width: 100% }
-}
-
-@keyframes blink {
-  0%, 100% { border-color: transparent }
-  50% { border-color: #9E8F91 }
-}
-
-.typing-effect {
-  font-family: 'Poppins', sans-serif;
-  font-weight: 700;
-  font-size: 3rem;
-  color: #9E8F91;
-  white-space: nowrap;
-  overflow: hidden;
-  border-right: 3px solid #9E8F91;
-  width: 0;
-  animation:
-    typing 10s steps(8, end) forwards,
-    blink 0.75s step-end infinite;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeInUp {
-  animation: fadeInUp 1s ease-out forwards;
-}
-
-@keyframes fall {
-  to {
-    transform: translateY(100vh);
-  }
-}
-.animate-fall {
-  animation: fall linear infinite;
-}
-
-@keyframes gradient-slow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animate-gradient-slow {
-  background-size: 200% 200%;
-  animation: gradient-slow 6s ease-in-out infinite;
-}
-
-/* ✨ Efecto máquina de escribir */
-@keyframes cursor-blink {
-  0%, 50%, 100% {
-    opacity: 1;
-  }
-  25%, 75% {
-    opacity: 0;
-  }
-}
-
-.animate-cursor {
-  animation: cursor-blink 1s step-end infinite;
+@keyframes shine {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 
 /* ===========================================================
-   💚 BOTÓN LUMINOSO VERDE — con brillo móvil animado
+   BASE — dentro de @layer para que las utilidades de Tailwind
+   siempre ganen (en v4 los estilos sin capa le ganan a todo)
    =========================================================== */
-   .boton-luminoso-verde {
-    position: relative;
-    display: inline-block;
-    color: #fff;
-    background-color: #16a34a;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 700;
-    overflow: hidden;
-    transition: all 0.3s ease-in-out;
-    box-shadow: 0 0 20px rgba(22, 163, 74, 0.5), 0 0 40px rgba(22, 163, 74, 0.3);
+@layer base {
+  :root {
+    --header-h: 64px;
+    --banner-h: 30px;
+    --nav-h: calc(var(--header-h) + var(--banner-h));
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    font-weight: 400;
+    color: #0a0a0a;
+    background-color: #ffffff;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
-  .boton-luminoso-verde::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -75%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.6) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    transform: skewX(-25deg);
-    animation: brilloVerdeMovimiento 3s infinite;
+
+  @media (min-width: 640px) {
+    :root { --header-h: 76px; }
   }
-  
-  @keyframes brilloVerdeMovimiento {
-    0% {
-      left: -75%;
-    }
-    50% {
-      left: 125%;
-    }
-    100% {
-      left: 125%;
-    }
+
+  /* Compatibilidad v3 → v4: bordes grises por defecto */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
   }
-  
-  .boton-luminoso-verde:hover {
-    box-shadow: 0 0 25px rgba(80, 255, 150, 0.8), 0 0 50px rgba(80, 255, 150, 0.4);
-    transform: scale(1.05);
+
+  html { scroll-behavior: smooth; }
+  body { background-color: #ffffff; overflow-x: hidden; }
+
+  a {
+    font-weight: 500;
+    color: inherit;
+    text-decoration: inherit;
   }
-  
-  
-  /* ===========================================================
-     ❤️ BOTÓN LUMINOSO ROJO — con brillo móvil animado
-     =========================================================== */
-  .boton-luminoso-rojo {
-    position: relative;
-    display: inline-block;
-    color: #fff;
-    background-color: #dc2626;
-    border: none;
-    border-radius: 0.5rem;
-    font-weight: 700;
-    overflow: hidden;
-    transition: all 0.3s ease-in-out;
-    box-shadow: 0 0 20px rgba(255, 50, 50, 0.5), 0 0 40px rgba(255, 50, 50, 0.3);
+
+  h1 { line-height: 1.1; }
+
+  button {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.25s, background-color 0.25s, color 0.25s;
   }
-  
-  .boton-luminoso-rojo::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -75%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(
-      120deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.7) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-    transform: skewX(-25deg);
-    animation: brilloRojoMovimiento 3s infinite;
+
+  button:disabled { cursor: not-allowed; }
+
+  button:focus { outline: none; }
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
   }
-  
-  @keyframes brilloRojoMovimiento {
-    0% {
-      left: -75%;
-    }
-    50% {
-      left: 125%;
-    }
-    100% {
-      left: 125%;
-    }
-  }
-  
-  .boton-luminoso-rojo:hover {
-    box-shadow: 0 0 25px rgba(255, 100, 100, 0.8), 0 0 50px rgba(255, 100, 100, 0.4);
-    transform: scale(1.05);
-  }
-  
-  /* ❤️ Etiqueta de Oferta con efecto luminoso en movimiento */
+
+  ::selection { background: #22d3ee; color: #000; }
+}
+
+/* ===========================================================
+   UTILIDADES DE MARCA
+   =========================================================== */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+@utility text-silver {
+  background: linear-gradient(110deg, #8d8d94 0%, #e9e9ee 25%, #ffffff 40%, #b9b9c0 55%, #f4f4f6 75%, #8d8d94 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@utility text-silver-animated {
+  background: linear-gradient(110deg, #8d8d94 0%, #e9e9ee 25%, #ffffff 40%, #b9b9c0 55%, #f4f4f6 75%, #8d8d94 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shine 4s linear infinite;
+}
+
+@utility bg-silver {
+  background: linear-gradient(145deg, #f4f4f5 0%, #dcdcdf 30%, #c3c3c8 55%, #ececee 80%, #ffffff 100%);
+}
+
+/* Scrollbar personalizada */
+.scroll-custom,
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #a0aec0 transparent;
+}
+.scroll-custom::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.scroll-custom::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: #a0aec0; border-radius: 9999px; }
+.scroll-custom::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+/* ===========================================================
+   CLASES HEREDADAS (usadas en modales y páginas de admin)
+   =========================================================== */
+.fondo-plateado,
+.fondo-plateado-redondo {
+  background: linear-gradient(145deg, #f2f2f2 0%, #d9d9d9 25%, #bfbfbf 50%, #e6e6e6 75%, #ffffff 100%);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px rgba(200, 200, 200, 0.3);
+  border: 0 solid #bfbfbf;
+  transition: all 0.3s ease;
+}
+.fondo-plateado { border-radius: 0; }
+.fondo-plateado-redondo { border-radius: 9999px; }
+.fondo-plateado:hover,
+.fondo-plateado-redondo:hover {
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 0 40px rgba(180, 180, 180, 0.5);
+}
+
+.text-vino-brillante {
+  font-weight: 800;
+  background: linear-gradient(90deg, #8b0000 0%, #ff3355 40%, #ff6680 50%, #ff3355 60%, #8b0000 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: brilloVino 5s linear infinite;
+}
+@keyframes brilloVino {
+  0% { background-position: -150px 0; }
+  100% { background-position: 150px 0; }
+}
+
+.text-blanco-borde-negro {
+  color: #fff;
+  font-weight: 900;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000,
+    0 0 8px rgba(255, 255, 255, 0.6), 0 0 14px rgba(255, 255, 255, 0.4);
+}
+
+.text-plateado {
+  font-weight: 900;
+  letter-spacing: 1px;
+  background: linear-gradient(110deg, #7a6a6c 10%, #9e8f91 30%, #fff 45%, #fff 55%, #9e8f91 70%, #7a6a6c 90%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: brilloMetalico 3s linear infinite;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
+}
+@keyframes brilloMetalico {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.texto-plateado {
+  background: linear-gradient(to bottom, #fff 0%, #f0f0f0 35%, #cfcfcf 60%, #e8e8e8 85%, #fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.6));
+}
+
+.boton-luminoso-verde,
+.boton-luminoso-rojo {
+  position: relative;
+  display: inline-block;
+  color: #fff;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 700;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+.boton-luminoso-verde { background-color: #16a34a; box-shadow: 0 0 20px rgba(22, 163, 74, 0.5), 0 0 40px rgba(22, 163, 74, 0.3); }
+.boton-luminoso-rojo { background-color: #dc2626; box-shadow: 0 0 20px rgba(255, 50, 50, 0.5), 0 0 40px rgba(255, 50, 50, 0.3); }
+.boton-luminoso-verde::before,
+.boton-luminoso-rojo::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0) 100%);
+  transform: skewX(-25deg);
+  animation: brilloBoton 3s infinite;
+}
+@keyframes brilloBoton {
+  0% { left: -75%; }
+  50%, 100% { left: 125%; }
+}
+.boton-luminoso-verde:hover { box-shadow: 0 0 25px rgba(80, 255, 150, 0.8), 0 0 50px rgba(80, 255, 150, 0.4); transform: scale(1.05); }
+.boton-luminoso-rojo:hover { box-shadow: 0 0 25px rgba(255, 100, 100, 0.8), 0 0 50px rgba(255, 100, 100, 0.4); transform: scale(1.05); }
+
 .etiqueta-oferta-luminosa {
   position: relative;
   display: inline-block;
-  background-color: #dc2626; /* rojo base */
   color: #fff;
   font-weight: 800;
   text-transform: uppercase;
@@ -347,216 +252,340 @@ button:focus-visible {
   border-radius: 0.5rem;
   letter-spacing: 1px;
   overflow: hidden;
-  box-shadow: 0 0 15px rgba(255, 50, 50, 0.6),
-              0 0 30px rgba(255, 50, 50, 0.3);
-  transition: all 0.3s ease-in-out;
-}
-
-/* ✨ Brillo animado que cruza la etiqueta */
-/* ✨ Efecto luminoso rojo animado para etiqueta de oferta */
-.etiqueta-oferta-luminosa {
   background: linear-gradient(90deg, #b30000, #ff3333, #ff6666, #b30000);
   background-size: 300% 300%;
   animation: brilloOferta 3s ease-in-out infinite;
-  box-shadow: 0 0 12px rgba(255, 0, 0, 0.6), 0 0 20px rgba(255, 80, 80, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
-
 @keyframes brilloOferta {
-  0% {
-    background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
-  }
-  50% {
-    background-position: 100% 50%;
-    box-shadow: 0 0 20px rgba(255, 100, 100, 0.8);
-  }
-  100% {
-    background-position: 0% 50%;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
-  }
+  0%, 100% { background-position: 0% 50%; box-shadow: 0 0 10px rgba(255, 0, 0, 0.4); }
+  50% { background-position: 100% 50%; box-shadow: 0 0 20px rgba(255, 100, 100, 0.8); }
 }
 
-/* 1. Definimos la animación del brillo pasando */
-@keyframes brilloMetalico {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
+/* Animaciones heredadas */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeInUp { animation: fadeInUp 1s ease-out forwards; }
+
+@keyframes fall { to { transform: translateY(100vh); } }
+.animate-fall { animation: fall linear infinite; }
+
+@keyframes gradient-slow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-slow { background-size: 200% 200%; animation: gradient-slow 6s ease-in-out infinite; }
+
+@keyframes cursor-blink {
+  0%, 50%, 100% { opacity: 1; }
+  25%, 75% { opacity: 0; }
+}
+.animate-cursor { animation: cursor-blink 1s step-end infinite; }
+
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
 }
 
-/* 2. Clase mejorada */
-.text-plateado {
-  /* Tipografía fuerte para que se note el metal */
-  font-weight: 900; 
-  letter-spacing: 1px;
-  
-  /* El Gradiente "Premium":
-     Usamos tu color base (#9E8F91) pero agregamos blanco puro 
-     y tonos más oscuros para dar volumen 3D */
-  background: linear-gradient(
-    110deg, 
-    #7a6a6c 10%,      /* Sombra metálica */
-    #9E8F91 30%,      /* Tu color base */
-    #ffffff 45%,      /* ✨ Brillo intenso (Punto de luz) */
-    #ffffff 55%,      /* ✨ Brillo intenso mantenido */
-    #9E8F91 70%,      /* Tu color base */
-    #7a6a6c 90%       /* Sombra metálica */
-  );
-
-  /* Tamaño del fondo para permitir el movimiento */
-  background-size: 200% auto;
-  
-  /* Recortar el fondo a la forma de las letras */
-  -webkit-background-clip: text;
-  background-clip: text;
-  
-  /* Hacer las letras transparentes para ver el metal */
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  
-  /* Animación: 3 segundos, movimiento suave e infinito */
-  animation: brilloMetalico 3s linear infinite;
-
-  /* IMPORTANTE: Usamos filter en vez de text-shadow para textos con gradiente */
-  filter: drop-shadow(0px 2px 3px rgba(0, 0, 0, 0.5));
-}
-/* 🔁 Movimiento del brillo dentro de las letras */
-@keyframes brilloSoloTexto {
-  0% {
-    background-position: 200% center;
-  }
-  100% {
-    background-position: -200% center;
+/* Animaciones de entrada (equivalente ligero a tailwindcss-animate) */
+@keyframes enter {
+  from {
+    opacity: var(--enter-opacity, 1);
+    transform: translate3d(var(--enter-x, 0), var(--enter-y, 0), 0) scale(var(--enter-scale, 1));
   }
 }
+.animate-in { animation: enter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.fade-in { --enter-opacity: 0; }
+.zoom-in, .zoom-in-95 { --enter-scale: 0.95; }
+.slide-in-from-right { --enter-x: 100%; }
+.slide-in-from-bottom-4 { --enter-y: 1rem; }
+.slide-in-from-top-2 { --enter-y: -0.5rem; }
 
-@keyframes shineMove {
-  0% {
-    left: -100%;
-  }
-  50% {
-    left: 120%;
-  }
-  100% {
-    left: 120%;
-  }
+/* ===========================================================
+   🔥 TARJETA DE OFERTAS (riel de categorías)
+   =========================================================== */
+.offer-pill {
+  background: linear-gradient(120deg, #7f1d1d 0%, #dc2626 30%, #f87171 50%, #dc2626 70%, #7f1d1d 100%);
+  background-size: 250% 100%;
+  animation: offerFlow 4s ease-in-out infinite;
 }
-@keyframes shineMove {
-  0% { left: -100%; }
-  40% { left: 120%; }
-  100% { left: 120%; }
-}
-
-/* 🔹 Sticker "NUEVO" tipo circular */
-.sticker-new {
+.offer-pill::before {
+  content: "";
   position: absolute;
-  top: -10px;
-  left: -10px;
-  width: 68px;
-  height: 68px;
-  z-index: 10;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #000, #000 55%, #000 85%);
-  border: 1px solid rgba(255,255,255,0.6);
-  box-shadow:
-    0 8px 16px rgba(0,0,0,0.18),
-    inset 0 0 10px rgba(206, 201, 201, 0.65);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  inset: 0;
+  background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.07) 0 8px, transparent 8px 16px);
   pointer-events: none;
-  opacity: 0.95;
-  backdrop-filter: blur(2px);
 }
-
-.sticker-new span {
-  font-weight: 800;
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #fff;
-  letter-spacing: 0.6px;
-  text-shadow: 0 1px 4px rgba(255,255,255,0.9);
-  transform: translateY(2px);
-}
-
-/* ✨ Brillo del sticker */
-.sticker-new::after {
+.offer-pill::after {
   content: "";
   position: absolute;
   top: 0;
-  left: -120%;
-  width: 60%;
+  left: -60%;
+  width: 40%;
   height: 100%;
-  background: linear-gradient(
-    120deg,
-    rgba(255,255,255,0) 0%,
-    rgba(255,255,255,0.85) 100%,
-    rgba(255,255,255,0) 100%
-  );
+  background: linear-gradient(110deg, transparent, rgba(255, 255, 255, 0.55), transparent);
   transform: skewX(-20deg);
-  animation: shineMove 5s infinite;
+  animation: offerShine 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes offerFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+@keyframes offerShine {
+  0% { left: -60%; }
+  60%, 100% { left: 130%; }
 }
 
-/* 📱 Tamaño más pequeño en móvil */
-@media (max-width: 640px) {
-  .sticker-new {
-    transform: scale(0.7);
-    top: -18px;
-    left: -18px;
-  }
-  .sticker-new span {
-    font-size: 9px;
-  }
-}
-/* En index.css */
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-
-/* EFECTO TEXTO PLATEADO (VERSIÓN CLARA / HEADER) */
-.texto-plateado {
-  background: linear-gradient(
-    to bottom,
-    #ffffff 0%,      /* Blanco puro en la parte superior */
-    #f0f0f0 35%,     /* Gris ultra claro (como el brillo del header) */
-    #cfcfcf 60%,     /* Gris medio sutil para dar la curvatura del metal */
-    #e8e8e8 85%,     /* Vuelve a aclarar */
-    #ffffff 100%     /* Cierra blanco */
-  );
-  
-  -webkit-background-clip: text;
-  background-clip: text;
+/* ===========================================================
+   🧊 3D / MOTION GRAPHICS
+   =========================================================== */
+.preserve-3d { transform-style: preserve-3d; }
+.text-outline {
   color: transparent;
-  
-  /* Usamos drop-shadow en lugar de text-shadow para que el borde negro 
-     no interfiera con la transparencia del texto y resalte sobre el estadio */
-  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.6));
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.09);
+}
+/* Texto extruido en 3D (blanco) */
+.text-3d {
+  text-shadow:
+    0 1px 0 #c9c9c9, 0 2px 0 #b5b5b5, 0 3px 0 #9a9a9a, 0 4px 0 #7d7d7d,
+    0 5px 0 #5f5f5f, 0 6px 0 #444, 0 7px 0 #2c2c2c,
+    0 14px 18px rgba(0, 0, 0, 0.75), 0 24px 40px rgba(0, 0, 0, 0.5);
+}
+/* Extrusión para texto con degradado (usa drop-shadow en vez de text-shadow) */
+.text-3d-silver {
+  filter: drop-shadow(0 1px 0 #6b6b6b) drop-shadow(0 2px 0 #4a4a4a) drop-shadow(0 3px 0 #2e2e2e)
+    drop-shadow(0 12px 18px rgba(0, 0, 0, 0.8));
+}
+/* Piso de cancha en perspectiva que avanza */
+.pitch-plane {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 80px 80px;
+  animation: pitchMove 2.5s linear infinite;
+}
+@keyframes pitchMove {
+  from { background-position: 0 0; }
+  to { background-position: 0 80px; }
+}
+/* Moneda del logo girando */
+@keyframes coinSpin {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(360deg); }
+}
+.coin-spin { animation: coinSpin 6s linear infinite; transform-style: preserve-3d; }
+
+/* ===========================================================
+   🪟 MODALES — controles de formulario unificados
+   (sin capa a propósito: así unifican el foco aunque el
+    componente traiga focus:border-green / focus:border-black)
+   =========================================================== */
+.fs-modal input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):not([type="range"]),
+.fs-modal select,
+.fs-modal textarea {
+  border-color: #e4e4e7;
+  border-radius: 0.75rem;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+.fs-modal input:not([type="radio"]):not([type="checkbox"]):not([type="file"]):not([type="range"]):focus,
+.fs-modal select:focus,
+.fs-modal textarea:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18);
+  background-color: #fff;
+}
+.fs-modal input::placeholder,
+.fs-modal textarea::placeholder { color: #a1a1aa; }
+.fs-modal input[type="radio"],
+.fs-modal input[type="checkbox"] { accent-color: #06b6d4; }
+.fs-modal input[type="file"] { font-size: 0.75rem; color: #52525b; }
+.fs-modal input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  border: 0;
+  border-radius: 9999px;
+  background: #0a0a0a;
+  color: #fff;
+  padding: 0.45rem 0.9rem;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
 }
 
-.fondo-plateado-redondo {
-  background: linear-gradient(
-    145deg,
-    #f2f2f2 0%,
-    #d9d9d9 25%,
-    #bfbfbf 50%,
-    #e6e6e6 75%,
-    #ffffff 100%
-  );
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5),
-              0 0 20px rgba(200, 200, 200, 0.3);
-  border: 0px solid #bfbfbf;
-  border-radius: 9999px; /* 👈 Esto lo hace perfectamente redondo/píldora */
-  transition: all 0.3s ease;
+/* Tarjeta de diálogos en línea (confirmaciones dentro de las páginas) */
+.fs-dialog {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem !important;
+  box-shadow: 0 30px 80px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+.fs-dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, transparent);
+  pointer-events: none;
+}
+.fs-dialog h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  font-size: 1.5rem;
+  line-height: 1.05;
 }
 
-.fondo-plateado-redondo:hover {
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7),
-              0 0 40px rgba(180, 180, 180, 0.5);
+/* Piezas reutilizables (en capa: las utilidades como pl-9 pueden sobrescribirlas) */
+@layer components {
+.fs-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #71717a;
+}
+.fs-input {
+  width: 100%;
+  border: 1px solid #e4e4e7;
+  background: #fafafa;
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0a0a0a;
+}
+.fs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.9rem;
+  padding: 0.8rem 1.2rem;
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  transition: transform 0.15s, background-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+.fs-btn:active { transform: scale(0.98); }
+.fs-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fs-btn-primary { background: #0a0a0a; color: #fff; box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.6); }
+.fs-btn-primary:hover:not(:disabled) { background: #18181b; box-shadow: 0 10px 30px -8px rgba(6, 182, 212, 0.45); color: #a5f3fc; }
+.fs-btn-ghost { background: #fff; color: #0a0a0a; border: 1px solid #e4e4e7; }
+.fs-btn-ghost:hover:not(:disabled) { border-color: #06b6d4; color: #0e7490; }
+.fs-btn-danger { background: #dc2626; color: #fff; }
+.fs-btn-danger:hover:not(:disabled) { background: #b91c1c; }
+
+}
+
+/* ===========================================================
+   🔔 TOASTS FUTSTORE (react-toastify)
+   =========================================================== */
+.Toastify__toast-container { z-index: 100000; }
+.Toastify__toast-container--top-center { top: calc(var(--nav-h, 94px) + 10px); }
+@media (max-width: 480px) {
+  .Toastify__toast-container { padding: 0 12px; }
+  .Toastify__toast-container--top-center { top: calc(var(--nav-h, 94px) + 8px); }
+}
+
+.Toastify .Toastify__toast {
+  position: relative;
+  overflow: hidden;
+  min-height: 58px;
+  margin-bottom: 10px;
+  padding: 12px 40px 14px 14px;
+  border-radius: 16px;
+  background: rgba(10, 10, 10, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+/* Franja de color a la izquierda según el tipo */
+.Toastify .Toastify__toast::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: #a1a1aa;
+}
+.Toastify .Toastify__toast--success::before { background: #22d3ee; box-shadow: 0 0 12px rgba(34, 211, 238, 0.8); }
+.Toastify .Toastify__toast--error::before { background: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.7); }
+.Toastify .Toastify__toast--warning::before { background: #e4e4e7; }
+.Toastify .Toastify__toast--info::before { background: linear-gradient(#f4f4f5, #a1a1aa); }
+
+.Toastify .Toastify__toast-icon { width: 28px; margin-inline-end: 12px; }
+.fut-toast-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  background: #18181b;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.fut-toast-icon--success { background: #22d3ee; color: #000; box-shadow: 0 0 14px rgba(34, 211, 238, 0.55); }
+.fut-toast-icon--error { background: #dc2626; color: #fff; box-shadow: 0 0 14px rgba(220, 38, 38, 0.5); }
+.fut-toast-icon--warning { background: linear-gradient(145deg, #f4f4f5, #a1a1aa); color: #000; }
+.fut-toast-icon--info { background: linear-gradient(145deg, #f4f4f5, #a1a1aa); color: #000; }
+.fut-toast-icon--loading { background: transparent; box-shadow: none; }
+.fut-toast-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #22d3ee;
+  animation: spin 0.8s linear infinite;
+}
+
+.fut-toast-close {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  transition: background 0.2s, color 0.2s;
+}
+.fut-toast-close:hover { background: rgba(255, 255, 255, 0.16); color: #22d3ee; }
+
+/* Barra de tiempo */
+.Toastify .Toastify__progress-bar { height: 2px; }
+.Toastify .Toastify__progress-bar--success { background: #22d3ee; }
+.Toastify .Toastify__progress-bar--error { background: #ef4444; }
+.Toastify .Toastify__progress-bar--warning,
+.Toastify .Toastify__progress-bar--info,
+.Toastify .Toastify__progress-bar--default { background: linear-gradient(90deg, #a1a1aa, #fff); }
+.Toastify .Toastify__progress-bar--bg { opacity: 0.08; }
+
+/* Accesibilidad: menos movimiento si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -37,7 +37,6 @@ export default function Checkout() {
   const [metodoPago, setMetodoPago] = useState("tarjeta");
   
   const [loadingPay, setLoadingPay] = useState(false);
-  const [verifyingPayment, setVerifyingPayment] = useState(false);
 
   // 🏆 NUEVOS ESTADOS PARA VALIDACIÓN PROACTIVA Y CÉDULA
   const [verifyingCartOnLoad, setVerifyingCartOnLoad] = useState(true);
@@ -52,49 +51,13 @@ export default function Checkout() {
     correo: ''
   });
 
-  // --- DETECTAR REGRESO DE TILOPAY ---
+  // --- REGRESO DE TILOPAY → página de resultado del pago ---
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    const orderId = query.get("order");
-    const tiloPayResponse = query.get("Response") || query.get("response") || query.get("code");
-
-    if (orderId && tiloPayResponse) {
-      if (tiloPayResponse === "1") {
-        confirmarPagoBackend(orderId);
-      } else {
-        toast.error("El pago fue cancelado o la tarjeta fue rechazada por el banco.");
-        navigate('/checkout', { replace: true });
-      }
+    if (query.get("order") && (query.get("code") || query.get("Response") || query.get("response"))) {
+      navigate(`/pago${location.search}`, { replace: true });
     }
   }, [location, navigate]);
-
-  const confirmarPagoBackend = async (orderId) => {
-    try {
-      setVerifyingPayment(true);
-      const res = await fetch(`${API_BASE}/api/tilopay/confirm-payment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId })
-      });
-
-      const data = await res.json();
-
-      if (data.success || data.status === 'paid') {
-        toast.success("¡Pago exitoso! Te enviamos los detalles por correo.");
-        clearCart(); 
-        navigate("/"); 
-      } else {
-        toast.warning("Pago recibido, pero hubo un error actualizando el estado.");
-        navigate("/"); 
-      }
-      
-    } catch (error) {
-      console.error("Error confirmando:", error);
-      toast.error("Error de conexión al verificar el pago.");
-    } finally {
-      setVerifyingPayment(false);
-    }
-  };
 
   // 1. Cargar Provincias
   useEffect(() => {
@@ -371,6 +334,21 @@ export default function Checkout() {
             total: totalFinal
           };
 
+          try {
+            sessionStorage.setItem("futstore:lastCheckout", JSON.stringify({
+              nombre: formData.nombre,
+              items: cart.map((item) => ({
+                name: item.name,
+                size: item.selectedSize,
+                quantity: item.quantity,
+                price: item.discountPrice || item.price,
+                image: item.imageSrc,
+              })),
+              envio: { metodo: metodoEnvioFinal, precio: precioEnvioFinal },
+              total: totalFinal,
+            }));
+          } catch { /* sin almacenamiento: la página usa el resumen del servidor */ }
+
           const res = await fetch(`${API_BASE}/api/tilopay/create-link`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -389,16 +367,6 @@ export default function Checkout() {
       setLoadingPay(false);
     }
   };
-
-  if (verifyingPayment) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-black text-white px-4 text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#D4AF37] mb-6"></div>
-        <h2 className="text-2xl font-bold text-[#D4AF37] animate-pulse">Verificando tu pago...</h2>
-        <p className="text-gray-400 mt-2">Por favor no cierres esta ventana.</p>
-      </div>
-    );
-  }
 
   if (cart.length === 0) {
     return (
@@ -446,7 +414,7 @@ export default function Checkout() {
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center justify-between">
                   <span>Cédula (Autocompleta nombre)</span>
-                  {loadingCedula && <span className="text-[10px] text-amber-600 font-bold flex items-center gap-1 animate-pulse"><FaSpinner className="animate-spin"/> Buscando TSE...</span>}
+                  {loadingCedula && <span className="text-[10px] text-cyan-600 font-bold flex items-center gap-1 animate-pulse"><FaSpinner className="animate-spin"/> Buscando TSE...</span>}
                 </label>
                 <div className="relative mt-1">
                   <input 

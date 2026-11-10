@@ -2,8 +2,13 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import tailwindcss from '@tailwindcss/postcss';
 
 export default defineConfig({
+  // Tailwind v4 compilado en el build (antes no había config de PostCSS y solo funcionaba un Tailwind 2 por CDN)
+  css: {
+    postcss: { plugins: [tailwindcss()] },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -15,7 +20,8 @@ export default defineConfig({
         short_name: 'FutStore',
         start_url: '/',
         display: 'standalone',
-        background_color: '#ffffff',
+        background_color: '#000000',
+        theme_color: '#000000',
         icons: [
           { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' }

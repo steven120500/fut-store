@@ -207,7 +207,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                             <div 
                               key={idx} 
                               className={`flex items-center gap-1.5 px-2 py-1 rounded border ${
-                                isAgotado ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-orange-900/20 border-orange-800 text-orange-400'
+                                isAgotado ? 'bg-red-900/20 border-red-800 text-red-400' : 'bg-cyan-900/20 border-cyan-800 text-cyan-400'
                               }`}
                             >
                               <span className="font-black text-xs">{tc.talla}</span>
@@ -234,7 +234,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
               <div className="mt-8 flex justify-center border-t border-gray-800 pt-6">
                 <button
                   onClick={() => setVisibleCount(prev => prev + 15)}
-                  className="flex items-center gap-2 px-6 py-3 border border-gray-700 text-gray-400 hover:text-white hover:border-[#D4AF37] rounded-xl font-black uppercase tracking-widest text-[10px] transition cursor-pointer shadow-sm hover:shadow-[#D4AF37]/20 hover:bg-[#1a1a1a]"
+                  className="flex items-center gap-2 px-6 py-3 border border-gray-700 text-gray-400 hover:text-white hover:border-[#22D3EE] rounded-xl font-black uppercase tracking-widest text-[10px] transition cursor-pointer shadow-sm hover:shadow-[#22D3EE]/20 hover:bg-[#1a1a1a]"
                 >
                   Cargar más modelos <FaArrowDown size={10} />
                 </button>
@@ -246,10 +246,10 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
 
       {/* 📋 LADO DERECHO: TABLERO DE PRÓXIMO PEDIDO (STICKY) */}
       <div className="w-full lg:w-[400px] shrink-0">
-        <div className="bg-[#111] p-5 rounded-2xl border border-[#D4AF37]/30 shadow-[0_0_20px_rgba(212,175,55,0.05)] sticky top-28">
+        <div className="bg-[#111] p-5 rounded-2xl border border-[#22D3EE]/30 shadow-[0_0_20px_rgba(34, 211, 238,0.05)] sticky top-28">
           
           <div className="flex items-center gap-3 mb-6 border-b border-gray-800 pb-4">
-            <div className="w-10 h-10 rounded-full bg-[#D4AF37]/20 text-[#D4AF37] flex items-center justify-center border border-[#D4AF37]/40">
+            <div className="w-10 h-10 rounded-full bg-[#22D3EE]/20 text-[#22D3EE] flex items-center justify-center border border-[#22D3EE]/40">
               <FaClipboardList size={18} />
             </div>
             <div>
@@ -278,7 +278,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   </button>
 
                   <div className="flex gap-3 mb-3 pr-6">
-                    <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-gray-900 border border-gray-800 overflow-hidden shrink-0">
                       {item.imagen1 ? (
                         <img src={item.imagen1} className="w-full h-full object-cover" alt="miniatura" />
                       ) : (
@@ -304,7 +304,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                             min="0"
                             value={item.tallasPedidas[tc.talla] ?? 0}
                             onChange={(e) => actualizarTallaPedido(item.id || item._id, tc.talla, e.target.value)}
-                            className="w-full bg-black border border-gray-700 rounded text-center text-xs text-white py-1 focus:border-[#D4AF37] outline-none transition"
+                            className="w-full bg-black border border-gray-700 rounded text-center text-xs text-white py-1 focus:border-[#22D3EE] outline-none transition"
                           />
                         </div>
                       ))}
@@ -315,14 +315,14 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   <div className="mt-3 pt-3 border-t border-gray-800">
                     <button 
                       onClick={() => openCustomModal(item)}
-                      className="text-[10px] font-bold text-gray-400 hover:text-[#D4AF37] uppercase flex items-center gap-1.5 transition cursor-pointer"
+                      className="text-[10px] font-bold text-gray-400 hover:text-[#22D3EE] uppercase flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <FaTags size={10} /> {(item.nombreCamiseta || item.numeroCamiseta || item.parches) ? 'Editar Personalización' : 'Añadir Dorsal/Parches'}
                     </button>
                     
                     {/* Muestra lo que escribiste */}
                     {(item.nombreCamiseta || item.numeroCamiseta || item.parches) && (
-                      <div className="mt-2 text-[9px] bg-gray-900 px-2 py-1.5 rounded border border-[#D4AF37]/30 text-[#D4AF37]">
+                      <div className="mt-2 text-[9px] bg-gray-900 px-2 py-1.5 rounded border border-[#22D3EE]/30 text-[#22D3EE]">
                         {(item.nombreCamiseta || item.numeroCamiseta) && (
                           <span className="block font-black uppercase">DORSAL: {item.nombreCamiseta} {item.numeroCamiseta ? `#${item.numeroCamiseta}` : ''}</span>
                         )}
@@ -354,8 +354,8 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
 
       {/* 🔥 MODALITO DE PERSONALIZACIÓN */}
       {modalItem && (
-        <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-gray-700 text-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200">
+        <div className="fs-modal fixed inset-0 z-[999] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white border border-gray-700 text-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200">
             <h3 className="font-black uppercase text-lg text-black mb-4 flex items-center gap-2">
               <FaTags /> Personalizar Encargo
             </h3>
@@ -389,7 +389,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   type="text" 
                   value={customForm.nombre} 
                   onChange={e => setCustomForm({...customForm, nombre: e.target.value})} 
-                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#D4AF37] outline-none transition uppercase" 
+                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#22D3EE] outline-none transition uppercase" 
                   placeholder="Ej: MESSI" 
                 />
               </div>
@@ -399,7 +399,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   type="number" 
                   value={customForm.numero} 
                   onChange={e => setCustomForm({...customForm, numero: e.target.value})} 
-                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#D4AF37] outline-none transition" 
+                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#22D3EE] outline-none transition" 
                   placeholder="Ej: 10" 
                 />
               </div>
@@ -409,7 +409,7 @@ export default function RestockBoard({ productosStock, onCrearRestock }) {
                   type="text" 
                   value={customForm.parches} 
                   onChange={e => setCustomForm({...customForm, parches: e.target.value})} 
-                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#D4AF37] outline-none transition uppercase" 
+                  className="w-full bg-black border border-gray-700 rounded-lg px-3 py-2 text-xs font-bold text-white focus:border-[#22D3EE] outline-none transition uppercase" 
                   placeholder="Ej: CHAMPIONS LEAGUE" 
                 />
               </div>

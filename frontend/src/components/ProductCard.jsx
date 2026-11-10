@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { FaPlus } from "react-icons/fa";
+import { FaArrowRight } from "react-icons/fa";
 
 // 🔽 Helper para Cloudinary
 const cldUrl = (url, w, h) => {
@@ -29,7 +28,7 @@ const getStockDisponible = (stockObj, tallaBuscada) => {
   return keyReal !== undefined && stockObj[keyReal] !== null ? Number(stockObj[keyReal]) : null;
 };
 
-export default function ProductCard({ product, onClick, canEdit }) {
+export default function ProductCard({ product, onClick }) {
   const H = 800;
 
   // 1. IMAGEN PRINCIPAL (Frontal)
@@ -56,7 +55,11 @@ export default function ProductCard({ product, onClick, canEdit }) {
         )
       : null;
 
-  const hasDiscount = Number(product.discountPrice) > 0;
+  const price = Number(product.price) || 0;
+  const discountPrice = Number(product.discountPrice) || 0;
+  const hasDiscount = discountPrice > 0 && discountPrice < price;
+  const discountPct = hasDiscount ? Math.round((1 - discountPrice / price) * 100) : 0;
+  const fmt = (n) => `₡${Number(n).toLocaleString("de-DE")}`;
   const isNew = Boolean(product.isNew);
 
   // Definición de Tallas y Stock
@@ -78,148 +81,102 @@ export default function ProductCard({ product, onClick, canEdit }) {
     getStockDisponible(product.stock, size),
   ]);
 
-  const soldOutSizes = stockEntries
-    .filter(([_, qty]) => qty == null || qty <= 0)
-    .map(([size]) => size);
-
-  const lowStockSizes = stockEntries
-    .filter(([_, qty]) => Number(qty) === 1)
-    .map(([size]) => size);
-
-  const totalStock = stockEntries.reduce((acc, [_, qty]) => acc + (Number(qty) || 0), 0);
+  const totalStock = stockEntries.reduce((acc, [, qty]) => acc + (Number(qty) || 0), 0);
   const isOutOfStock = totalStock <= 0;
 
   return (
-    <motion.div
+    <motion.article
       whileTap={{ scale: 0.98 }}
-      className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl w-full h-full flex flex-col md:hover:-translate-y-2 transition-all duration-300 ease-out border border-gray-100 cursor-pointer"
+      className="group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-zinc-200/70 bg-white transition-all duration-300 ease-out hover:border-cyan-300/70 hover:shadow-[0_20px_40px_-12px_rgba(6,182,212,0.35)] md:hover:-translate-y-1.5"
       onClick={() => onClick(product)}
     >
-
-      {/* Etiqueta NUEVO */}
-      {!isOutOfStock && isNew && (
-        <div className="sticker-new z-30 absolute -top-2 -left-2 scale-[0.55] sm:scale-[0.80] origin-top-left transition-transform pointer-events-none drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
-          <span>Nuevo</span>
-        </div>
-      )}
-
-      {/* 📸 SECCIÓN DE IMAGEN */}
-      <div 
-        className="relative w-full bg-gray-50 rounded-t-xl overflow-hidden shrink-0 flex items-center justify-center"
-        style={{ aspectRatio: "4/5" }}
-      >
-
-        {isOutOfStock && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <span className="text-white font-bold uppercase tracking-widest border-2 border-white text-xs px-4 py-2 sm:text-lg">
-              Agotado
-            </span>
-          </div>
-        )}
-
-        {/* 🔥 MEJORA: Etiqueta OFERTA redonda (rounded-full) y con reducción de escala en celular */}
-        {!isOutOfStock && hasDiscount && (
-          <span
-            className="absolute bottom-14  -right-3 text-white font-black z-10 text-xs sm:text-sm px-3 py-1 sm:px-4 sm:py-1.5 rounded-full shadow-md tracking-wider pointer-events-none transform scale-[0.75] sm:scale-100 origin-top-right transition-transform"
-            style={{
-              background: "linear-gradient(90deg, #d10000 0%, #ff1a1a 100%)",
-            }}
-          >
-            OFERTA
-          </span>
-        )}
-
-        {/* Imágenes */}
+      {/* 📸 Imagen */}
+      <div className="relative w-full shrink-0 overflow-hidden bg-zinc-100" style={{ aspectRatio: "4/5" }}>
         {imgMain ? (
           <img
             src={imgMain}
             alt={product.name}
-            className={`w-full h-full object-cover object-top transition-all duration-700 ease-in-out md:group-hover:scale-105 ${
-              imgHover && !isOutOfStock ? "group-hover:opacity-0" : "" 
+            className={`h-full w-full object-cover object-top transition-all duration-700 ease-out md:group-hover:scale-105 ${
+              imgHover && !isOutOfStock ? "md:group-hover:opacity-0" : ""
             } ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full grid place-items-center text-gray-300">
-            <span className="text-xs">Sin imagen</span>
-          </div>
+          <div className="grid h-full w-full place-items-center text-xs text-zinc-400">Sin imagen</div>
         )}
 
         {imgHover && !isOutOfStock && (
           <img
             src={imgHover}
             alt={`${product.name} vista trasera`}
-            className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-700 ease-in-out opacity-0 group-hover:opacity-100 md:group-hover:scale-105"
+            className="absolute inset-0 hidden h-full w-full object-cover object-top opacity-0 transition-all duration-700 ease-out md:block md:group-hover:scale-105 md:group-hover:opacity-100"
             loading="lazy"
           />
         )}
 
-        {/* 🔥 FRANJA SÓLIDA PARA EL TIPO */}
-        {type && (
-          <div className="absolute bottom-0 left-0 w-full text-center py-1.5 text-xs sm:text-xl font-black uppercase tracking-[0.2em] fondo-plateado text-black z-0 border-none border-0">
-            {type}
+        {/* Degradado inferior para legibilidad */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent opacity-80" />
+
+        {/* Etiquetas: misma familia visual (cápsula de vidrio negro) */}
+        <div className="absolute left-2 top-2 z-20 flex flex-col items-start gap-1.5 sm:left-3 sm:top-3">
+          {!isOutOfStock && isNew && (
+            <span className="flex items-center gap-1.5 rounded-full bg-black/80 py-1 pl-2 pr-2.5 text-[9px] font-black uppercase tracking-[0.18em] text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md sm:text-[10px]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+              </span>
+              Nuevo
+            </span>
+          )}
+        </div>
+
+        {!isOutOfStock && hasDiscount && (
+          <span className="absolute right-2 top-2 z-20 flex items-stretch overflow-hidden rounded-full shadow-[0_6px_18px_rgba(220,38,38,0.45)] ring-1 ring-white/20 sm:right-3 sm:top-3">
+            <span className="bg-black/80 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-md sm:text-[10px]">Oferta</span>
+            <span className="bg-gradient-to-r from-red-600 to-red-500 px-2 py-1 text-[10px] font-black text-white sm:text-[11px]">-{discountPct}%</span>
+          </span>
+        )}
+
+        {/* Ver producto (desktop hover) */}
+        {!isOutOfStock && (
+          <span className="absolute bottom-3 right-3 z-20 hidden h-9 w-9 translate-y-2 place-items-center rounded-full bg-cyan-400 text-black opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 md:grid">
+            <FaArrowRight size={12} />
+          </span>
+        )}
+
+        {isOutOfStock && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/50 backdrop-blur-[2px]">
+            <span className="rounded-full border border-white/70 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.25em] text-white sm:text-xs">
+              Agotado
+            </span>
           </div>
         )}
       </div>
 
-      {/* 📝 INFORMACIÓN */}
-      <div className={`p-3 sm:p-4 flex flex-col flex-grow bg-white text-left ${canEdit ? "" : "rounded-b-xl"}`}>
-
-        {/* Título */}
-        <h3 className="text-xs sm:text-xl font-black text-black uppercase tracking-tight line-clamp-2 leading-snug h-[2rem] sm:h-[2.2rem] overflow-hidden group-hover:text-black transition-colors shrink-0">
+      {/* 📝 Información */}
+      <div className="flex grow flex-col p-3 sm:p-4">
+        {type && (
+          <span className="bg-silver mb-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-zinc-200 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-800 sm:text-[10px]">
+            <span className="h-1.5 w-1.5 rotate-45 bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.8)]" />
+            {type}
+          </span>
+        )}
+        <h3 className="line-clamp-2 min-h-[2.5em] text-[13px] font-bold uppercase leading-tight tracking-tight text-zinc-900 sm:text-[15px]">
           {product.name}
         </h3>
 
-        {/* Precios y Botón de "+" */}
-        <div className="flex items-end justify-between mt-auto pt-3">
-          <div className="flex flex-col items-start">
-            {hasDiscount ? (
-              <>
-                <span className="text-xs sm:text-xl text-gray-400 line-through decoration-red-400">
-                  ₡{Number(product.price).toLocaleString("de-DE")}
-                </span>
-                <span className="text-xs sm:text-xl font-black text-red-600 leading-none mt-0.5">
-                  ₡{Number(product.discountPrice).toLocaleString("de-DE")}
-                </span>
-              </>
-            ) : (
-              <span className="text-xs sm:text-xl font-black text-gray-500 leading-none">
-                ₡{Number(product.price).toLocaleString("de-DE")}
-              </span>
-            )}
-          </div>
-
-          {/* Botón flotante derecho */}
-          <div className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center bg-gray-50 rounded shadow-sm border border-gray-100 text-gray-400 group-hover:bg-black group-hover:text-white transition-colors">
-            <FaPlus className="text-[9px] sm:text-[10px]" />
-          </div>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          {hasDiscount ? (
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <span className="text-base font-black leading-none text-red-600 sm:text-lg">{fmt(discountPrice)}</span>
+              <span className="text-[11px] text-zinc-400 line-through sm:text-xs">{fmt(price)}</span>
+            </div>
+          ) : (
+            <span className="text-base font-black leading-none text-zinc-900 sm:text-lg">{fmt(price)}</span>
+          )}
         </div>
       </div>
 
-      {/* 🔥 CAJA ADMIN */}
-      {canEdit && (
-        <div className="bg-gray-50 px-3 py-2 border-t border-gray-200 text-[10px] space-y-1 shrink-0 h-[56px] flex flex-col justify-center overflow-hidden text-center rounded-b-xl">
-            {isOutOfStock ? (
-              <p className="text-red-600 font-bold">🔴 SIN STOCK</p>
-            ) : (
-              <>
-              {soldOutSizes.length > 0 && (
-                <p className="text-red-600 truncate">
-                  <span className="font-bold">Agotado:</span> {soldOutSizes.join(", ")}
-                </p>
-              )}
-              {lowStockSizes.length > 0 && (
-                <p className="text-orange-500 truncate">
-                  <span className="font-bold">Queda 1:</span> {lowStockSizes.join(", ")}
-                </p>
-              )}
-              {soldOutSizes.length === 0 && lowStockSizes.length === 0 && (
-                <p className="text-green-600 font-medium">✅ Stock completo</p>
-              )}
-              </>
-            )}
-        </div>
-      )}
-    </motion.div>
+    </motion.article>
   );
 }

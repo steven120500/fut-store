@@ -2,8 +2,12 @@ import express from 'express';
 import Sale from '../models/Sale.js';
 import Product from '../models/Product.js';
 import History from '../models/History.js';
+import { adjustMany } from '../utils/stock.js';
+import { asString } from '../utils/security.js';
+import { requireAuth, requireRole, actorName } from '../middleware/auth.js';
 
 const router = express.Router();
+router.use(requireAuth); // ventas: solo personal
 
 const VENDEDORESOFICIALES = [
   'LaR Delflow',
@@ -33,79 +37,73 @@ const normalizarVendedor = (inputName) => {
 // 📥 POST: Guardar venta con DESCUENTO DE INVENTARIO Y REGISTRO EN HISTORIAL
 router.post('/', async (req, res) => {
   try {
-    const rawVendedor = req.body.vendedor || req.headers['x-user'] || 'Steven Corrales';
+    const rawVendedor = asString(req.body.vendedor) || actorName(req, 'Steven Corrales');
     const vendedorEstandarizado = normalizarVendedor(rawVendedor);
+    const productosVendidos = Array.isArray(req.body.productos) ? req.body.productos : [];
 
-    const productosVendidos = req.body.productos || [];
-
-    // 🛡️ MAGIA DE INVENTARIO: Descontar stock
-    if (productosVendidos.length > 0) {
-      for (const prod of productosVendidos) {
-        if (prod.tipoVenta === 'stock' && prod.productoId) {
-          try {
-            const dbProduct = await Product.findById(prod.productoId);
-            if (dbProduct && dbProduct.stock) {
-              const talla = String(prod.talla);
-              const cantidadVendida = Number(prod.cantidad) || 1;
-              
-              const stockActual = Number(dbProduct.stock[talla]) || 0;
-              const nuevoStock = Math.max(0, stockActual - cantidadVendida);
-              
-              dbProduct.stock = {
-                ...dbProduct.stock,
-                [talla]: nuevoStock
-              };
-              
-              dbProduct.markModified('stock');
-              await dbProduct.save();
-            }
-          } catch (err) {
-            console.error(`Advertencia: No se pudo descontar stock del producto ${prod.productoId}:`, err.message);
-          }
-        }
+    // --- Validaciones ---
+    for (const p of productosVendidos) {
+      const c = Number(p?.cantidad ?? 1);
+      if (!Number.isInteger(c) || c < 1 || c > 500) {
+        return res.status(400).json({ error: 'Cantidad inválida en uno de los productos' });
       }
     }
-
-    let cantidadTotal = 0;
-    if (productosVendidos.length > 0) {
-      cantidadTotal = productosVendidos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
-    } else {
-      cantidadTotal = Number(req.body.cantidad) || 1;
+    let fecha = new Date();
+    if (req.body.fecha) {
+      const f = new Date(req.body.fecha);
+      if (Number.isNaN(f.getTime())) return res.status(400).json({ error: 'Fecha inválida' });
+      if (f.getTime() > Date.now() + 36 * 3600 * 1000) return res.status(400).json({ error: 'La fecha de la venta no puede ser futura' });
+      fecha = f;
     }
 
-    const resumenChemas = req.body.productoNombre || (productosVendidos.map(p => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ') || 'Camiseta');
+    const cantidadTotal = productosVendidos.length > 0
+      ? productosVendidos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0)
+      : Math.max(1, Math.trunc(Number(req.body.cantidad) || 1));
 
+    const resumenChemas = asString(req.body.productoNombre)
+      || productosVendidos.map((p) => `${p.cantidad}x ${p.nombre} (${p.talla})`).join(' + ')
+      || 'Camiseta';
+
+    // 1) Primero se guarda la venta: si faltan datos, NO se toca el inventario
     const newSale = await Sale.create({
-      cedula: req.body.cedula,
-      nombre: req.body.nombre,
-      numero: req.body.numero,
+      cedula: String(req.body.cedula ?? ''),
+      nombre: String(req.body.nombre ?? ''),
+      numero: String(req.body.numero ?? ''),
       totalPago: Number(req.body.totalPago) || 0,
       costoEnvio: Number(req.body.costoEnvio) || 0,
-      direccionEnvio: req.body.direccionEnvio || '', 
+      direccionEnvio: asString(req.body.direccionEnvio),
       montoTotal: Number(req.body.montoTotal) || 0,
-      
-      tallaVendida: req.body.tallaVendida || (productosVendidos[0]?.talla || 'N/A'),
+      tallaVendida: asString(req.body.tallaVendida) || String(productosVendidos[0]?.talla || 'N/A'),
       cantidad: cantidadTotal,
       productoNombre: resumenChemas,
       productos: productosVendidos,
-
       vendedor: vendedorEstandarizado,
-      fecha: req.body.fecha ? new Date(req.body.fecha) : new Date(),
-      archivado: false
+      fecha,
+      archivado: false,
     });
 
-    // 🏆 REGISTRAR EN EL HISTORIAL DEL SISTEMA
+    // 2) Descuento de inventario atómico
+    const ajustes = await adjustMany(
+      productosVendidos
+        .filter((p) => p?.tipoVenta === 'stock' && p.productoId)
+        .map((p) => ({ productId: p.productoId, talla: p.talla, delta: -(Number(p.cantidad) || 1), nombre: p.nombre }))
+    );
+    const fallidos = ajustes.filter((a) => !a.ok);
+    if (fallidos.length) console.warn('⚠️ Venta registrada pero sin descontar stock en:', fallidos.map((f) => `${f.nombre} (${f.talla}): ${f.reason}`).join(' | '));
+
+    // 3) Historial
     await History.create({
       user: vendedorEstandarizado,
       action: 'registró venta rápida',
-      item: `Cliente: ${req.body.nombre} (${cantidadTotal} unds)`,
+      item: `Cliente: ${newSale.nombre} (${cantidadTotal} unds)`,
       date: new Date(),
-      details: `Detalle: ${resumenChemas} | Total: ₡${(Number(req.body.montoTotal) || 0).toLocaleString()}`
+      details: `Detalle: ${resumenChemas} | Total: ₡${(Number(req.body.montoTotal) || 0).toLocaleString()}${fallidos.length ? ` | ⚠️ Sin stock descontado: ${fallidos.map((f) => `${f.nombre} (${f.talla})`).join(', ')}` : ''}`,
     });
 
-    res.status(201).json({ success: true, sale: newSale });
+    res.status(201).json({ success: true, sale: newSale, stockWarnings: fallidos.map((f) => ({ nombre: f.nombre, talla: f.talla, motivo: f.reason })) });
   } catch (error) {
     console.error("Error al guardar venta:", error);
+    if (error?.name === 'ValidationError') return res.status(400).json({ error: 'Faltan datos de la venta (cédula, nombre o número)' });
     res.status(500).json({ error: "Error interno al registrar la venta" });
   }
 });
@@ -239,13 +237,13 @@ router.get('/ranking', async (req, res) => {
 });
 
 // 🔄 RUTA DE CIERRE DE MES INTELIGENTE (Archivar en lugar de borrar para proteger el Balance)
-router.delete('/reset/all', async (req, res) => {
+router.delete('/reset/all', requireRole('edit'), async (req, res) => {
   try {
     // En lugar de hacer deleteMany, marcamos las ventas como archivadas para que el Balance anual las conserve
     await Sale.updateMany({ archivado: false }, { $set: { archivado: true } });
     
     await History.create({
-      user: req.headers['x-user'] || 'Admin',
+      user: actorName(req, 'Admin'),
       action: 'archivó ventas del mes',
       item: 'Cierre de mes de ventas',
       date: new Date(),
@@ -260,49 +258,35 @@ router.delete('/reset/all', async (req, res) => {
 });
 
 // 🗑️ DELETE: Eliminar venta por ID individual, devolver stock y registrar en historial
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('edit'), async (req, res) => {
   try {
-    const saleToDelete = await Sale.findById(req.params.id);
+    // Borrado atómico: solo UNA petición puede obtener la venta, así el stock nunca se devuelve dos veces
+    const saleToDelete = await Sale.findByIdAndDelete(req.params.id).lean().catch(() => null);
     if (!saleToDelete) {
       return res.status(404).json({ error: "Venta no encontrada" });
     }
 
-    if (saleToDelete.productos && saleToDelete.productos.length > 0) {
-      for (const prod of saleToDelete.productos) {
-        if (prod.tipoVenta === 'stock' && prod.productoId) {
-          try {
-            const dbProduct = await Product.findById(prod.productoId);
-            if (dbProduct && dbProduct.stock) {
-              const talla = String(prod.talla);
-              const cantidadDevuelta = Number(prod.cantidad) || 1;
-              const stockActual = Number(dbProduct.stock[talla]) || 0;
-              
-              dbProduct.stock = {
-                ...dbProduct.stock,
-                [talla]: stockActual + cantidadDevuelta
-              };
-              
-              dbProduct.markModified('stock');
-              await dbProduct.save();
-            }
-          } catch (err) {
-            console.error(`Advertencia: No se pudo restaurar stock del producto ${prod.productoId}:`, err.message);
-          }
-        }
-      }
-    }
-
-    await Sale.findByIdAndDelete(req.params.id);
+    const ajustes = await adjustMany(
+      (saleToDelete.productos || [])
+        .filter((p) => p?.tipoVenta === 'stock' && p.productoId)
+        .map((p) => ({ productId: p.productoId, talla: p.talla, delta: Number(p.cantidad) || 1, nombre: p.nombre }))
+    );
+    const devueltos = ajustes.filter((a) => a.ok);
+    const fallidos = ajustes.filter((a) => !a.ok);
 
     await History.create({
-      user: req.headers['x-user'] || 'Admin',
+      user: actorName(req, 'Admin'),
       action: 'eliminó venta',
       item: `Cliente: ${saleToDelete.nombre}`,
       date: new Date(),
-      details: `Venta eliminada por monto de ₡${saleToDelete.montoTotal?.toLocaleString()}`
+      details: `Venta eliminada por monto de ₡${saleToDelete.montoTotal?.toLocaleString()} | Stock devuelto: ${devueltos.length ? devueltos.map((d) => `${d.nombre} (${d.key}) +${d.delta}`).join(', ') : 'ninguno'}${fallidos.length ? ` | ⚠️ No devuelto: ${fallidos.map((f) => `${f.nombre} (${f.talla})`).join(', ')}` : ''}`,
     });
 
-    res.json({ success: true, message: "Venta eliminada y stock restaurado en bodega" });
+    res.json({
+      success: true,
+      message: devueltos.length ? "Venta eliminada y stock restaurado en bodega" : "Venta eliminada (no tenía productos de inventario para devolver)",
+      stockDevuelto: devueltos.length,
+    });
   } catch (error) {
     console.error("Error al eliminar la venta:", error);
     res.status(500).json({ error: "Error al eliminar la venta" });

@@ -248,7 +248,7 @@ export default function BalancePage({ user }) {
     doc.setFillColor(17, 17, 17); 
     doc.rect(0, 0, pageWidth, 42, 'F');
 
-    doc.setFillColor(212, 175, 55); 
+    doc.setFillColor(34, 211, 238); 
     doc.rect(0, 42, pageWidth, 3, 'F');
 
     doc.setTextColor(255, 255, 255);
@@ -328,7 +328,7 @@ export default function BalancePage({ user }) {
         theme: 'grid',
         headStyles: { 
           fillColor: [17, 17, 17], 
-          textColor: [212, 175, 55], 
+          textColor: [34, 211, 238], 
           fontStyle: 'bold',
           fontSize: 8.5
         },
@@ -361,13 +361,13 @@ export default function BalancePage({ user }) {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col font-sans">
-      <div className="flex-grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
+      <div className="grow pt-40 pb-16 px-4 md:px-8 max-w-6xl mx-auto w-full">
         
         {/* ENCABEZADO Y VOLVER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-gray-800">
           <button 
             onClick={() => navigate(-1)} 
-            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#D4AF37] hover:border-[#D4AF37] transition font-bold text-xs uppercase cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 bg-black border border-gray-700 rounded-xl text-gray-300 hover:text-[#22D3EE] hover:border-[#22D3EE] transition font-bold text-xs uppercase cursor-pointer"
           >
             <FaArrowLeft /> Volver
           </button>
@@ -376,7 +376,7 @@ export default function BalancePage({ user }) {
             
             {/* 📅 SELECTOR MENSUAL */}
             <div className="flex items-center gap-1.5 bg-black border border-gray-700 px-3 py-1.5 rounded-xl text-xs font-bold text-white shadow-inner">
-              <FaCalendarAlt className="text-[#D4AF37]" />
+              <FaCalendarAlt className="text-[#22D3EE]" />
               
               <select 
                 value={selectedMonth.split('-')[1]} 
@@ -402,7 +402,7 @@ export default function BalancePage({ user }) {
               <select 
                 value={selectedMonth.split('-')[0]} 
                 onChange={e => setSelectedMonth(`${e.target.value}-${selectedMonth.split('-')[1]}`)}
-                className="bg-transparent text-[#D4AF37] outline-none cursor-pointer appearance-none"
+                className="bg-transparent text-[#22D3EE] outline-none cursor-pointer appearance-none"
               >
                 <option value="2025" className="text-black">2025</option>
                 <option value="2026" className="text-black">2026</option>
@@ -428,7 +428,7 @@ export default function BalancePage({ user }) {
 
         {/* TÍTULO */}
         <div className="border-b border-gray-800 pb-6 mb-8">
-          <h1 className="text-3xl font-black italic uppercase text-[#D4AF37] flex items-center gap-3 tracking-tighter">
+          <h1 className="text-3xl font-black italic uppercase text-[#22D3EE] flex items-center gap-3 tracking-tighter">
             <FaChartLine /> Balance General y Rendimiento
           </h1>
           <p className="text-xs text-gray-400 mt-1">
@@ -458,7 +458,7 @@ export default function BalancePage({ user }) {
               <div className="bg-[#111] p-5 rounded-2xl border border-gray-800 shadow-lg flex flex-col justify-between">
                 <div>
                   <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest block mb-1">Costo Mercadería + Envíos</span>
-                  <span className="text-2xl font-black text-amber-500">₡{(costoTotalChemas + totalEnviosCobrados).toLocaleString()}</span>
+                  <span className="text-2xl font-black text-cyan-500">₡{(costoTotalChemas + totalEnviosCobrados).toLocaleString()}</span>
                 </div>
                 
                 <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-800/80">
@@ -472,7 +472,7 @@ export default function BalancePage({ user }) {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider">🚚 Envíos</span>
-                    <span className="text-[11px] font-bold text-blue-400">₡{totalEnviosCobrados.toLocaleString()}</span>
+                    <span className="text-[11px] font-bold text-cyan-400">₡{totalEnviosCobrados.toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -493,7 +493,7 @@ export default function BalancePage({ user }) {
                   : 'bg-gradient-to-br from-red-950/40 to-[#111] border-red-500/50 shadow-red-900/20'
               }`}>
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-widest block mb-1 text-[#D4AF37]">
+                  <span className="text-[10px] font-black uppercase tracking-widest block mb-1 text-[#22D3EE]">
                     Balance Neto (Utilidad)
                   </span>
                   <span className={`text-3xl font-black tracking-tight ${balanceNeto >= 0 ? 'text-green-400' : 'text-red-400'}`}>
@@ -551,8 +551,8 @@ export default function BalancePage({ user }) {
                             </td>
                             <td className="py-3 px-4">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                                exp.categoria === 'Publicidad' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                exp.categoria === 'Salarios' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                                exp.categoria === 'Publicidad' ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30' :
+                                exp.categoria === 'Salarios' ? 'bg-zinc-500/20 text-zinc-400 border border-zinc-500/30' :
                                 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
                               }`}>
                                 {exp.categoria}
@@ -587,8 +587,8 @@ export default function BalancePage({ user }) {
 
       {/* ⚠️ MODAL ELEGANTE PARA ELIMINAR GASTO */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 overflow-hidden text-center">
+        <div className="fs-modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-sm flex flex-col p-6 relative animate-in zoom-in-95 duration-200 overflow-hidden text-center">
             
             <div className="w-12 h-12 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4 shadow-sm">
               <FaExclamationTriangle size={20} />
@@ -625,8 +625,8 @@ export default function BalancePage({ user }) {
 
       {/* 🚀 MODAL PARA AÑADIR GASTO MANUAL */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="fs-modal fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+          <div className="fs-dialog bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-md flex flex-col max-h-[90vh] relative animate-in zoom-in-95 duration-200 overflow-hidden">
             
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <div className="flex items-center gap-2.5">

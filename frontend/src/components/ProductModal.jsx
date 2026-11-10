@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { FaWhatsapp, FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { motion, AnimatePresence } from "framer-motion";
+import { API_ORIGIN } from '../config';
 
 // ✅ MEJORA 1: Usamos la misma lógica que en AddProduct para evitar errores de URL
-const API_BASE = import.meta.env.VITE_API_URL || "https://fut-store.onrender.com";
+const API_BASE = API_ORIGIN;
 
 const TALLAS_ADULTO = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
 const TALLAS_NINO   = ['16', '18', '20', '22', '24', '26', '28'];
@@ -320,7 +321,7 @@ export default function ProductModal({
           ) : (
             <>
               <span className="block text-xs uppercase text-gray-500">{viewProduct?.type}</span>
-              <h2 className="text-xl font-extrabold" style={{ color: '#9E8F91' }}>
+              <h2 className="text-xl font-extrabold" style={{ color: '#A1A1AA' }}>
                 {viewProduct?.name}
               </h2>
             </>
@@ -413,7 +414,7 @@ export default function ProductModal({
         <div className="mt-4">
           <p className="font-semibold mb-2">Stock por talla:</p>
           {tallasVisibles.map((talla) => (
-            <div key={talla} className="flex justify-between items-center border rounded px-2 py-1 mb-1 text-[#d4af37]">
+            <div key={talla} className="flex justify-between items-center border rounded px-2 py-1 mb-1 text-[#22D3EE]">
               <span>{talla}</span>
               {isEditing ? (
                 <input
@@ -436,7 +437,7 @@ export default function ProductModal({
               {loading ? 'Guardando...' : 'Guardar'}
             </button>
           ) : canEdit && (
-            <button className="bg-blue-600 text-white py-2 rounded" onClick={() => setIsEditing(true)}>
+            <button className="bg-cyan-600 text-white py-2 rounded" onClick={() => setIsEditing(true)}>
               Editar
             </button>
           )}

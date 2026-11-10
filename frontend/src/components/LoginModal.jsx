@@ -1,9 +1,11 @@
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { FiEye, FiEyeOff, FiX, FiPhone } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiPhone, FiMail, FiLock, FiUser, FiLogIn, FiUserPlus, FiKey } from 'react-icons/fi';
+import ModalShell from './ModalShell';
 import 'react-toastify/dist/ReactToastify.css';
+import { API_ORIGIN } from '../config';
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://fut-store.onrender.com";
+const API_BASE = API_ORIGIN;
 
 export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   // Estados de campos
@@ -16,6 +18,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   // Modos: 'login', 'register', 'forgot'
   const [mode, setMode] = useState('login'); 
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const cardRef = useRef(null);
 
   // 🛡️ Validaciones de contraseña
@@ -58,6 +61,7 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
     }
 
     // 2. Lógica según el modo
+    setLoading(true);
     try {
       if (mode === 'forgot') {
         const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
@@ -103,7 +107,9 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
         toast.success('¡Registro exitoso! Ya puedes iniciar sesión.');
         setMode('login');
       } else {
+        if (!data.token) throw new Error('No se pudo iniciar sesión. Intenta de nuevo.');
         const userData = {
+          token: data.token,
           id: data.id,
           username: data.firstName, 
           firstName: data.firstName,
@@ -120,125 +126,121 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
       }
     } catch (err) {
       toast.error(err.message || 'Error de conexión');
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div ref={cardRef} className="relative w-full max-w-sm rounded-xl bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        
-        <button onClick={onClose} className="absolute right-3 top-2 p-1.5 rounded-md fondo-plateado text-black z-10 hover:brightness-90 transition">
-          <FiX size={20} />
-        </button>
+  const META = {
+    login: { title: 'Iniciar sesión', subtitle: 'Accede a tu panel de FutStore', icon: FiLogIn, cta: 'Entrar' },
+    register: { title: 'Crear cuenta', subtitle: 'Regístrate en segundos', icon: FiUserPlus, cta: 'Crear cuenta' },
+    forgot: { title: 'Recuperar clave', subtitle: 'Te enviamos un enlace a tu correo', icon: FiKey, cta: 'Enviar enlace' },
+  }[mode];
 
-        <div className="pt-8 pb-2 text-center">
-          <h2 className="text-xl font-bold text-gray-800 uppercase tracking-tight">
-            {mode === 'login' && 'Iniciar Sesión'}
-            {mode === 'register' && 'Crear Cuenta'}
-            {mode === 'forgot' && 'Recuperar Clave'}
-          </h2>
+  const Rule = ({ ok, children }) => (
+    <li className={`flex items-center gap-1.5 text-[11px] ${ok ? 'font-bold text-cyan-700' : 'text-zinc-400'}`}>
+      <span className={`grid h-4 w-4 place-items-center rounded-full text-[9px] ${ok ? 'bg-cyan-500 text-white' : 'bg-zinc-200 text-zinc-500'}`}>{ok ? '✓' : ''}</span>
+      {children}
+    </li>
+  );
+
+  return (
+    <ModalShell onClose={onClose} title={META.title} subtitle={META.subtitle} icon={META.icon} size="sm">
+      <form ref={cardRef} onSubmit={handleSubmit} className="space-y-4">
+        {mode === 'register' && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="fs-label">Nombre</label>
+                <div className="relative">
+                  <FiUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                  <input type="text" placeholder="Nombre" value={firstName} onChange={(e) => setFirstName(e.target.value)} className="fs-input pl-9" autoComplete="given-name" />
+                </div>
+              </div>
+              <div>
+                <label className="fs-label">Apellido</label>
+                <input type="text" placeholder="Apellido" value={lastName} onChange={(e) => setLastName(e.target.value)} className="fs-input" autoComplete="family-name" />
+              </div>
+            </div>
+            <div>
+              <label className="fs-label">Celular</label>
+              <div className="relative">
+                <FiPhone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+                <input type="tel" inputMode="numeric" placeholder="8 dígitos" value={phone} onChange={handlePhoneChange} className="fs-input pl-9" autoComplete="tel" />
+              </div>
+            </div>
+          </>
+        )}
+
+        <div>
+          <label className="fs-label">Correo electrónico</label>
+          <div className="relative">
+            <FiMail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+            <input type="email" placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} className="fs-input pl-9" autoComplete="email" autoFocus />
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
-          
-          {mode === 'register' && (
-            <>
-              <div className="grid grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2">
-                <input
-                  type="text" placeholder="Nombre" value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-300"
-                />
-                <input
-                  type="text" placeholder="Apellido" value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-300"
-                />
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><FiPhone size={14}/></span>
-                <input
-                  type="text" placeholder="Celular (8 dígitos)" value={phone}
-                  onChange={handlePhoneChange}
-                  className="w-full rounded-lg border border-gray-300 pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-300"
-                />
-              </div>
-            </>
-          )}
-
+        {mode !== 'forgot' && (
           <div>
-            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Correo Electrónico</label>
-            <input
-              type="email" placeholder="tu@correo.com" value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-gray-300"
-            />
-          </div>
-
-          {mode !== 'forgot' && (
-            <div>
-              <div className="flex justify-between items-center mb-1 ml-1">
-                <label className="block text-[10px] font-bold text-gray-500 uppercase">Contraseña</label>
-                {mode === 'login' && (
-                  <button type="button" onClick={() => setMode('forgot')} className="text-[10px] text-blue hover:text-black hover:underline bg-transparent">
-                    ¿Olvidaste tu contraseña?
-                  </button>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full rounded-lg border px-3 py-2 pr-10 outline-none focus:ring-2 transition-all ${
-                    mode === 'register' && password.length > 0 
-                    ? (isPasswordValid ? 'border-green-500 focus:ring-green-100' : 'border-red-300 focus:ring-red-50') 
-                    : 'border-gray-300'
-                  }`}
-                />
-                <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-3 top-0 -translate-y-1/2 text-gray-400 bg-transparent flex items-center h-full">
-                  {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-                </button>
-              </div>
-
-              {mode === 'register' && (
-                <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-100">
-                  <ul className="space-y-1">
-                    <li className={`flex items-center text-[10px] ${hasLength ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      <span className="mr-1.5">{hasLength ? '✓' : '○'}</span> 6+ caracteres
-                    </li>
-                    <li className={`flex items-center text-[10px] ${hasUpper ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      <span className="mr-1.5">{hasUpper ? '✓' : '○'}</span> Una MAYÚSCULA
-                    </li>
-                    <li className={`flex items-center text-[10px] ${hasNumber ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      <span className="mr-1.5">{hasNumber ? '✓' : '○'}</span> Un número
-                    </li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="pt-2 space-y-4">
-            <button type="submit" className="w-full rounded-lg py-2.5 font-bold text-black transition hover:scale-[1.02] shadow-md fondo-plateado">
-              {mode === 'login' && 'Entrar'}
-              {mode === 'register' && 'Crear Cuenta'}
-              {mode === 'forgot' && 'Enviar Enlace'}
-            </button>
-
-            <div className="text-center text-xs text-gray-600">
+            <div className="mb-1 flex items-center justify-between">
+              <label className="fs-label mb-0">Contraseña</label>
               {mode === 'login' && (
-                <>¿No tienes cuenta? <button type="button" onClick={() => setMode('register')} className="font-bold underline hover:text-black">Regístrate</button></>
-              )}
-              {mode === 'register' && (
-                <>¿Ya tienes cuenta? <button type="button" onClick={() => setMode('login')} className="font-bold underline hover:text-black">Inicia sesión</button></>
-              )}
-              {mode === 'forgot' && (
-                <button type="button" onClick={() => setMode('login')} className="font-bold underline hover:text-black">Volver al inicio de sesión</button>
+                <button type="button" onClick={() => setMode('forgot')} className="border-0 bg-transparent p-0 text-[11px] font-semibold text-cyan-700 hover:underline">
+                  ¿La olvidaste?
+                </button>
               )}
             </div>
+            <div className="relative">
+              <FiLock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={14} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                className={`fs-input pl-9 pr-11 ${mode === 'register' && password.length > 0 ? (isPasswordValid ? '!border-cyan-500' : '!border-red-300') : ''}`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-lg border-0 bg-transparent p-0 text-zinc-400 hover:text-black"
+              >
+                {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+              </button>
+            </div>
+
+            {mode === 'register' && (
+              <ul className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-zinc-100 bg-zinc-50 p-3">
+                <Rule ok={hasLength}>6+ letras</Rule>
+                <Rule ok={hasUpper}>Mayúscula</Rule>
+                <Rule ok={hasNumber}>Número</Rule>
+              </ul>
+            )}
           </div>
-        </form>
-      </div>
-    </div>
+        )}
+
+        <button type="submit" disabled={loading} className="fs-btn fs-btn-primary w-full">
+          {loading ? (
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+          ) : (
+            <META.icon size={14} />
+          )}
+          {loading ? 'Procesando…' : META.cta}
+        </button>
+
+        <p className="text-center text-xs text-zinc-500">
+          {mode === 'login' && (
+            <>¿No tienes cuenta?{' '}<button type="button" onClick={() => setMode('register')} className="border-0 bg-transparent p-0 font-bold text-black hover:text-cyan-700">Regístrate</button></>
+          )}
+          {mode === 'register' && (
+            <>¿Ya tienes cuenta?{' '}<button type="button" onClick={() => setMode('login')} className="border-0 bg-transparent p-0 font-bold text-black hover:text-cyan-700">Inicia sesión</button></>
+          )}
+          {mode === 'forgot' && (
+            <button type="button" onClick={() => setMode('login')} className="border-0 bg-transparent p-0 font-bold text-black hover:text-cyan-700">← Volver a iniciar sesión</button>
+          )}
+        </p>
+      </form>
+    </ModalShell>
   );
 }

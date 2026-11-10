@@ -1,3 +1,5 @@
+import ModalShell from './ModalShell';
+import { FaBoxOpen } from 'react-icons/fa';
 import React from 'react';
 import { FaTimes, FaUserTie, FaChevronDown, FaCheck, FaSpinner, FaIdCard, FaPhone, FaUser, FaPlus, FaSearch, FaTshirt, FaTags, FaImage } from 'react-icons/fa';
 
@@ -30,23 +32,26 @@ export default function NewApartadoModal({
   // Lista de tallas predeterminada para pedidos especiales de Tacos
   const TALLAS_TACOS = ['7 US (40)', '7,5 US (40,5)', '8 US (41)', '8,5 US (42)', '9 US (42,5)', '9,5 US (43)', '10 US (44)', '10,5 US (44,5)', '11 US (45)', '11,5 US (45,5)', '12 US (46)'];
 
-  return (
-    <div className="fixed inset-0 z-[999] bg-black/80 backdrop-blur-sm flex items-start justify-center p-2 sm:p-6 overflow-y-auto">
-      {/* Usamos my-8 para que tenga margen arriba y abajo al hacer scroll */}
-      <div className="bg-white text-black rounded-[2rem] shadow-2xl w-full max-w-2xl flex flex-col my-8 relative animate-in zoom-in-95 duration-200">
-        
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-[2rem] shrink-0">
-          <div>
-            <h3 className="font-black uppercase text-sm tracking-tight text-black">Registrar Nuevo Apartado</h3>
-          </div>
-          <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-full bg-gray-200 hover:bg-black hover:text-white flex items-center justify-center transition cursor-pointer">
-            <FaTimes size={12} />
-          </button>
-        </div>
+  const close = () => setShowAddModal(false);
 
-        <form onSubmit={handleCrearApartado} className="flex flex-col">
-          
-          <div className="p-4 sm:p-6 space-y-5 bg-white">
+  return (
+    <ModalShell
+      onClose={close}
+      title="Nuevo apartado"
+      subtitle="Registra el pedido y el abono inicial"
+      icon={FaBoxOpen}
+      size="xl"
+      zIndex={999}
+      closeOnBackdrop={false}
+      footer={
+        <div className="flex gap-2">
+          <button type="button" onClick={close} className="fs-btn fs-btn-ghost w-1/3">Cancelar</button>
+          <button type="submit" form="new-apartado-form" className="fs-btn fs-btn-primary w-2/3">Registrar apartado</button>
+        </div>
+      }
+    >
+        <form id="new-apartado-form" onSubmit={handleCrearApartado} className="flex flex-col">
+          <div className="space-y-5">
             
             {/* EMPLEADO */}
             <div className="relative z-50" ref={employeeDropdownRef}>
@@ -85,7 +90,7 @@ export default function NewApartadoModal({
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase mb-1 flex justify-between items-center">
                     Cédula *
-                    {buscandoCedula && <span className="text-blue-500 flex items-center gap-1"><FaSpinner className="animate-spin" size={10}/> TSE</span>}
+                    {buscandoCedula && <span className="text-cyan-500 flex items-center gap-1"><FaSpinner className="animate-spin" size={10}/> TSE</span>}
                   </label>
                   <div className="relative">
                     <FaIdCard className="absolute left-3 top-3 text-gray-400" size={12}/>
@@ -208,9 +213,9 @@ export default function NewApartadoModal({
                                     >
                                       <div className="flex items-center gap-2.5 min-w-0 pr-2">
                                         {imgCat ? (
-                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border flex-shrink-0" />
+                                          <img src={imgCat} alt={cat.name} className="w-8 h-8 object-cover rounded-md border shrink-0" />
                                         ) : (
-                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 flex-shrink-0">
+                                          <div className="w-8 h-8 bg-gray-200 rounded-md flex items-center justify-center text-gray-500 shrink-0">
                                             <FaTshirt size={12} />
                                           </div>
                                         )}
@@ -226,7 +231,7 @@ export default function NewApartadoModal({
                                           </span>
                                         </div>
                                       </div>
-                                      <span className="font-black text-green-700 whitespace-nowrap text-xs flex-shrink-0">
+                                      <span className="font-black text-green-700 whitespace-nowrap text-xs shrink-0">
                                         ₡{precioCat.toLocaleString()}
                                       </span>
                                     </button>
@@ -350,7 +355,7 @@ export default function NewApartadoModal({
                                 actualizarProducto(index, 'precioItem', pr * (Number(val) || 1));
                               }
                             }}
-                            className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-black text-center outline-none focus:border-black bg-amber-50 h-8" 
+                            className="w-full border border-gray-300 p-1.5 rounded-lg text-xs font-black text-center outline-none focus:border-black bg-cyan-50 h-8" 
                           />
                         </div>
                         <div className="col-span-5">
@@ -395,7 +400,7 @@ export default function NewApartadoModal({
 
               {/* 📍 SE MUESTRA SOLO SI REQUIERE ENVÍO */}
               {form.requiereEnvio && (
-                <div className="space-y-3 bg-blue-50/40 p-3 rounded-xl border border-blue-100 mb-2 animate-in fade-in zoom-in duration-200">
+                <div className="space-y-3 bg-cyan-50/40 p-3 rounded-xl border border-cyan-100 mb-2 animate-in fade-in zoom-in duration-200">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Dirección de Envío *</label>
                     <textarea 
@@ -404,7 +409,7 @@ export default function NewApartadoModal({
                       value={form.direccionEnvio} 
                       onChange={e => setForm({...form, direccionEnvio: e.target.value})} 
                       placeholder="Ej: San José, Escazú, 100m sur del parque..." 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
                     />
                   </div>
                   <div>
@@ -415,7 +420,7 @@ export default function NewApartadoModal({
                       value={form.costoEnvio} 
                       onChange={e => setForm({...form, costoEnvio: e.target.value})} 
                       placeholder="0" 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold text-blue-600 focus:border-black outline-none bg-white" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold text-cyan-600 focus:border-black outline-none bg-white" 
                     />
                   </div>
                 </div>
@@ -423,45 +428,30 @@ export default function NewApartadoModal({
             </div>
 
             {/* TOTALES */}
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mt-2">
+            <div className="rounded-2xl bg-black p-4 mt-2 text-white shadow-lg">
               <div className="flex justify-between items-center mb-3">
                 <div>
-                  <p className="text-[10px] font-black uppercase text-green-800 tracking-wider">Total Pedido:</p>
-                  <p className="text-[9px] font-bold text-green-600">{form.productos.reduce((sum, p) => sum + Number(p.cantidad), 0)} artículos en total</p>
+                  <p className="text-[10px] font-black uppercase text-white/60 tracking-wider">Total Pedido:</p>
+                  <p className="text-[10px] font-bold text-cyan-300">{form.productos.reduce((sum, p) => sum + Number(p.cantidad), 0)} artículos en total</p>
                 </div>
-                <p className="text-xl font-black text-green-700">₡{totalCalculado.toLocaleString()}</p>
+                <p className="font-display text-3xl tracking-wide text-cyan-300">₡{totalCalculado.toLocaleString()}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 border-t border-green-200 pt-3">
+              <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-3">
                 <div>
-                  <label className="text-[10px] font-bold text-green-800 uppercase mb-1 block">Abono Inicial (₡) *</label>
-                  <input type="number" required placeholder="Ej: 15000" value={form.abono} onChange={e => setForm({...form, abono: e.target.value})} className="w-full border border-green-300 p-2 rounded-xl text-sm font-black text-green-700 bg-white outline-none focus:border-green-600" />
+                  <label className="text-[10px] font-bold text-white/60 uppercase mb-1 block">Abono Inicial (₡) *</label>
+                  <input type="number" required placeholder="Ej: 15000" value={form.abono} onChange={e => setForm({...form, abono: e.target.value})} className="w-full border border-white/20 p-2 rounded-xl text-sm font-black text-black bg-white outline-none" />
                 </div>
                 <div className="flex flex-col justify-end">
-                  <p className="text-[9px] font-bold text-gray-500 uppercase mb-1">Saldo Faltante</p>
-                  <p className="text-lg font-black text-red-600">₡{faltanteCalculado > 0 ? faltanteCalculado.toLocaleString() : 0}</p>
+                  <p className="text-[10px] font-bold text-white/50 uppercase mb-1">Saldo Faltante</p>
+                  <p className="text-lg font-black text-red-400">₡{faltanteCalculado > 0 ? faltanteCalculado.toLocaleString() : 0}</p>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* PIE DEL MODAL */}
-          <div className="p-4 border-t border-gray-100 bg-gray-50 flex gap-2 rounded-b-[2rem] shrink-0">
-            <button 
-              type="button" 
-              onClick={() => setShowAddModal(false)} 
-              className="w-1/3 py-3 border rounded-xl font-bold text-xs text-gray-700 hover:bg-gray-200 transition cursor-pointer bg-white shadow-sm"
-            >
-              Cancelar
-            </button>
-            <button type="submit" className="w-2/3 py-3 bg-black hover:bg-gray-600 text-white rounded-xl font-black text-xs shadow-md transition uppercase tracking-widest cursor-pointer">
-              Registrar 
-            </button>
-          </div>
-
         </form>
-      </div>
-    </div>
+    </ModalShell>
   );
 }

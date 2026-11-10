@@ -3,12 +3,18 @@ import Product from '../models/Product.js';
 import History from '../models/History.js';
 import cloudinary from '../config/cloudinary.js';
 import multer from 'multer';
+import { escapeRegex } from '../utils/security.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
 /* ================= Multer ================= */
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024, files: 12 }, // 10MB por imagen, máx 12
+  fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype)),
+});
 
 /* ================= Helpers ================= */
 const ADULT_SIZES = ['S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
@@ -32,8 +38,6 @@ function whoDidIt(req) {
   return (
     req.user?.name ||
     req.user?.email ||
-    req.headers['x-user'] ||
-    req.body.user ||
     'Sistema'
   );
 }
@@ -100,7 +104,7 @@ router.get('/health', async (_req, res) => {
 });
 
 /** Catálogo completo para POS */
-router.get('/all-pos', async (req, res) => {
+router.get('/all-pos', requireAuth, async (req, res) => {
   try {
     // 👇 NUEVO: Agregamos 'ubicacion' para que la página la reciba al hacer ventas rápidas
     const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy ubicacion';
@@ -121,12 +125,12 @@ router.get('/', async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
-    const q = (req.query.q || '').trim();
-    const type = (req.query.type || '').trim();
-    const mode = (req.query.mode || '').trim();
+    const q = String(req.query.q || '').trim().slice(0, 80);
+    const type = String(req.query.type || '').trim();
+    const mode = String(req.query.mode || '').trim();
 
     const find = {};
-    if (q) find.name = { $regex: q,$options: 'i' };
+    if (q) find.name = { $regex: escapeRegex(q), $options: 'i' };
 
     if (type === 'Ofertas') {
       find.discountPrice = { $ne: null,$gt: 0 };
@@ -139,7 +143,10 @@ router.get('/', async (req, res) => {
     }
 
     // 👇 NUEVO: Agregamos 'ubicacion' en la vista estándar del catálogo
-    const projection = 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy ubicacion';
+    // Público: solo lo necesario. Personal con sesión: también bodega, ubicación y bloqueo.
+    const projection = req.user
+      ? 'name price discountPrice type imageSrc images stock bodega createdAt isNew isMundial lockedBy ubicacion'
+      : 'name price discountPrice type imageSrc images stock createdAt isNew isMundial';
 
     // 🏆 Ordenado por _id descendente
     const [items, total] = await Promise.all([
@@ -147,7 +154,8 @@ router.get('/', async (req, res) => {
       Product.countDocuments(find),
     ]);
 
-    res.set('Cache-Control', 'public, max-age=20');
+    res.set('Vary', 'Authorization');
+    res.set('Cache-Control', req.user ? 'private, no-store' : 'public, max-age=20');
     res.json({
       items: items || [],
       total: total || 0,
@@ -156,13 +164,14 @@ router.get('/', async (req, res) => {
       limit,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener los productos', details: err.message });
+    console.error('Error listando productos:', err);
+    res.status(500).json({ error: 'Error al obtener los productos' });
   }
 });
 
 /* ==================== RUTAS DE BLOQUEO (CANDADO) ================== */
 
-router.post('/:id/lock', async (req, res) => {
+router.post('/:id/lock', requireAuth, async (req, res) => {
   try {
       const product = await Product.findById(req.params.id);
       if (!product) return res.status(404).json({ error: "Producto no encontrado" });
@@ -187,7 +196,7 @@ router.post('/:id/lock', async (req, res) => {
   }
 });
 
-router.post('/:id/unlock', async (req, res) => {
+router.post('/:id/unlock', requireAuth, async (req, res) => {
   try {
       const product = await Product.findById(req.params.id);
       const user = whoDidIt(req);
@@ -206,16 +215,19 @@ router.post('/:id/unlock', async (req, res) => {
 /** Obtener producto por ID */
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const query = Product.findById(req.params.id);
+    if (!req.user) query.select('-bodega -lockedBy -lockedAt -ubicacion'); // datos internos solo para personal
+    const product = await query;
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
     res.json(product);
   } catch (err) {
+    if (err?.name === 'CastError') return res.status(404).json({ error: 'Producto no encontrado' });
     res.status(500).json({ error: 'Error al obtener el producto' });
   }
 });
 
 /** Crear producto */
-router.post('/', upload.any(), async (req, res) => {
+router.post('/', requireRole('add'), upload.any(), async (req, res) => {
   try {
     const files = (req.files || []).filter(
       (f) => f.fieldname === 'images' || f.fieldname === 'image'
@@ -272,12 +284,14 @@ router.post('/', upload.any(), async (req, res) => {
 
     res.status(201).json(product);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Error al crear producto' });
+    console.error('Error creando producto:', err);
+    if (err?.name === 'ValidationError') return res.status(400).json({ error: 'Datos del producto inválidos (revisa nombre, precio, tipo y tallas)' });
+    res.status(500).json({ error: 'Error al crear producto' });
   }
 });
 
 /** Actualizar producto */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireRole('edit'), async (req, res) => {
   try {
     const prev = await Product.findById(req.params.id).lean();
     if (!prev) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -301,8 +315,8 @@ router.put('/:id', async (req, res) => {
     if (incomingBodega && typeof incomingBodega === 'object') nextBodega = sanitizeInv(incomingBodega);
 
     const update = {
-      name: req.body.name ? req.body.name.trim().slice(0, 150) : prev.name,
-      type: req.body.type ? req.body.type.trim().slice(0, 40) : prev.type,
+      name: typeof req.body.name === 'string' && req.body.name.trim() ? req.body.name.trim().slice(0, 150) : prev.name,
+      type: typeof req.body.type === 'string' && req.body.type.trim() ? req.body.type.trim().slice(0, 40) : prev.type,
       price: Number(req.body.price) || prev.price,
       discountPrice: (req.body.discountPrice !== undefined && req.body.discountPrice !== '') ? Number(req.body.discountPrice) : prev.discountPrice,
       stock: nextStock,
@@ -365,12 +379,15 @@ router.put('/:id', async (req, res) => {
     }
     res.json(updated);
   } catch (err) {
+    console.error('Error actualizando producto:', err);
+    if (err?.name === 'ValidationError') return res.status(400).json({ error: 'Datos del producto inválidos' });
+    if (err?.name === 'CastError') return res.status(404).json({ error: 'Producto no encontrado' });
     res.status(500).json({ error: 'Error al actualizar producto' });
   }
 });
 
 /** Eliminar producto */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireRole('delete'), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });

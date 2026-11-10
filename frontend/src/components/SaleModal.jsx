@@ -93,7 +93,7 @@ export default function SaleModal({
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-[10px] font-bold text-gray-500 uppercase">Nombre del Cliente *</label>
-                {loadingCedula && <span className="text-[9px] font-bold text-amber-600 animate-pulse">Buscando...</span>}
+                {loadingCedula && <span className="text-[9px] font-bold text-cyan-600 animate-pulse">Buscando...</span>}
               </div>
               <div className="relative">
                 <input type="text" required value={saleForm.nombre} onChange={e => setSaleForm({...saleForm, nombre: e.target.value})} placeholder={loadingCedula ? "Autocompletando..." : "Nombre completo"} className="w-full border p-2 rounded-lg text-xs focus:border-black outline-none pl-7 font-bold h-9.5" />
@@ -119,7 +119,7 @@ export default function SaleModal({
               {/* CANTIDAD (Ancho: 2 columnas) */}
               <div className="col-span-2">
                 <label className="text-[9px] font-bold text-gray-500 uppercase block mb-1 text-center truncate">Cant.</label>
-                <input type="number" min="1" required value={saleForm.cantidadVendida} onChange={e => handleQuantityChange(e.target.value)} className="w-full border p-2 rounded-lg text-xs font-black text-center text-black focus:border-black outline-none bg-amber-50 h-9.5" />
+                <input type="number" min="1" required value={saleForm.cantidadVendida} onChange={e => handleQuantityChange(e.target.value)} className="w-full border p-2 rounded-lg text-xs font-black text-center text-black focus:border-black outline-none bg-cyan-50 h-9.5" />
               </div>
 
               {/* CHEMAS (Ancho: 5 columnas) */}
@@ -158,7 +158,7 @@ export default function SaleModal({
 
               {/* 📍 SE MUESTRA SOLO SI REQUIERE ENVÍO */}
               {saleForm.requiereEnvio && (
-                <div className="space-y-3 bg-blue-50/40 p-3 rounded-xl border border-blue-100 mb-2 animate-in fade-in zoom-in duration-200">
+                <div className="space-y-3 bg-cyan-50/40 p-3 rounded-xl border border-cyan-100 mb-2 animate-in fade-in zoom-in duration-200">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase block mb-1">Dirección de Envío *</label>
                     <textarea 
@@ -167,7 +167,7 @@ export default function SaleModal({
                       value={saleForm.direccionEnvio} 
                       onChange={e => setSaleForm({...saleForm, direccionEnvio: e.target.value})} 
                       placeholder="Ej: San José, Escazú, 100m sur del parque..." 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold focus:border-black outline-none bg-white resize-none" 
                     />
                   </div>
                   <div>
@@ -178,7 +178,7 @@ export default function SaleModal({
                       value={saleForm.costoEnvio} 
                       onChange={e => setSaleForm({...saleForm, costoEnvio: e.target.value})} 
                       placeholder="0" 
-                      className="w-full border border-blue-200 p-2 rounded-lg text-xs font-bold text-blue-600 focus:border-black outline-none bg-white" 
+                      className="w-full border border-cyan-200 p-2 rounded-lg text-xs font-bold text-cyan-600 focus:border-black outline-none bg-white" 
                     />
                   </div>
                 </div>
