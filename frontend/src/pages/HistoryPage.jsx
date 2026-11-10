@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import { FaHistory, FaTrash, FaUser, FaCalendarAlt, FaArrowLeft, FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import Footer from "../components/Footer";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -51,8 +52,9 @@ export default function HistoryPage({ user }) {
     fetchHistory();
   }, [selectedDate]); 
 
+  const [confirmClear, setConfirmClear] = useState(false);
+
   const handleClear = async () => {
-    if (!window.confirm("¿Seguro que quieres eliminar TODO el historial?")) return;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/history`, {
@@ -62,6 +64,7 @@ export default function HistoryPage({ user }) {
       if (!res.ok) throw new Error();
       toast.success("Historial limpiado.");
       setLogs([]);
+      setConfirmClear(false);
     } catch {
       toast.error("Error al limpiar.");
     } finally {
@@ -129,7 +132,7 @@ export default function HistoryPage({ user }) {
                 {/* 👇 BOTÓN LIMPIAR REINSTALADO 👇 */}
                 {isSuperUser && (
                     <button 
-                        onClick={handleClear} 
+                        onClick={() => setConfirmClear(true)} 
                         className="w-full sm:w-auto bg-red-600 text-white px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-red-700 transition-all shadow-lg active:scale-95"
                     >
                         LIMPIAR TODO
@@ -194,6 +197,16 @@ export default function HistoryPage({ user }) {
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmClear}
+        title="Borrar historial"
+        subtitle="Esta acción no se puede deshacer"
+        message={`Se eliminarán TODOS los registros del historial de cambios${logs.length ? ` (${logs.length} visibles ahora)` : ''}. Las ventas, pedidos y productos no se tocan.`}
+        confirmLabel="Sí, borrar todo"
+        loading={loading}
+        onClose={() => !loading && setConfirmClear(false)}
+        onConfirm={handleClear}
+      />
       <Footer />
     </div>
   );

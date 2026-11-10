@@ -150,14 +150,7 @@ export default function InicioOverlay({ onComplete }) {
           FutStore
         </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.1, duration: 0.8 }}
-          className="mt-3 text-sm font-medium text-white/70 sm:text-base"
-        >
-          La élite del fútbol, en tu piel.
-        </motion.p>
+       
       </div>
 
       {/* 🌟 Barra de progreso + saltar */}

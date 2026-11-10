@@ -6,6 +6,7 @@ import { FaBoxOpen, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
+import ConfirmDialog from '../components/ConfirmDialog';
 import { API_URL } from '../config';
 
 
@@ -18,6 +19,8 @@ const OrdersPage = ({ user }) => {
     // Estados para el Modal de la Guía
     const [showTrackingModal, setShowTrackingModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [orderToDelete, setOrderToDelete] = useState(null);
+    const [deletingOrder, setDeletingOrder] = useState(false);
     const [trackingNumber, setTrackingNumber] = useState('');
     const [sendingTracking, setSendingTracking] = useState(false);
     
@@ -38,18 +41,20 @@ const OrdersPage = ({ user }) => {
         }
     };
 
-    const handleDeleteOrder = async (orderId) => {
-        if (!window.confirm("¿Estás seguro de que quieres ELIMINAR este pedido permanentemente?")) {
-            return;
-        }
-
+    const handleDeleteOrder = async () => {
+        if (!orderToDelete) return;
+        const orderId = orderToDelete._id;
+        setDeletingOrder(true);
         try {
             await axios.delete(`${API_URL}/orders/${orderId}`);
             setOrders(prevOrders => prevOrders.filter(order => order._id !== orderId));
-            toast.success("Pedido eliminado correctamente 🗑️");
+            setOrderToDelete(null);
+            toast.success("Pedido eliminado correctamente.");
         } catch (error) {
             console.error("Error eliminando:", error);
-            toast.error("No se pudo eliminar el pedido.");
+            toast.error(error?.response?.data?.message || "No se pudo eliminar el pedido.");
+        } finally {
+            setDeletingOrder(false);
         }
     };
 
@@ -186,7 +191,7 @@ const handleCopiarGuia = (order) => {
 
                                         {!showTrackingModal && (
                                             <button 
-                                                onClick={() => handleDeleteOrder(order._id)}
+                                                onClick={() => setOrderToDelete(order)}
                                                 className="absolute top-28 right-4 bg-zinc-900 hover:bg-red-600 text-gray-500 hover:text-white p-2.5 rounded-lg transition-all shadow-lg border border-gray-800 hover:border-red-500 z-10"
                                                 title="Eliminar Pedido"
                                             >
@@ -352,6 +357,32 @@ const handleCopiarGuia = (order) => {
                     </div>
                 </div>
             )}
+
+            <ConfirmDialog
+                open={Boolean(orderToDelete)}
+                title="Eliminar pedido"
+                subtitle="Esta acción no se puede deshacer"
+                message="El pedido se borrará permanentemente del tablero. Esto no devuelve stock ni anula la venta registrada."
+                loading={deletingOrder}
+                onClose={() => !deletingOrder && setOrderToDelete(null)}
+                onConfirm={handleDeleteOrder}
+                details={orderToDelete && (
+                    <div className="overflow-hidden rounded-2xl border border-zinc-200">
+                        <div className="flex items-center justify-between bg-zinc-50 px-4 py-2.5">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Pedido</span>
+                            <span className="font-mono text-xs font-bold text-zinc-900">{orderToDelete.orderId}</span>
+                        </div>
+                        <div className="space-y-1 px-4 py-3 text-sm">
+                            <p className="font-bold text-zinc-900">{orderToDelete.customer?.name || 'Cliente'}</p>
+                            <p className="text-[11px] text-zinc-500">{(orderToDelete.items || []).length} artículo(s) · {orderToDelete.status === 'paid' ? 'Pagado' : orderToDelete.status === 'sent' ? 'Enviado' : orderToDelete.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}</p>
+                        </div>
+                        <div className="flex items-end justify-between border-t border-zinc-100 px-4 py-3">
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Total</span>
+                            <span className="font-display text-2xl tracking-wide text-red-600">₡{Number(orderToDelete.total || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
+                )}
+            />
 
             <Footer />
         </div>

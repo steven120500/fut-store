@@ -46,43 +46,39 @@ function FlipText({ text, charClass = "", delay = 0 }) {
   );
 }
 
-// 👕 Camiseta del anillo: siempre mira a la cámara y se oscurece según su profundidad
+// 👕 Camiseta del anillo.
+// La posición "3D" se calcula con matemática 2D (x, escala, profundidad) en vez de translateZ + perspectiva:
+// se ve igual, pero la camiseta del frente queda a escala 1 (tamaño nativo) y nunca se agranda un bitmap,
+// que era lo que la hacía verse borrosa en Safari/iPhone. Sin blur y sin filtros en la del frente.
 function RingItem({ slide, index, ring, radius, size, isActive, onClick }) {
   const angle = index * STEP;
-  const facing = useTransform(ring, (r) => -(angle + r));
-  const depth = useTransform(ring, (r) => (Math.cos(((angle + r) * Math.PI) / 180) + 1) / 2); // 1 = al frente
-  const opacity = useTransform(depth, (d) => 0.12 + 0.88 * Math.pow(d, 2.2));
-  const filter = useTransform(depth, (d) => `brightness(${0.2 + 0.8 * Math.pow(d, 2)}) blur(${(1 - d) * 3}px)`);
+  const theta = useTransform(ring, (r) => ((angle + r) * Math.PI) / 180);
+  const depth = useTransform(theta, (t) => (Math.cos(t) + 1) / 2); // 1 = al frente, 0 = atrás
+  const x = useTransform(theta, (t) => Math.sin(t) * radius);
+  const y = useTransform(depth, (d) => -(1 - d) * size * 0.14); // las de atrás un poco más arriba (horizonte)
+  const scale = useTransform(depth, (d) => 0.42 + 0.58 * d);
+  const opacity = useTransform(depth, (d) => 0.1 + 0.9 * Math.pow(d, 2));
+  const zIndex = useTransform(depth, (d) => Math.round(d * 100));
+  const filter = useTransform(depth, (d) => (d > 0.97 ? "none" : `brightness(${(0.3 + 0.7 * d * d).toFixed(2)})`));
 
   return (
-    <div
-      className="preserve-3d absolute"
-      style={{
-        width: size,
-        height: size,
-        left: -size / 2,
-        top: -size / 2,
-        transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
-      }}
+    <motion.button
+      type="button"
+      onClick={onClick}
+      aria-label={isActive ? slide.title : `Ver ${slide.label}`}
+      style={{ x, y, scale, opacity, zIndex, width: size, height: size, left: -size / 2, top: -size / 2 }}
+      className="absolute rounded-none border-0 bg-transparent p-0 will-change-transform"
     >
-      <motion.button
-        type="button"
-        onClick={onClick}
-        aria-label={isActive ? slide.title : `Ver ${slide.label}`}
-        style={{ rotateY: facing, opacity }}
-        className="relative h-full w-full rounded-none border-0 bg-transparent p-0"
-      >
-        <motion.img
-          src={slide.image}
-          alt={slide.label}
-          style={{ filter }}
-          draggable={false}
-          className="h-full w-full object-contain drop-shadow-[0_30px_30px_rgba(0,0,0,0.85)]"
-          animate={isActive ? { y: [0, -10, 0] } : { y: 0 }}
-          transition={isActive ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
-        />
-      </motion.button>
-    </div>
+      <motion.img
+        src={slide.image}
+        alt={slide.label}
+        style={{ filter }}
+        draggable={false}
+        className="h-full w-full object-contain drop-shadow-[0_24px_24px_rgba(0,0,0,0.8)]"
+        animate={isActive ? { y: [0, -10, 0] } : { y: 0 }}
+        transition={isActive ? { duration: 3, repeat: Infinity, ease: "easeInOut" } : { duration: 0.4 }}
+      />
+    </motion.button>
   );
 }
 
@@ -115,8 +111,9 @@ export default function Bienvenido() {
   // Parallax con el mouse
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
-  const tiltY = useSpring(useTransform(mx, [-0.5, 0.5], [-14, 14]), { stiffness: 80, damping: 18 });
-  const tiltX = useSpring(useTransform(my, [-0.5, 0.5], [2, -12]), { stiffness: 80, damping: 18 });
+  const stageX = useSpring(useTransform(mx, [-0.5, 0.5], [-18, 18]), { stiffness: 80, damping: 18 });
+  const stageY = useSpring(useTransform(my, [-0.5, 0.5], [-10, 10]), { stiffness: 80, damping: 18 });
+  const floorTilt = useSpring(useTransform(mx, [-0.5, 0.5], [-8, 8]), { stiffness: 80, damping: 18 });
   const bgX = useSpring(useTransform(mx, [-0.5, 0.5], [18, -18]), { stiffness: 60, damping: 20 });
   const bgY = useSpring(useTransform(my, [-0.5, 0.5], [12, -12]), { stiffness: 60, damping: 20 });
 
@@ -204,7 +201,7 @@ export default function Bienvenido() {
             transition={{ duration: 0.6 }}
             className="mb-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300/90 sm:text-[11px]"
           >
-            <span className="h-px w-8 bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" /> Temporada 26/27 · Costa Rica
+           
           </motion.div>
 
           <h1 className="font-display uppercase leading-[1.08] tracking-wide text-white" style={titleSize}>
@@ -257,18 +254,18 @@ export default function Bienvenido() {
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
         >
-          <div className="relative w-full" style={{ height: stage.height, perspective: isMobile ? 900 : 1400 }}>
+          <div className="relative w-full" style={{ height: stage.height }}>
             <motion.div
-              className="preserve-3d absolute inset-0"
-              style={{ rotateX: tiltX, rotateY: tiltY }}
+              className="absolute inset-0"
+              style={{ x: stageX, y: stageY, perspective: isMobile ? 700 : 1100 }}
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 1, delay: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
             >
               {/* Piso: círculo central de la cancha en perspectiva */}
-              <div
-                className="preserve-3d pointer-events-none absolute left-1/2 top-1/2"
-                style={{ transform: `translate(-50%, -50%) translateY(${stage.floor}px) rotateX(90deg)` }}
+              <motion.div
+                className="pointer-events-none absolute left-1/2 top-1/2"
+                style={{ x: "-50%", y: stage.floor - (stage.radius * 2.7) / 2, rotateX: 78, rotateZ: floorTilt, transformOrigin: "50% 50%" }}
               >
                 <div className="relative" style={{ width: stage.radius * 2.7, height: stage.radius * 2.7 }}>
                   <div className="absolute inset-[18%] rounded-full bg-[radial-gradient(circle,rgba(34,211,238,0.22)_0%,rgba(255,255,255,0.06)_40%,transparent_65%)]" />
@@ -294,10 +291,10 @@ export default function Bienvenido() {
                     transition={{ duration: 2.6, repeat: Infinity, ease: "easeOut" }}
                   />
                 </div>
-              </div>
+              </motion.div>
 
               {/* Anillo de camisetas */}
-              <motion.div className="preserve-3d absolute left-1/2 top-1/2" style={{ rotateY: ring }}>
+              <div className="absolute left-1/2 top-1/2">
                 {slides.map((s, i) => (
                   <RingItem
                     key={s.id}
@@ -310,7 +307,7 @@ export default function Bienvenido() {
                     onClick={() => (i === activeIdx ? handleNavigation(s.eventName) : goTo(i))}
                   />
                 ))}
-              </motion.div>
+              </div>
             </motion.div>
 
             {/* Flechas */}
@@ -368,17 +365,6 @@ export default function Bienvenido() {
         </div>
       </div>
 
-      {/* 💬 WhatsApp flotante */}
-      <a
-        href={WHATSAPP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Escríbenos por WhatsApp"
-        className="group fixed bottom-5 left-5 z-50 grid h-14 w-14 place-items-center rounded-full bg-[#25D366] text-white shadow-[0_8px_30px_rgba(37,211,102,0.45)] transition hover:scale-110 md:bottom-8 md:left-8"
-      >
-        <span className="absolute inset-0 animate-ping rounded-full bg-[#25D366] opacity-40 [animation-duration:2.5s]" />
-        <FaWhatsapp className="relative text-3xl" />
-      </a>
     </section>
   );
 }

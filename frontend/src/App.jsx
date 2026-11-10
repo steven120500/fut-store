@@ -25,6 +25,7 @@ import tallaPorTipo from "./utils/tallaPorTipo";
 import { FaPlus, FaChevronLeft, FaChevronRight, FaArrowRight } from "react-icons/fa";
 import { toast } from "react-toastify";
 import FutToaster from "./components/FutToaster";
+import WhatsAppFloat from "./components/WhatsAppFloat";
 import "react-toastify/dist/ReactToastify.css";
 import "./index.css";
 import { AUTH_EXPIRED_EVENT } from "./authFetch";
@@ -534,6 +535,7 @@ function MainApp() {
                     />
 
                   <Bienvenido />
+                  <WhatsAppFloat />
                   
                   {canAdd && (
                     <button aria-label="Agregar producto" className="fixed bottom-6 right-6 z-50 grid h-14 w-14 place-items-center rounded-full bg-black text-white shadow-[0_10px_30px_rgba(0,0,0,0.35)] ring-1 ring-white/20 transition hover:scale-105" onClick={() => setShowAddModal(true)}>

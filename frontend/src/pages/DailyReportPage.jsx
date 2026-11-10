@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -37,7 +38,8 @@ export default function DailyReportPage({ user, onLogout }) {
   const [loading, setLoading] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
+  const [saleToDelete, setSaleToDelete] = useState(null); // venta pendiente de confirmar
+  const [deletingSale, setDeletingSale] = useState(false);
 
   // 📅 Estado para filtrar automáticamente por el mes actual (se resetea solo cada mes)
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthCR());
@@ -80,24 +82,28 @@ export default function DailyReportPage({ user, onLogout }) {
     }
   };
 
-  // 🗑️ ELIMINAR UNA VENTA INDIVIDUAL
-  const handleDeleteSale = async (saleId) => {
+  // 🗑️ ELIMINAR UNA VENTA INDIVIDUAL (tras confirmar en el diálogo)
+  const handleDeleteSale = async () => {
+    if (!saleToDelete) return;
+    const saleId = saleToDelete._id;
+    setDeletingSale(true);
     try {
-      const res = await fetch(`${API_BASE}/api/sales/${saleId}`, {
-        method: 'DELETE',
-        headers: { 'x-user': displayName }
-      });
+      const res = await fetch(`${API_BASE}/api/sales/${saleId}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "No se pudo eliminar la venta");
 
-      if (res.ok) {
-        toast.success("🗑️ Venta eliminada correctamente");
-        setSales(prev => prev.filter(s => s._id !== saleId));
-        setDeletingId(null);
-      } else {
-        throw new Error("No se pudo eliminar la venta");
-      }
+      setSales(prev => prev.filter(s => s._id !== saleId));
+      setSaleToDelete(null);
+      toast.success(
+        data.stockDevuelto > 0
+          ? `Venta eliminada. Se devolvieron ${data.stockDevuelto} producto(s) al inventario.`
+          : "Venta eliminada correctamente."
+      );
     } catch (error) {
       console.error("Error al eliminar venta:", error);
-      toast.error("Error al conectar con el servidor para eliminar la venta.");
+      toast.error(error.message || "Error al conectar con el servidor para eliminar la venta.");
+    } finally {
+      setDeletingSale(false);
     }
   };
 
@@ -526,24 +532,9 @@ export default function DailyReportPage({ user, onLogout }) {
                         <td className="p-4 text-center">
                           {isApartado ? (
                             <span className="text-[9px] text-gray-500 font-bold uppercase cursor-default block" title="Los apartados se gestionan en el Tablero de Apartados">En Tablero</span>
-                          ) : deletingId === itemId ? (
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => handleDeleteSale(itemId)}
-                                className="px-2 py-1 bg-red-600 text-white font-bold rounded text-[10px] hover:bg-red-700 cursor-pointer"
-                              >
-                                Sí
-                              </button>
-                              <button
-                                onClick={() => setDeletingId(null)}
-                                className="px-2 py-1 bg-gray-700 text-white font-bold rounded text-[10px] hover:bg-gray-600 cursor-pointer"
-                              >
-                                No
-                              </button>
-                            </div>
                           ) : (
                             <button
-                              onClick={() => setDeletingId(itemId)}
+                              onClick={() => setSaleToDelete(item)}
                               className="p-2 bg-red-600/10 text-red-400 hover:bg-red-600 hover:text-white rounded-xl transition cursor-pointer"
                               title="Eliminar venta"
                             >
@@ -562,6 +553,35 @@ export default function DailyReportPage({ user, onLogout }) {
         )}
 
       </div>
+
+      <ConfirmDialog
+        open={Boolean(saleToDelete)}
+        title="Eliminar venta"
+        subtitle="Esta acción no se puede deshacer"
+        message="La venta se quitará del reporte y los productos de inventario se devolverán al stock."
+        loading={deletingSale}
+        onClose={() => !deletingSale && setSaleToDelete(null)}
+        onConfirm={handleDeleteSale}
+        details={saleToDelete && (
+          <div className="overflow-hidden rounded-2xl border border-zinc-200">
+            <div className="flex items-center justify-between bg-zinc-50 px-4 py-2.5">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Cliente</span>
+              <span className="truncate pl-3 text-sm font-bold text-zinc-900">{saleToDelete.nombre || 'Sin nombre'}</span>
+            </div>
+            <div className="space-y-1 px-4 py-3">
+              <p className="line-clamp-2 text-xs font-bold uppercase text-zinc-700">{getResumenPrendas(saleToDelete)}</p>
+              <p className="text-[11px] text-zinc-500">
+                {new Date(saleToDelete.fecha || saleToDelete.createdAt).toLocaleDateString('es-CR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                {saleToDelete.vendedor ? ` · ${saleToDelete.vendedor}` : ''}
+              </p>
+            </div>
+            <div className="flex items-end justify-between border-t border-zinc-100 px-4 py-3">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Total</span>
+              <span className="font-display text-2xl tracking-wide text-red-600">₡{Number(saleToDelete.montoTotal || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      />
 
       {showResetModal && (
         <div className="fs-modal fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
