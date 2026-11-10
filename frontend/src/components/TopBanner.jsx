@@ -1,4 +1,6 @@
 import React from "react";
+import { motion } from "framer-motion";
+import useMarquee from "../hooks/useMarquee";
 
 const MESSAGES = [
   "Stock de +6000 chemas",
@@ -10,6 +12,7 @@ const MESSAGES = [
 // Franja plateada con mensajes en marquesina (se renderiza dentro del Header)
 export default function TopBanner() {
   const items = [...MESSAGES, ...MESSAGES, ...MESSAGES, ...MESSAGES];
+  const { trackRef, x, handlers } = useMarquee(40);
 
   return (
     <div
@@ -17,7 +20,7 @@ export default function TopBanner() {
       style={{ height: "var(--banner-h)" }}
       aria-label={MESSAGES.join(" · ")}
     >
-      <div className="flex w-max animate-marquee items-center hover:[animation-play-state:paused]" aria-hidden="true">
+      <motion.div ref={trackRef} style={{ x }} {...handlers} className="flex w-max items-center will-change-transform" aria-hidden="true">
         {[0, 1].map((dup) => (
           <div key={dup} className="flex shrink-0 items-center">
             {items.map((msg, i) => (
@@ -28,7 +31,7 @@ export default function TopBanner() {
             ))}
           </div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -99,24 +99,25 @@ export default function ProductCard({ product, onClick }) {
         {/* Degradado inferior para legibilidad */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/45 to-transparent opacity-80" />
 
-        {/* Etiquetas: misma familia visual (cápsula de vidrio negro) */}
-        <div className="absolute left-2 top-2 z-20 flex flex-col items-start gap-1.5 sm:left-3 sm:top-3">
-          {!isOutOfStock && isNew && (
-            <span className="flex items-center gap-1.5 rounded-full bg-black/80 py-1 pl-2 pr-2.5 text-[9px] font-black uppercase tracking-[0.18em] text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md sm:text-[10px]">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+        {/* Etiquetas: un solo contenedor; si no caben en una fila, "Oferta" baja a la siguiente línea */}
+        {!isOutOfStock && (isNew || hasDiscount) && (
+          <div className="pointer-events-none absolute inset-x-2 top-2 z-20 flex flex-wrap items-start gap-1 sm:inset-x-3 sm:top-3 sm:gap-1.5">
+            {isNew && (
+              <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-black/80 py-1 pl-2 pr-2.5 text-[9px] font-black uppercase tracking-[0.12em] text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md sm:text-[10px] sm:tracking-[0.18em]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                </span>
+                Nuevo
               </span>
-              Nuevo
-            </span>
-          )}
-        </div>
-
-        {!isOutOfStock && hasDiscount && (
-          <span className="absolute right-2 top-2 z-20 flex items-stretch overflow-hidden rounded-full shadow-[0_6px_18px_rgba(220,38,38,0.45)] ring-1 ring-white/20 sm:right-3 sm:top-3">
-            <span className="bg-black/80 px-2 py-1 text-[9px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-md sm:text-[10px]">Oferta</span>
-            <span className="bg-gradient-to-r from-red-600 to-red-500 px-2 py-1 text-[10px] font-black text-white sm:text-[11px]">-{discountPct}%</span>
-          </span>
+            )}
+            {hasDiscount && (
+              <span className="ml-auto flex shrink-0 items-stretch overflow-hidden rounded-full shadow-[0_6px_18px_rgba(220,38,38,0.45)] ring-1 ring-white/20">
+                <span className="bg-black/80 px-1.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white backdrop-blur-md sm:px-2 sm:text-[10px] sm:tracking-[0.18em]">Oferta</span>
+                <span className="bg-gradient-to-r from-red-600 to-red-500 px-1.5 py-1 text-[10px] font-black text-white sm:px-2 sm:text-[11px]">-{discountPct}%</span>
+              </span>
+            )}
+          </div>
         )}
 
         {/* Ver producto (desktop hover) */}

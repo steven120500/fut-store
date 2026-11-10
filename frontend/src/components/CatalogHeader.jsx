@@ -1,4 +1,6 @@
 import React from "react";
+import { motion } from "framer-motion";
+import useMarquee from "../hooks/useMarquee";
 
 const CATEGORY_BOXES = [
   { label: "Todos", value: "", sub: "Catálogo completo" },
@@ -18,6 +20,7 @@ const COPIES_PER_HALF = 2;
 
 export default function CatalogHeader({ filterType, setFilterType, setPage }) {
   const current = (filterType || "").toLowerCase();
+  const { trackRef, x, handlers } = useMarquee(70);
 
   const handleSelectCategory = (val) => {
     setFilterType((prev) => (prev === val && val !== "" ? "" : val));
@@ -100,12 +103,9 @@ export default function CatalogHeader({ filterType, setFilterType, setPage }) {
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#0b0b0b] to-transparent sm:w-32" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#0b0b0b] to-transparent sm:w-32" />
-        <div
-          className="flex w-max animate-marquee py-4 hover:[animation-play-state:paused] active:[animation-play-state:paused]"
-          style={{ animationDuration: "70s" }}
-        >
+        <motion.div ref={trackRef} style={{ x }} {...handlers} className="flex w-max py-4 will-change-transform">
           {halves}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
