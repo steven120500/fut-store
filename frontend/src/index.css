@@ -598,3 +598,28 @@
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
 }
+
+/* =================================================================
+   PRODUCT CARD — foto trasera (ProductCard.jsx, clases pc-flip*)
+   Desktop: al pasar el mouse alterna frente/espalda en bucle.
+   Celular (sin hover): alterna sola, empezando por la foto principal.
+   ================================================================= */
+.pc-flip-alt { opacity: 0; }
+.pc-flip:hover .pc-flip-alt { animation: pcSwapHover 1.5s infinite; }
+@keyframes pcSwapHover {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-flip:hover .pc-flip-alt { animation: none; opacity: 1; }
+}
+/* Va después de reduce-motion a propósito: es un fundido, no movimiento. */
+@media (hover: none) {
+  .pc-flip .pc-flip-alt,
+  .pc-flip:hover .pc-flip-alt { animation: pcSwapTouch 5s ease-in-out infinite; }
+}
+@keyframes pcSwapTouch {
+  0%, 42% { opacity: 0; }
+  50%, 92% { opacity: 1; }
+  100% { opacity: 0; }
+}

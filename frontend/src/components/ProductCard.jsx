@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cld } from "../utils/cloudinary";
 import { motion } from "framer-motion";
 import { FaArrowRight } from "react-icons/fa";
@@ -18,8 +19,13 @@ const getStockDisponible = (stockObj, tallaBuscada) => {
   return keyReal !== undefined && stockObj[keyReal] !== null ? Number(stockObj[keyReal]) : null;
 };
 
+// 📱 Pantallas táctiles (sin hover real): la foto trasera alterna sola
+const IS_TOUCH = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
+
 export default function ProductCard({ product, onClick }) {
-  const H = 800;
+  // 💸 La foto trasera solo se descarga cuando hace falta: en desktop al pasar el mouse;
+  // en celular cuando la card entra en pantalla (y ahí alterna sola, ver `.pc-flip` en index.css).
+  const [wantsAlt, setWantsAlt] = useState(false);
 
   // 1. IMAGEN PRINCIPAL (Frontal)
   const imgMain =
@@ -69,7 +75,11 @@ export default function ProductCard({ product, onClick }) {
   return (
     <motion.article
       whileTap={{ scale: 0.98 }}
-      className="group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-zinc-200/70 bg-white transition-all duration-300 ease-out hover:border-cyan-300/70 hover:shadow-[0_20px_40px_-12px_rgba(6,182,212,0.35)] md:hover:-translate-y-1.5"
+      onMouseEnter={() => setWantsAlt(true)}
+      onViewportEnter={() => {
+        if (IS_TOUCH) setWantsAlt(true);
+      }}
+      className="pc-flip group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-zinc-200/70 bg-white transition-all duration-300 ease-out hover:border-cyan-300/70 hover:shadow-[0_20px_40px_-12px_rgba(6,182,212,0.35)] md:hover:-translate-y-1.5"
       onClick={() => onClick(product)}
     >
       {/* 📸 Imagen */}
@@ -79,19 +89,20 @@ export default function ProductCard({ product, onClick }) {
             src={imgMain}
             alt={product.name}
             className={`h-full w-full object-cover object-top transition-all duration-700 ease-out md:group-hover:scale-105 ${
-              imgHover && !isOutOfStock ? "md:group-hover:opacity-0" : ""
-            } ${isOutOfStock ? "opacity-60 grayscale" : ""}`}
+              isOutOfStock ? "opacity-60 grayscale" : ""
+            }`}
             loading="lazy"
           />
         ) : (
           <div className="grid h-full w-full place-items-center text-xs text-zinc-400">Sin imagen</div>
         )}
 
-        {imgHover && !isOutOfStock && (
+        {imgHover && !isOutOfStock && wantsAlt && (
           <img
             src={imgHover}
-            alt={`${product.name} vista trasera`}
-            className="absolute inset-0 hidden h-full w-full object-cover object-top opacity-0 transition-all duration-700 ease-out md:block md:group-hover:scale-105 md:group-hover:opacity-100"
+            alt=""
+            aria-hidden="true"
+            className="pc-flip-alt absolute inset-0 h-full w-full object-cover object-top transition-transform duration-700 ease-out md:group-hover:scale-105"
             loading="lazy"
           />
         )}

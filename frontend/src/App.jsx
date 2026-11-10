@@ -404,13 +404,36 @@ function MainApp() {
     }
   }, [loading, isFetchingProducts, pendingScroll, products]);
 
+  // 📄 Cambio de página: sube al inicio de la grilla (título "Colección" incluido) en vez de quedarse abajo.
+  // El destino usa la altura real del header fijo (distinta en celular y desktop).
+  const gridTopOffset = () => {
+    if (!pageTopRef.current) return null;
+    const header = document.querySelector("header");
+    const headerH = header ? header.getBoundingClientRect().height : 0;
+    return pageTopRef.current.getBoundingClientRect().top - headerH - 16;
+  };
+  const scrollToGrid = (behavior = "smooth") => {
+    const off = gridTopOffset();
+    if (off === null) return;
+    window.scrollTo({ top: Math.max(0, window.scrollY + off), behavior });
+  };
+  const pendingPageScrollRef = useRef(false);
+  const goToPage = (n) => {
+    if (n === page) return;
+    pendingPageScrollRef.current = true;
+    setPage(n);
+    scrollToGrid("smooth");
+  };
+
+  // Cuando llegan los productos de la nueva página, corrige la posición si la altura cambió mientras cargaba
   useEffect(() => {
-    if (!loading && !isFirstRun.current && pageTopRef.current && !pendingScroll) {
-      const rect = pageTopRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      window.scrollTo({ top: rect.top + scrollTop - 120, behavior: "smooth" });
-    }
-  }, [page]); 
+    if (isFetchingProducts || !pendingPageScrollRef.current) return;
+    pendingPageScrollRef.current = false;
+    requestAnimationFrame(() => {
+      const off = gridTopOffset();
+      if (off !== null && Math.abs(off) > 40) scrollToGrid("auto");
+    });
+  }, [isFetchingProducts]);
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
@@ -638,7 +661,8 @@ function MainApp() {
                     ) : (
                       /* VISTA 2: GRILLA COMPLETA CUANDO SE SELECCIONA UNA CATEGORÍA O SE BUSCA */
                       <div className="w-full max-w-[1600px] px-4 sm:px-8">
-                        {!isFetchingProducts && (
+                        {/* Siempre visible (también mientras carga) para que la grilla no salte al cambiar de página */}
+                        <div ref={pageTopRef}>
                           <div className="mb-5 flex items-end justify-between">
                             <div>
                               <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600">{searchTerm ? "Resultados" : "Colección"}</p>
@@ -646,12 +670,15 @@ function MainApp() {
                                 {searchTerm ? `“${searchTerm}”` : filterType || "Catálogo"}
                               </h2>
                             </div>
-                            <span className="text-xs font-semibold text-zinc-400">{listaFinalProductos.length} productos</span>
+                            {!isFetchingProducts && (
+                              <span className="text-xs font-semibold text-zinc-400">{listaFinalProductos.length} productos</span>
+                            )}
                           </div>
-                        )}
-                        <div ref={pageTopRef} className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                           {isFetchingProducts ? (
-                            Array.from({ length: 8 }).map((_, idx) => (
+                            // Tantos esqueletos como productos por página: la altura no se encoge al cambiar de página
+                            Array.from({ length: limit }).map((_, idx) => (
                               <ProductSkeleton key={`skeleton-${idx}`} />
                             ))
                           ) : listaFinalProductos.length === 0 ? (
@@ -682,12 +709,12 @@ function MainApp() {
                         {!isFetchingProducts && pages > 1 && (
                           <div className="mt-12 flex flex-col items-center gap-3">
                             <nav className="flex items-center justify-center gap-1.5" aria-label="Paginación">
-                              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronLeft size={12} /></button>
+                              <button onClick={() => goToPage(Math.max(1, page - 1))} disabled={page === 1} aria-label="Anterior" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronLeft size={12} /></button>
                               {buildPages(page, pages).map((n, i, arr) => (
                                 <React.Fragment key={n}>
                                   {i > 0 && n - arr[i - 1] > 1 && <span className="px-1 text-zinc-400">…</span>}
                                   <button
-                                    onClick={() => setPage(n)}
+                                    onClick={() => goToPage(n)}
                                     aria-current={n === page ? "page" : undefined}
                                     className={`grid h-10 min-w-10 place-items-center rounded-full border px-3 text-sm font-bold transition ${n === page ? "border-black bg-black text-white" : "border-zinc-200 bg-white text-zinc-700 hover:border-black"}`}
                                   >
@@ -695,7 +722,7 @@ function MainApp() {
                                   </button>
                                 </React.Fragment>
                               ))}
-                              <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronRight size={12} /></button>
+                              <button onClick={() => goToPage(Math.min(pages, page + 1))} disabled={page === pages} aria-label="Siguiente" className="grid h-10 w-10 place-items-center rounded-full border border-zinc-200 bg-white text-black transition hover:border-black disabled:opacity-40"><FaChevronRight size={12} /></button>
                             </nav>
                           </div>
                         )}
