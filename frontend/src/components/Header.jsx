@@ -83,7 +83,7 @@ export default function Header({
     <header className="fixed inset-x-0 top-0 z-50">
       <div
         className={`border-b transition-colors duration-300 ${
-          scrolled ? "border-cyan-400/20 bg-black/90 backdrop-blur-xl" : "border-white/5 bg-black"
+          scrolled ? "border-cyan-400/20 bg-black/95 md:bg-black/90 md:backdrop-blur-xl" : "border-white/5 bg-black"
         }`}
         style={{ height: "var(--header-h)" }}
       >

@@ -11,7 +11,8 @@ const MESSAGES = [
 
 // Franja plateada con mensajes en marquesina (se renderiza dentro del Header)
 export default function TopBanner() {
-  const items = [...MESSAGES, ...MESSAGES, ...MESSAGES, ...MESSAGES];
+  // 2 copias por mitad (~2000px) bastan para pantallas anchas; más solo agranda la capa de GPU.
+  const items = [...MESSAGES, ...MESSAGES];
   const { trackRef, x, handlers } = useMarquee(40);
 
   return (
@@ -20,7 +21,7 @@ export default function TopBanner() {
       style={{ height: "var(--banner-h)" }}
       aria-label={MESSAGES.join(" · ")}
     >
-      <motion.div ref={trackRef} style={{ x }} {...handlers} className="flex w-max items-center will-change-transform" aria-hidden="true">
+      <motion.div ref={trackRef} {...handlers} className="flex w-max items-center" style={{ x, willChange: "transform" }} aria-hidden="true">
         {[0, 1].map((dup) => (
           <div key={dup} className="flex shrink-0 items-center">
             {items.map((msg, i) => (
