@@ -3,6 +3,7 @@ import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { FaFacebookF, FaInstagram, FaWhatsapp, FaArrowRight } from "react-icons/fa";
 import logo from "../assets/logo.png";
 import { WHATSAPP_URL, INSTAGRAM_URL, FACEBOOK_URL } from "./Contacto";
+import usePageZoomed from "../hooks/usePageZoomed";
 
 const categorias = [
   { label: "Player", event: "filtrarPlayer" },
@@ -41,6 +42,9 @@ function LogoCoin({ size = 96 }) {
 
 export default function Footer() {
   const ref = useRef(null);
+  // Con zoom (iPhone) se quitan el piso 3D animado y el brillo: re-pintados a la escala
+  // del zoom agotan la memoria de GPU y Safari/Chrome iOS cierran la pestaña.
+  const zoomed = usePageZoomed();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end end"] });
   const progress = useSpring(scrollYProgress, { stiffness: 70, damping: 20 });
 
@@ -65,13 +69,19 @@ export default function Footer() {
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" />
 
       {/* 🟩 Piso de cancha 3D en movimiento */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]" style={{ perspective: 600, perspectiveOrigin: "50% 0%" }}>
-        <div
-          className="pitch-plane absolute left-[-50%] top-0 h-[220%] w-[200%] origin-top [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_70%,transparent)]"
-          style={{ transform: "rotateX(72deg)" }}
-        />
-      </div>
-      <div className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[900px] -translate-x-1/2 rounded-full bg-cyan-400/[0.07] blur-[120px]" />
+      {!zoomed && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%]" style={{ perspective: 600, perspectiveOrigin: "50% 0%" }}>
+          <div
+            className="pitch-plane absolute left-[-50%] top-0 h-[220%] w-[200%] origin-top [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_70%,transparent)]"
+            style={{ transform: "rotateX(72deg)" }}
+          />
+        </div>
+      )}
+      {/* Brillo: degradado radial en vez de blur(120px), mismo efecto sin filtro de GPU */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/3 h-[500px] w-[900px] -translate-x-1/2"
+        style={{ background: "radial-gradient(closest-side, rgba(34,211,238,0.07), transparent)" }}
+      />
 
       {/* 📣 CTA */}
       <div className="relative mx-auto flex max-w-7xl flex-col items-center px-5 pt-16 text-center sm:px-8 sm:pt-20">
@@ -132,7 +142,7 @@ export default function Footer() {
 
       {/* 🔗 Panel de enlaces */}
       <div className="relative mx-auto mt-6 max-w-7xl px-5 sm:mt-10 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl sm:p-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-8 md:backdrop-blur-xl md:grid-cols-3">
           <div>
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-300/70">FutStore Costa Rica</p>
             <p className="max-w-xs text-sm text-white/60">La élite del fútbol, en tu piel. Más de 6000 camisas en stock y envíos a todo el país.</p>
