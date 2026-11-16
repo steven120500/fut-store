@@ -18,6 +18,7 @@ const VENDEDORES = [
   'Carlos Lobo',
   'Alonso Lobo',
   'Dylan Gomez',
+  'Ashley Rosales',
   'Steven Corrales'
 ];
 
@@ -46,10 +47,26 @@ export default function SalesPage({ user, onLogout }) {
 
   const displayName = user?.firstName || user?.username || user?.email || 'Steven Corrales';
 
+  // Nombre completo del usuario logueado (el que aparece arriba)
+  const nombreCompletoUsuario = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+
+  // Vendedor por defecto = el usuario logueado
   const getInitialVendedor = () => {
+    const full = nombreCompletoUsuario.toLowerCase();
+    const exacto = VENDEDORES.find(v => v.toLowerCase() === full);
+    if (exacto) return exacto;
     const cleanName = displayName.toLowerCase();
-    const found = VENDEDORES.find(v => cleanName.includes(v.toLowerCase().split(' ')[0]));
-    return found || 'Steven Corrales';
+    const porNombre = VENDEDORES.find(v => cleanName.includes(v.toLowerCase().split(' ')[0]));
+    return porNombre || nombreCompletoUsuario || 'Steven Corrales';
+  };
+
+  // Si el usuario logueado no está en la lista, se agrega para que siempre pueda elegirse
+  const vendedorUsuario = getInitialVendedor();
+  const listaVendedores = VENDEDORES.includes(vendedorUsuario) ? VENDEDORES : [...VENDEDORES, vendedorUsuario];
+
+  const abrirVentaRapida = () => {
+    setQuickForm(prev => ({ ...prev, vendedorAsignado: getInitialVendedor() }));
+    setShowQuickSaleModal(true);
   };
 
   const [quickForm, setQuickForm] = useState({
@@ -465,7 +482,7 @@ export default function SalesPage({ user, onLogout }) {
               </button>
             )}
             <button
-              onClick={() => setShowQuickSaleModal(true)}
+              onClick={abrirVentaRapida}
               className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center gap-2 text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
             >
               <FaPlus size={14} /> Agregar Venta Rápida
@@ -744,7 +761,7 @@ export default function SalesPage({ user, onLogout }) {
           submitting={submitting}
           loadingCedula={loadingCedula}
           catalogo={catalogo}
-          VENDEDORES={VENDEDORES}
+          VENDEDORES={listaVendedores}
           displayName={displayName}
           totalCantidadChemas={totalCantidadPrendas}
           granTotalConEnvio={granTotalConEnvio}

@@ -45,10 +45,16 @@ export default function ApartadosPage({ user }) {
   const employeeDropdownRef = useRef(null);
   const listaEmpleados = [
     "LaR Delflow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
-    "Dylan Gomez", "Steven Corrales", "Keylor Gómez"
+    "Dylan Gomez", "Ashley Rosales", "Steven Corrales", "Keylor Gómez"
   ];
 
-  const currentUser = user?.firstName || user?.username || 'Steven Corrales';
+  // Vendedor por defecto = el usuario logueado, con el mismo nombre que usa la lista (y el ranking)
+  const nombreCompletoUsuario = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+  const primerNombre = (user?.firstName || user?.username || '').trim().toLowerCase();
+  const currentUser =
+    listaEmpleados.find(e => e.toLowerCase() === nombreCompletoUsuario.toLowerCase()) ||
+    (primerNombre && listaEmpleados.find(e => e.toLowerCase().split(' ')[0] === primerNombre)) ||
+    nombreCompletoUsuario || user?.username || 'Steven Corrales';
 
   const [form, setForm] = useState({
     vendedor: currentUser, 
@@ -750,7 +756,7 @@ export default function ApartadosPage({ user }) {
         employeeDropdownRef={employeeDropdownRef}
         showEmployeeDropdown={showEmployeeDropdown}
         setShowEmployeeDropdown={setShowEmployeeDropdown}
-        listaEmpleados={listaEmpleados}
+        listaEmpleados={listaEmpleados.includes(currentUser) ? listaEmpleados : [...listaEmpleados, currentUser]}
         buscandoCedula={buscandoCedula}
         handleCedulaChange={handleCedulaChange}
         agregarOtraChema={agregarOtraChema}
