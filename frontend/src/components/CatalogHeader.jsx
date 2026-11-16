@@ -3,15 +3,15 @@ import { motion } from "framer-motion";
 import useMarquee from "../hooks/useMarquee";
 
 const CATEGORY_BOXES = [
-  { label: "Todos", value: "", sub: "Catálogo completo" },
-  { label: "Retro", value: "Retro", sub: "Clásicos" },
-  { label: "Fan", value: "Fan", sub: "Aficionado" },
-  { label: "Player", value: "Player", sub: "Jugador" },
-  { label: "Mujer", value: "Mujer", sub: "Corte dama" },
-  { label: "Nacional", value: "Nacional", sub: "Fútbol nacional" },
+  { label: "Todos", value: "", sub: "Catálogo completo", img: "/Botones/todos.webp" },
+  { label: "Retro", value: "Retro", sub: "Clásicos", img: "/Botones/retro.webp" },
+  { label: "Fan", value: "Fan", sub: "Aficionado", img: "/Botones/fan.webp" },
+  { label: "Player", value: "Player", sub: "Jugador", img: "/Botones/player.webp" },
+  { label: "Mujer", value: "Mujer", sub: "Corte dama", img: "/Botones/mujer.webp" },
+  { label: "Nacional", value: "Nacional", sub: "Fútbol nacional", img: "/Botones/nacional.webp" },
   { label: "Ofertas", value: "Ofertas", sub: "Precios especiales", isOffer: true },
-  { label: "Tacos", value: "Tacos", sub: "Calzado pro" },
-  { label: "Niño", value: "Niño", sub: "Infantil" },
+  { label: "Tacos", value: "Tacos", sub: "Calzado pro", img: "/Botones/tacos.webp" },
+  { label: "Niño", value: "Niño", sub: "Infantil", img: "/Botones/nino.webp" },
 ];
 
 // Cuántas veces se repite la lista en CADA mitad del riel.
@@ -62,14 +62,31 @@ export default function CatalogHeader({ filterType, setFilterType, setPage }) {
         onClick={() => handleSelectCategory(cat.value)}
         tabIndex={focusable ? 0 : -1}
         aria-pressed={isSelected}
-        className={`group relative flex h-[84px] w-[150px] shrink-0 flex-col items-center justify-center overflow-hidden rounded-2xl border px-4 transition-all duration-300 sm:h-[96px] sm:w-[180px] ${
+        className={`group relative flex h-[84px] w-[150px] shrink-0 flex-col items-center justify-center overflow-hidden rounded-2xl border bg-[#141414] px-4 text-white transition-all duration-300 sm:h-[96px] sm:w-[180px] ${
           isSelected
-            ? "bg-silver border-cyan-300 text-black shadow-[0_0_35px_rgba(34,211,238,0.35)] ring-2 ring-cyan-400/60"
-            : "border-white/10 bg-[#141414] text-white hover:-translate-y-1 hover:border-cyan-400/50 hover:bg-[#1b1b1b]"
+            ? "border-cyan-300 shadow-[0_0_35px_rgba(34,211,238,0.35)] ring-2 ring-cyan-400/60"
+            : "border-white/10 hover:-translate-y-1 hover:border-cyan-400/50"
         }`}
       >
-        <span className="font-display text-xl uppercase tracking-wider sm:text-2xl">{cat.label}</span>
-        <span className={`mt-0.5 text-[9px] font-bold uppercase tracking-[0.2em] sm:text-[10px] ${isSelected ? "text-zinc-700" : "text-zinc-500"}`}>
+        {/* Foto de fondo + capa oscura para que el texto se lea */}
+        {cat.img && (
+          <>
+            <img
+              src={cat.img}
+              alt=""
+              draggable="false"
+              decoding="async"
+              className="pointer-events-none absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <span
+              className={`pointer-events-none absolute inset-0 transition-colors duration-300 ${
+                isSelected ? "bg-black/35" : "bg-black/55 group-hover:bg-black/40"
+              }`}
+            />
+          </>
+        )}
+        <span className="relative font-display text-xl uppercase tracking-wider [text-shadow:0_2px_6px_rgba(0,0,0,0.8)] sm:text-2xl">{cat.label}</span>
+        <span className={`relative mt-0.5 text-[9px] font-bold uppercase tracking-[0.2em] [text-shadow:0_1px_4px_rgba(0,0,0,0.9)] sm:text-[10px] ${isSelected ? "text-cyan-300" : "text-zinc-300"}`}>
           {cat.sub}
         </span>
       </button>
