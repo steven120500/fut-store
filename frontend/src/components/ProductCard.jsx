@@ -2,6 +2,9 @@ import { useState } from "react";
 import { cld } from "../utils/cloudinary";
 import { motion } from "framer-motion";
 import { FaArrowRight } from "react-icons/fa";
+import { Copo } from "./decorations/NavidadCatalogo";
+import { NAVIDAD } from "../navidad";
+import ErrorBoundary from "./ErrorBoundary";
 
 // 🛡️ HELPER INTELIGENTE: Busca el stock ignorando la diferencia entre puntos y comas
 const getStockDisponible = (stockObj, tallaBuscada) => {
@@ -22,7 +25,7 @@ const getStockDisponible = (stockObj, tallaBuscada) => {
 // 📱 Pantallas táctiles (sin hover real): la foto trasera alterna sola
 const IS_TOUCH = typeof window !== "undefined" && window.matchMedia?.("(hover: none)").matches;
 
-export default function ProductCard({ product, onClick }) {
+function ProductCardInner({ product, onClick }) {
   // 💸 La foto trasera solo se descarga cuando hace falta: en desktop al pasar el mouse;
   // en celular cuando la card entra en pantalla (y ahí alterna sola, ver `.pc-flip` en index.css).
   const [wantsAlt, setWantsAlt] = useState(false);
@@ -147,6 +150,9 @@ export default function ProductCard({ product, onClick }) {
         )}
       </div>
 
+      {/* ❄️ Línea celeste entre la foto y la info */}
+      {NAVIDAD && <div className="h-[3px] w-full shrink-0 bg-gradient-to-r from-cyan-500 via-cyan-300 to-cyan-500" />}
+
       {/* 📝 Información */}
       <div className="flex grow flex-col p-3 sm:p-4">
         {type && (
@@ -168,9 +174,19 @@ export default function ProductCard({ product, onClick }) {
           ) : (
             <span className="text-base font-black leading-none text-zinc-900 sm:text-lg">{fmt(price)}</span>
           )}
+          {NAVIDAD && <Copo className="h-4 w-4 text-cyan-500 transition-transform duration-500 group-hover:rotate-[60deg] sm:h-5 sm:w-5" />}
         </div>
       </div>
 
     </motion.article>
+  );
+}
+
+// Si una tarjeta tiene datos raros y falla, solo esa se oculta; el resto del catálogo sigue
+export default function ProductCard(props) {
+  return (
+    <ErrorBoundary name={`tarjeta ${props.product?._id || props.product?.id || ""}`} fallback={null}>
+      <ProductCardInner {...props} />
+    </ErrorBoundary>
   );
 }

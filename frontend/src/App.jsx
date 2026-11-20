@@ -14,6 +14,8 @@ import LoginModal from "./components/LoginModal";
 import RegisterUserModal from "./components/RegisterUserModal";
 import Footer from "./components/Footer";
 import InicioOverlay from "./components/InicioOverlay"; 
+import ErrorBoundary from "./components/ErrorBoundary";
+import { BannerNavidad, Copo, GuirnaldaPino } from "./components/decorations/NavidadCatalogo";
 import UserListModal from "./components/UserListModal";
 import Medidas from "./components/Medidas";
 import Bienvenido from "./components/Bienvenido";
@@ -135,7 +137,7 @@ function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, 
     <section className="mx-auto mb-14 w-full max-w-[1600px] sm:mb-16">
       <div className="mb-5 flex items-end justify-between gap-4 px-4 sm:px-8">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600">Colección</p>
+          <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600"><Copo /> Colección</p>
           <h2 className="font-display text-3xl uppercase leading-none tracking-wide text-black sm:text-4xl">{title}</h2>
         </div>
 
@@ -147,6 +149,7 @@ function CategoryRow({ title, categoryKey, products, onSelectCategory, canEdit, 
           <FaArrowRight size={10} className="transition group-hover:translate-x-0.5" />
         </button>
       </div>
+      <GuirnaldaPino className="-mt-2 mb-5 px-4 sm:px-8" />
 
       <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2 sm:gap-4 sm:px-8 md:grid md:grid-cols-4 md:overflow-visible md:pb-0 lg:grid-cols-5">
         {loadingRow && displayItems.length === 0
@@ -205,11 +208,8 @@ function MainApp() {
   const [limit] = useState(20);
   const [total, setTotal] = useState(0);
 
-  const isFrontendFilterActive = filterType === "Mundial" || filterSizes.length > 0;
-
-  const pages = isFrontendFilterActive
-    ? 1
-    : Math.max(1, Math.ceil(total / limit));
+  // Tallas y "Mundial" ahora se filtran en el servidor con paginación normal
+  const pages = Math.max(1, Math.ceil(total / limit));
 
   const pageTopRef = useRef(null);
   const isFirstRun = useRef(true);
@@ -304,58 +304,36 @@ function MainApp() {
     const currentSizes = opts.sizes ?? filterSizes; 
     const mode = opts.mode ?? (window.__verDisponiblesActivo ? "disponibles" : "");
 
-    const needsMassiveFetch = currentActualFilter === "Mundial" || currentSizes.length > 0;
+    const filtroServidor = currentActualFilter === "Mundial" || currentSizes.length > 0;
 
     setIsFetchingProducts(true);
-    if (needsMassiveFetch) setIsFiltering(true); 
+    if (filtroServidor) setIsFiltering(true);
 
     try {
-      const baseParams = {
-        limit: needsMassiveFetch ? "100" : "20",
+      // Antes, con tallas o "Mundial" se bajaba TODO el catálogo (hasta 5000 productos) y se filtraba
+      // en el celular. Ahora el servidor filtra y devuelve solo la página pedida.
+      const params = new URLSearchParams({
+        page: String(p),
+        limit: "20",
         ...(q ? { q } : {}),
         ...(tp ? { type: tp } : {}),
         ...(mode ? { mode } : {}),
-      };
-
-      const params = new URLSearchParams({
-        page: needsMassiveFetch ? "1" : String(p),
-        ...baseParams
+        ...(currentSizes.length ? { sizes: currentSizes.join("|") } : {}),
+        ...(currentActualFilter === "Mundial" ? { mundial: "1" } : {}),
       });
 
       const res = await fetch(`${API_BASE}/api/products?${params.toString()}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
       const json = await res.json();
 
-      let fetchedItems = json.items || [];
-      let fetchedTotal = json.total || 0;
-
-      if (needsMassiveFetch && fetchedItems.length > 0 && fetchedItems.length < fetchedTotal) {
-        const limitUsed = fetchedItems.length; 
-        const totalPagesToFetch = Math.ceil(fetchedTotal / limitUsed);
-
-        const fetchPromises = [];
-        const maxPages = Math.min(totalPagesToFetch, 50); 
-
-        for (let i = 2; i <= maxPages; i++) {
-          const loopParams = new URLSearchParams({ page: String(i), ...baseParams });
-          fetchPromises.push(
-            fetch(`${API_BASE}/api/products?${loopParams.toString()}`)
-              .then(r => r.ok ? r.json() : { items: [] })
-              .catch(() => ({ items: [] }))
-          );
-        }
-
-        const results = await Promise.all(fetchPromises);
-        results.forEach(result => {
-          if (result.items) fetchedItems = [...fetchedItems, ...result.items];
-        });
-      }
+      const fetchedItems = json.items || [];
+      const fetchedTotal = json.total || 0;
 
       fetchedItems.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
       setProducts(fetchedItems);
       setTotal(fetchedTotal);
-      if (json.page && json.page !== p && !needsMassiveFetch) setPage(json.page);
+      if (json.page && json.page !== p) setPage(json.page);
 
     } catch (error) {
       console.error("Error cargando productos:", error);
@@ -462,8 +440,9 @@ function MainApp() {
 
       const matchesSizes = filterSizes.length === 0 || filterSizes.some((sizeABuscar) => {
         if (!product.stock) return false;
-        const cleanSize = sizeABuscar.trim().toLowerCase();
-        const claveReal = Object.keys(product.stock).find(k => k.trim().toLowerCase() === cleanSize);
+        const normTalla = (t) => String(t).replace(/,/g, ".").replace(/\s+/g, " ").trim().toLowerCase();
+        const cleanSize = normTalla(sizeABuscar);
+        const claveReal = Object.keys(product.stock).find(k => normTalla(k) === cleanSize);
         return claveReal ? Number(product.stock[claveReal]) > 0 : false;
       });
 
@@ -494,6 +473,7 @@ function MainApp() {
     <CartProvider>
       <div className="min-h-screen w-full bg-white text-black antialiased">
         <CartDrawer />
+        <ErrorBoundary name="ruta" resetKey={location.pathname}>
         <Routes>
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           
@@ -574,8 +554,8 @@ function MainApp() {
                   />
 
                   {/* CONTENEDOR MAESTRO CON ID PARA EL SCROLL */}
-                  <div id="catalogo-top" className="flex w-full flex-col items-center bg-gradient-to-b from-zinc-50 to-white pb-8 pt-8 sm:pt-10">
-                    
+                  <div id="catalogo-top" className="relative flex w-full flex-col items-center bg-gradient-to-b from-zinc-50 to-white pb-8 pt-8 sm:pt-10">
+
                     {/* BARRA DE FILTROS */}
                     <div className="mb-10 w-full max-w-[1600px] px-4 sm:px-8">
                       <FilterBar 
@@ -587,6 +567,12 @@ function MainApp() {
                         setFilterSizes={setFilterSizes} 
                       />
                     </div>
+
+                    {isViewingRows && (
+                      <div className="-mt-4 mb-12 w-full max-w-[1600px] px-4 sm:px-8">
+                        <BannerNavidad />
+                      </div>
+                    )}
 
                     {/* VISTA 1: TIRAS POR CATEGORÍA CON "VER MÁS" (CUANDO ESTÁ EN "TODOS") */}
                     {isViewingRows ? (
@@ -665,7 +651,7 @@ function MainApp() {
                         <div ref={pageTopRef}>
                           <div className="mb-5 flex items-end justify-between">
                             <div>
-                              <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600">{searchTerm ? "Resultados" : "Colección"}</p>
+                              <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-600"><Copo /> {searchTerm ? "Resultados" : "Colección"}</p>
                               <h2 className="font-display text-3xl uppercase leading-none tracking-wide text-black sm:text-4xl">
                                 {searchTerm ? `“${searchTerm}”` : filterType || "Catálogo"}
                               </h2>
@@ -737,6 +723,7 @@ function MainApp() {
             </AnimatePresence>
           } />
         </Routes>
+        </ErrorBoundary>
         <FutToaster />
       </div>
     </CartProvider>

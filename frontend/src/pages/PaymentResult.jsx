@@ -103,6 +103,9 @@ export default function PaymentResult() {
           sessionStorage.removeItem("futstore:lastCheckout");
           setStatus("success");
           toast.success("¡Pago aprobado! Te enviamos la factura por correo.");
+        } else if (res.status === 402) {
+          // TiloPay no reporta un pago aprobado para este pedido
+          setStatus("rejected");
         } else {
           setStatus("error");
         }

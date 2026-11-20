@@ -13,6 +13,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import Contacto from "./Contacto";
 import TopBanner from "./TopBanner";
 import { useCart } from "../context/CartContext";
+import GorroNavidad from "./decorations/GorroNavidad";
+import { NAVIDAD } from "../navidad";
 
 function NavItem({ icon: Icon, children, onClick, primary = false }) {
   return (
@@ -94,7 +96,10 @@ export default function Header({
             title="Volver al inicio"
             className="flex shrink-0 items-center gap-3 border-0 bg-transparent p-0"
           >
-            <img src={logo} alt="FutStore" className="h-11 w-11 rounded-full ring-1 ring-white/20 transition hover:scale-105 sm:h-14 sm:w-14" />
+            <span className="relative">
+              <img src={logo} alt="FutStore" className="h-11 w-11 rounded-full ring-1 ring-white/20 transition hover:scale-105 sm:h-14 sm:w-14" />
+              {NAVIDAD && <GorroNavidad className="-left-1.5 -top-2 w-7 -rotate-[18deg] sm:-left-2 sm:-top-2.5 sm:w-9" />}
+            </span>
             <span className="hidden font-display text-2xl uppercase tracking-wider text-silver lg:block">FutStore</span>
           </button>
 

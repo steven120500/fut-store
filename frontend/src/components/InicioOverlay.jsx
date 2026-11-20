@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import logo from "../assets/logo.png";
+import GorroNavidad from "./decorations/GorroNavidad";
+import { NAVIDAD } from "../navidad";
 
 const CAMISAS = ["/Japon.png", "/Mexico.png", "/Espana.png", "/Portugal.png", "/Italia.png", "/Usa.png"];
 const DURACION_MS = 3800;
@@ -130,6 +132,7 @@ export default function InicioOverlay({ onComplete }) {
             className="relative h-20 w-20 rounded-full shadow-[0_0_60px_rgba(255,255,255,0.25)] ring-1 ring-white/30 sm:h-24 sm:w-24"
             draggable={false}
           />
+          {NAVIDAD && <GorroNavidad className="-left-4 -top-7 w-16 -rotate-[18deg] sm:-top-8 sm:w-20" />}
         </motion.div>
 
         <motion.p
@@ -149,6 +152,17 @@ export default function InicioOverlay({ onComplete }) {
         >
           FutStore
         </motion.h1>
+
+        {NAVIDAD && (
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.3, duration: 0.8, ease: "easeOut" }}
+            className="mt-4 flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.4em] text-cyan-300 sm:text-sm"
+          >
+            <span className="text-red-500">✦</span> Feliz Navidad <span className="text-green-500">✦</span>
+          </motion.p>
+        )}
 
        
       </div>

@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import NewApartadoModal from '../components/NewApartadoModal'; 
 import RestockBoard from '../components/RestockBoard'; 
+import { NOMBRES_VENDEDORES, vendedorDeUsuario } from '../utils/vendedores';
 
 const API_BASE = "https://fut-store.onrender.com";
 
@@ -43,18 +44,10 @@ export default function ApartadosPage({ user }) {
 
   const [showEmployeeDropdown, setShowEmployeeDropdown] = useState(false);
   const employeeDropdownRef = useRef(null);
-  const listaEmpleados = [
-    "LaR Delflow", "Justin Lobo", "Carlos Lobo", "Alonso Lobo", 
-    "Dylan Gomez", "Ashley Rosales", "Steven Corrales", "Keylor Gómez"
-  ];
+  const listaEmpleados = NOMBRES_VENDEDORES;
 
-  // Vendedor por defecto = el usuario logueado, con el mismo nombre que usa la lista (y el ranking)
-  const nombreCompletoUsuario = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-  const primerNombre = (user?.firstName || user?.username || '').trim().toLowerCase();
-  const currentUser =
-    listaEmpleados.find(e => e.toLowerCase() === nombreCompletoUsuario.toLowerCase()) ||
-    (primerNombre && listaEmpleados.find(e => e.toLowerCase().split(' ')[0] === primerNombre)) ||
-    nombreCompletoUsuario || user?.username || 'Steven Corrales';
+  // Vendedor por defecto = el usuario logueado, con el mismo nombre oficial que usa el ranking
+  const currentUser = vendedorDeUsuario(user);
 
   const [form, setForm] = useState({
     vendedor: currentUser, 

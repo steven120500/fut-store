@@ -2,7 +2,7 @@ import { cld } from "../utils/cloudinary";
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaBoxOpen, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes, FaClipboardList } from 'react-icons/fa'; 
+import { FaBoxOpen, FaCheckCircle, FaMapMarkerAlt, FaPhone, FaEnvelope, FaTshirt, FaTrash, FaTruck, FaArrowLeft, FaPaperPlane, FaTimes, FaClipboardList, FaExclamationTriangle, FaBoxes } from 'react-icons/fa'; 
 import { toast } from 'react-toastify'; 
 import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer'; 
@@ -10,6 +10,62 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { API_URL } from '../config';
 
 
+
+// Estado del rebajo de inventario de un pedido
+const estadoStock = (order) => {
+    const detalle = order.stockDetalle || [];
+    if (!order.stockDiscounted) return { tipo: 'pendiente', detalle };
+    const problemas = detalle.filter(d => d.estado !== 'rebajado').length;
+    return { tipo: problemas ? 'revisar' : 'ok', problemas, detalle };
+};
+
+// Detalle del artículo #index (por posición; si no cuadra, por nombre + talla)
+const detalleDeItem = (detalle, item, index) => {
+    const porPosicion = detalle[index];
+    if (porPosicion && porPosicion.name === item.name) return porPosicion;
+    return detalle.find(d => d.name === item.name && String(d.size).toLowerCase() === String(item.size).toLowerCase()) || null;
+};
+
+function StockBadge({ order }) {
+    const { tipo, problemas } = estadoStock(order);
+    const fecha = order.stockDiscountedAt ? new Date(order.stockDiscountedAt).toLocaleString() : null;
+    if (tipo === 'ok') {
+        return (
+            <span title={fecha ? `Rebajado el ${fecha}` : 'Stock rebajado'}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide bg-[#22D3EE]/15 text-[#22D3EE] border border-[#22D3EE]/40">
+                <FaCheckCircle size={10} /> Stock rebajado
+            </span>
+        );
+    }
+    if (tipo === 'revisar') {
+        return (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide bg-amber-500/15 text-amber-400 border border-amber-500/40">
+                <FaExclamationTriangle size={10} /> Revisar stock ({problemas})
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide bg-zinc-800 text-zinc-400 border border-zinc-700">
+            <FaBoxes size={10} /> Stock sin rebajar
+        </span>
+    );
+}
+
+function StockItemLinea({ d }) {
+    if (!d) return null;
+    if (d.estado === 'rebajado') {
+        return (
+            <p className="mt-1.5 text-[10px] font-bold text-[#22D3EE] flex items-center gap-1">
+                <FaCheckCircle size={9} /> Rebajado del stock · quedan {d.despues}
+            </p>
+        );
+    }
+    return (
+        <p className="mt-1.5 text-[10px] font-bold text-amber-400 flex items-center gap-1">
+            <FaExclamationTriangle size={9} /> {d.estado === 'sin_stock' ? `Sin stock suficiente (${d.motivo?.toLowerCase()})` : `No se rebajó: ${d.motivo}`}
+        </p>
+    );
+}
 
 const OrdersPage = ({ user }) => {
     const [orders, setOrders] = useState([]);
@@ -170,6 +226,7 @@ const handleCopiarGuia = (order) => {
                         <div className="grid gap-8 mb-20"> 
                             {orders.map((order) => {
                                 const esEnvioCorreos = order.shipping?.method?.toLowerCase().includes('correo');
+                                const stock = estadoStock(order);
 
                                 return (
                                 <div key={order._id} className="bg-[#0a0a0a] border rounded-xl overflow-hidden transition-all relative border-[#22D3EE]/50 shadow-[0_0_20px_rgba(34, 211, 238,0.05)]">
@@ -181,11 +238,14 @@ const handleCopiarGuia = (order) => {
                                             <span className="text-xs text-gray-400 mt-1">{new Date(order.createdAt).toLocaleString()}</span>
                                         </div>
                                         <div className="mt-4 md:mt-0 text-left md:text-right">
-                                            <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide mb-2  ${
-                                                order.status === 'sent' ? 'bg-cyan-500 text-white' : 'bg-green-500 text-black'
-                                            }`}>
-                                                {order.status === 'sent' ? 'ENVIADO' : 'PAGADO'}
-                                            </span>
+                                            <div className="flex flex-wrap gap-2 md:justify-end mb-2">
+                                                <StockBadge order={order} />
+                                                <span className={`inline-block px-3 py-1 rounded text-[10px] font-black uppercase tracking-wide ${
+                                                    order.status === 'sent' ? 'bg-cyan-500 text-white' : 'bg-green-500 text-black'
+                                                }`}>
+                                                    {order.status === 'sent' ? 'ENVIADO' : 'PAGADO'}
+                                                </span>
+                                            </div>
                                             <p className="text-2xl font-black text-white">₡ {order.total?.toLocaleString()}</p>
                                         </div>
 
@@ -288,6 +348,7 @@ const handleCopiarGuia = (order) => {
                                                                     <p>Talla: <span className="text-white">{item.size}</span></p>
                                                                     {item.color && <p>Color: {item.color}</p>}
                                                                 </div>
+                                                                <StockItemLinea d={detalleDeItem(stock.detalle, item, index)} />
                                                             </div>
 
                                                             <div className="text-right">

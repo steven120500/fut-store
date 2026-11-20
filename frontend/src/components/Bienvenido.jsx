@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { FaArrowRight, FaWhatsapp, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { WHATSAPP_URL } from "./Contacto";
+import { NAVIDAD } from "../navidad";
+import { EsferasHero } from "./decorations/NavidadCatalogo";
 
 // 📦 Slides del hero
 const slides = [
@@ -169,6 +171,9 @@ export default function Bienvenido() {
       <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_70%_55%,transparent_0%,rgba(0,0,0,0.6)_45%,#000_85%)]" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-1/3 bg-gradient-to-t from-black to-transparent" />
 
+      {/* 🎄 Esferas colgando del techo del estadio */}
+      <EsferasHero />
+
       {/* Texto gigante en contorno, desplazándose */}
       <div className="pointer-events-none absolute bottom-[6%] left-0 -z-10 flex w-max animate-marquee whitespace-nowrap" style={{ animationDuration: "60s" }}>
         {[0, 1].map((k) => (
@@ -195,14 +200,27 @@ export default function Bienvenido() {
       <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-2 px-5 pb-20 pt-6 sm:px-8 md:grid-cols-[1fr_1.1fr] md:gap-6 md:pb-16 lg:px-12">
         {/* ✍️ Texto */}
         <div className="relative z-10 flex flex-col items-center text-center md:items-start md:text-left">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-5 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300/90 sm:text-[11px]"
-          >
-           
-          </motion.div>
+          {NAVIDAD ? (
+            <motion.div
+              initial={{ opacity: 0, y: -14, letterSpacing: "0.02em" }}
+              animate={{ opacity: 1, y: 0, letterSpacing: "0.08em" }}
+              transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1] }}
+              className="relative mb-4 flex flex-col items-center md:items-start"
+            >
+              <span className="relative inline-flex items-center gap-3">
+                <span className="navidad-destello text-cyan-300" style={{ animationDelay: "0s" }}>✦</span>
+                <span className="navidad-titulo font-display uppercase leading-none" style={{ fontSize: "clamp(1.9rem, 4vw, 3.1rem)" }}>
+                  Feliz Navidad
+                </span>
+                <span className="navidad-destello text-white" style={{ animationDelay: "0.9s" }}>✦</span>
+                <span className="navidad-destello absolute -right-6 -top-3 text-[10px] text-cyan-200" style={{ animationDelay: "1.6s" }}>✦</span>
+              </span>
+              <span className="mt-2 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300/80 sm:text-[11px]">
+                <span className="h-px w-8 bg-gradient-to-r from-transparent to-cyan-400" />
+                Temporada de regalos
+              </span>
+            </motion.div>
+          ) : null}
 
           <h1 className="font-display uppercase leading-[1.08] tracking-wide text-white" style={titleSize}>
             <FlipText text="La élite" charClass="text-3d" />

@@ -8,19 +8,12 @@ import { toast } from 'react-toastify';
 import Footer from '../components/Footer';
 import QuickSaleModal from '../components/QuickSaleModal';
 // 🔥 IMPORTAMOS EL NUEVO COMPONENTE QUE CREAREMOS AHORA
-import TopProductsBoard from '../components/TopProductsBoard'; 
+import TopProductsBoard from '../components/TopProductsBoard';
+import { NOMBRES_VENDEDORES, normalizarVendedor, mismoVendedor, vendedorDeUsuario } from '../utils/vendedores';
 
 const API_BASE = "https://fut-store.onrender.com";
 
-const VENDEDORES = [
-  'LaR Delflow',
-  'Justin Lobo',
-  'Carlos Lobo',
-  'Alonso Lobo',
-  'Dylan Gomez',
-  'Ashley Rosales',
-  'Steven Corrales'
-];
+const VENDEDORES = NOMBRES_VENDEDORES;
 
 export default function SalesPage({ user, onLogout }) {
   const navigate = useNavigate();
@@ -47,18 +40,8 @@ export default function SalesPage({ user, onLogout }) {
 
   const displayName = user?.firstName || user?.username || user?.email || 'Steven Corrales';
 
-  // Nombre completo del usuario logueado (el que aparece arriba)
-  const nombreCompletoUsuario = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-
-  // Vendedor por defecto = el usuario logueado
-  const getInitialVendedor = () => {
-    const full = nombreCompletoUsuario.toLowerCase();
-    const exacto = VENDEDORES.find(v => v.toLowerCase() === full);
-    if (exacto) return exacto;
-    const cleanName = displayName.toLowerCase();
-    const porNombre = VENDEDORES.find(v => cleanName.includes(v.toLowerCase().split(' ')[0]));
-    return porNombre || nombreCompletoUsuario || 'Steven Corrales';
-  };
+  // Vendedor por defecto = el usuario logueado (con su nombre oficial: Bulo → Justin Lobo, Alonso → Bety...)
+  const getInitialVendedor = () => vendedorDeUsuario(user);
 
   // Si el usuario logueado no está en la lista, se agrega para que siempre pueda elegirse
   const vendedorUsuario = getInitialVendedor();
@@ -171,18 +154,12 @@ export default function SalesPage({ user, onLogout }) {
         
         const mergedRanking = [];
         data.forEach(emp => {
-          let nombreAsignado = emp._id || '';
-          
-          if (nombreAsignado.trim().toLowerCase() === 'steven') {
-            nombreAsignado = 'Steven Corrales';
-          }
-          
-          const existente = mergedRanking.find(e => e._id.toLowerCase() === nombreAsignado.toLowerCase());
-          
+          const nombreAsignado = normalizarVendedor(emp._id) || 'Sin vendedor';
+          const existente = mergedRanking.find(e => e._id === nombreAsignado);
+
           if (existente) {
-            existente.totalVentas = (existente.totalVentas || 0) + (emp.totalVentas || 0);
-            existente.montoTotal = (existente.montoTotal || 0) + (emp.montoTotal || 0);
-            existente.enviosGenerados = (existente.enviosGenerados || 0) + (emp.enviosGenerados || 0);
+            ['totalVentas', 'totalPrendas', 'dineroGenerado', 'enviosGenerados', 'montoTotal', 'totalTacos', 'totalChemas']
+              .forEach(c => { existente[c] = (existente[c] || 0) + (emp[c] || 0); });
           } else {
             mergedRanking.push({ ...emp, _id: nombreAsignado });
           }
@@ -201,16 +178,7 @@ export default function SalesPage({ user, onLogout }) {
   const getPrendasVendedor = (nombreVendedor) => {
     let tacos = 0;
     let totalVendidas = 0;
-    const normalize = name => (name || '').trim().toLowerCase();
-    const nv = normalize(nombreVendedor);
-
-    const ventasDelVendedor = todasLasVentas.filter(s => {
-      const v = normalize(s.vendedor);
-      if (v === nv) return true;
-      if (nv === 'bety' && v.includes('alonso')) return true;
-      if (nv === 'steven corrales' && v === 'steven') return true; 
-      return false;
-    });
+    const ventasDelVendedor = todasLasVentas.filter(s => mismoVendedor(s.vendedor, nombreVendedor));
 
     ventasDelVendedor.forEach(sale => {
       totalVendidas += (Number(sale.cantidad) || 1);
@@ -557,7 +525,7 @@ export default function SalesPage({ user, onLogout }) {
                 const esBronce = index === 2;
                 
                 const abonosDelVendedor = apartadosActivos
-                  .filter(ap => ap.vendedor === emp._id)
+                  .filter(ap => mismoVendedor(ap.vendedor, emp._id))
                   .reduce((acc, curr) => acc + (Number(curr.abono) || 0), 0);
                   
                 const aporteTotalReal = (emp.montoTotal || 0) + abonosDelVendedor;

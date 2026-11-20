@@ -623,3 +623,39 @@
   50%, 92% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* 🎄 Navidad (components/decorations/NavidadCatalogo.jsx) */
+.navidad-esfera {
+  transform-origin: top center;
+  animation: navidadEsfera 4s ease-in-out infinite alternate;
+}
+@keyframes navidadEsfera {
+  from { transform: rotate(-4deg); }
+  to { transform: rotate(4deg); }
+}
+/* "Feliz Navidad" del hero: brillo celeste que recorre las letras + destellos */
+.navidad-titulo {
+  background: linear-gradient(110deg, #ffffff 0%, #ffffff 30%, #67e8f9 42%, #22d3ee 50%, #a5f3fc 58%, #ffffff 70%, #ffffff 100%);
+  background-size: 250% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 18px rgba(34, 211, 238, 0.35));
+  animation: navidadBrilloTexto 3.5s linear infinite;
+}
+@keyframes navidadBrilloTexto {
+  from { background-position: 125% center; }
+  to { background-position: -125% center; }
+}
+.navidad-destello {
+  display: inline-block;
+  animation: navidadDestello 2.4s ease-in-out infinite;
+}
+@keyframes navidadDestello {
+  0%, 100% { opacity: 0.25; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(45deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navidad-esfera, .navidad-titulo, .navidad-destello { animation: none !important; }
+}
