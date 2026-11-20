@@ -4,6 +4,7 @@ import Ingreso from '../models/Ingreso.js';
 import Venta from '../models/Sale.js';
 import { adjustMany } from '../utils/stock.js';
 import { asString } from '../utils/security.js';
+import { normalizarVendedor } from '../utils/vendedores.js';
 
 const ESTADOS_EDITABLES = ['PENDIENTE', 'EN_CAMINO', 'PARA_ENTREGAR']; // ENTREGADO solo vía /entregar
 
@@ -20,11 +21,12 @@ const itemsDeStock = (productos = []) =>
 
 export const crearApartado = async (req, res) => {
   try {
-    const { vendedor, cliente, cedula, telefono, imagen, imagen2, direccionEnvio } = req.body;
+    const { cliente, cedula, telefono, imagen, imagen2, direccionEnvio } = req.body;
+    const vendedor = normalizarVendedor(asString(req.body.vendedor));
     const productos = Array.isArray(req.body.productos) ? req.body.productos : [];
 
     // --- Validaciones ---
-    if (!asString(vendedor) || !asString(cliente)) return res.status(400).json({ error: 'Vendedor y cliente son obligatorios' });
+    if (!vendedor || !asString(cliente)) return res.status(400).json({ error: 'Vendedor y cliente son obligatorios' });
     if (productos.length === 0) return res.status(400).json({ error: 'Agrega al menos un producto' });
     for (const p of productos) {
       const c = Number(p?.cantidad ?? 1);
@@ -95,7 +97,7 @@ export const entregarApartado = async (req, res) => {
         concepto: `Cobro final de ₡${apartado.faltante} - Apartado Entregado a: ${apartado.cliente}`,
         tipo: 'Cancelación Apartado',
         fecha: new Date(),
-        vendedor: apartado.vendedor,
+        vendedor: normalizarVendedor(apartado.vendedor) || apartado.vendedor,
         apartadoId: apartado._id,
       });
     }
@@ -123,7 +125,7 @@ export const entregarApartado = async (req, res) => {
       cantidad: totalCantidad,
       productoNombre: resumenChemas,
       productos,
-      vendedor: apartado.vendedor,
+      vendedor: normalizarVendedor(apartado.vendedor) || apartado.vendedor,
       fecha: new Date(),
       apartadoId: apartado._id,
     });

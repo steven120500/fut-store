@@ -53,7 +53,26 @@ export async function adjustStock(productId, talla, delta) {
     },
   ]);
 
-  return { ok: true, key, name: product.name };
+  const antes = Math.max(0, Math.trunc(Number(product.stock[key])) || 0);
+  return { ok: true, key, name: product.name, antes, despues: Math.max(0, antes + qty) };
+}
+
+const MOTIVOS = {
+  producto_no_encontrado: 'El producto ya no existe',
+  talla_no_encontrada: 'Esa talla no existe en el producto',
+  id_invalido: 'Artículo sin producto ligado',
+  cantidad_invalida: 'Cantidad inválida',
+};
+
+/** Detalle por artículo de un rebajo (se guarda en el pedido para mostrarlo). */
+export function detalleRebajo(ajustes) {
+  return ajustes.map((a) => {
+    const quantity = Math.abs(Number(a.delta) || 0);
+    const base = { name: a.nombre, size: a.key || a.talla, quantity };
+    if (!a.ok) return { ...base, estado: 'fallo', motivo: MOTIVOS[a.reason] || a.reason || 'Error desconocido' };
+    if (a.antes < quantity) return { ...base, estado: 'sin_stock', motivo: `Solo había ${a.antes}`, antes: a.antes, despues: a.despues };
+    return { ...base, estado: 'rebajado', antes: a.antes, despues: a.despues };
+  });
 }
 
 /** Aplica varios ajustes y devuelve el detalle (para historial / logs). */

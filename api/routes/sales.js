@@ -5,40 +5,16 @@ import History from '../models/History.js';
 import { adjustMany } from '../utils/stock.js';
 import { asString } from '../utils/security.js';
 import { requireAuth, requireRole, actorName } from '../middleware/auth.js';
+import { normalizarVendedor } from '../utils/vendedores.js';
 
 const router = express.Router();
 router.use(requireAuth); // ventas: solo personal
-
-const VENDEDORESOFICIALES = [
-  'LaR Delflow',
-  'Justin Lobo',
-  'Carlos Lobo',
-  'Bety',
-  'Dylan Gomez',
-  'Steven Corrales'
-];
-
-const normalizarVendedor = (inputName) => {
-  if (!inputName) return 'Steven Corrales';
-  let cleanInput = inputName.trim().toLowerCase();
-  
-  if (cleanInput.includes('alonso') || cleanInput.includes('alonso lobo')) {
-    return 'Bety';
-  }
-
-  const match = VENDEDORESOFICIALES.find(v => v.toLowerCase() === cleanInput || v.toLowerCase().startsWith(cleanInput));
-  if (match) return match;
-  return inputName
-    .trim()
-    .toLowerCase()
-    .replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase());
-};
 
 // 📥 POST: Guardar venta con DESCUENTO DE INVENTARIO Y REGISTRO EN HISTORIAL
 router.post('/', async (req, res) => {
   try {
     const rawVendedor = asString(req.body.vendedor) || actorName(req, 'Steven Corrales');
-    const vendedorEstandarizado = normalizarVendedor(rawVendedor);
+    const vendedorEstandarizado = normalizarVendedor(rawVendedor) || 'Steven Corrales';
     const productosVendidos = Array.isArray(req.body.productos) ? req.body.productos : [];
 
     // --- Validaciones ---
@@ -145,31 +121,60 @@ router.get('/top-products', async (req, res) => {
     const startDate = new Date(targetYear, targetMonth, 1);
     const endDate = new Date(targetYear, targetMonth + 1, 0, 23, 59, 59);
 
-    const topProducts = await Sale.aggregate([
-      {
-        $match: {
-          fecha: { $gte: startDate, $lte: endDate }
-        }
-      },
+    const cantidad = { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } };
+    const monto = { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } };
+
+    const [resultado] = await Sale.aggregate([
+      { $match: { fecha: { $gte: startDate, $lte: endDate } } },
       { $unwind: "$productos" },
+      { $addFields: { _cant: cantidad, _monto: monto } },
       {
-        $group: {
-          _id: {
-            idRef: "$productos.productoId",
-            nombreRef: { $toUpper: "$productos.nombre" }
-          },
-          nombre: { $first: "$productos.nombre" }, 
-          tipo: { $first: "$productos.type" },
-          imagen: { $first: "$productos.imageSrc" }, 
-          totalUnidadesVendidas: { $sum: { $convert: { input: "$productos.cantidad", to: "int", onError: 1, onNull: 1 } } },
-          totalDineroGenerado: { $sum: { $convert: { input: "$productos.precioTotal", to: "double", onError: 0, onNull: 0 } } }
+        $facet: {
+          productos: [
+            {
+              $group: {
+                _id: { idRef: "$productos.productoId", nombreRef: { $toUpper: "$productos.nombre" } },
+                nombre: { $first: "$productos.nombre" },
+                tipo: { $first: "$productos.type" },
+                imagen: { $max: "$productos.imageSrc" }, // la primera no vacía
+                totalUnidadesVendidas: { $sum: "$_cant" },
+                totalDineroGenerado: { $sum: "$_monto" },
+                ventas: { $sum: 1 },
+                tallas: { $push: { talla: "$productos.talla", cantidad: "$_cant" } },
+              }
+            },
+            { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
+            { $limit: 60 }
+          ],
+          resumen: [
+            {
+              $group: {
+                _id: null,
+                unidades: { $sum: "$_cant" },
+                dinero: { $sum: "$_monto" },
+                modelos: { $addToSet: { $toUpper: "$productos.nombre" } },
+              }
+            },
+            { $project: { _id: 0, unidades: 1, dinero: 1, modelos: { $size: "$modelos" } } }
+          ]
         }
-      },
-      { $sort: { totalUnidadesVendidas: -1, totalDineroGenerado: -1 } },
-      { $limit: 15 }
+      }
     ]);
 
-    res.json(topProducts);
+    const esTaco = (p) => /taco/i.test(`${p.tipo || ''} ${p.nombre || ''}`) || (p.tallas || []).some((t) => /us/i.test(t.talla || ''));
+    const productos = (resultado?.productos || []).map(({ tallas = [], ...p }) => {
+      const porTalla = {};
+      for (const t of tallas) if (t.talla) porTalla[t.talla] = (porTalla[t.talla] || 0) + (Number(t.cantidad) || 0);
+      return {
+        ...p,
+        categoria: esTaco({ ...p, tallas }) ? 'tacos' : 'chemas',
+        tallasTop: Object.entries(porTalla).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([talla, cantidad]) => ({ talla, cantidad })),
+      };
+    });
+
+    // Compatibilidad: el frontend viejo espera solo el arreglo; el nuevo pide ?formato=2
+    if (req.query.formato !== '2') return res.json(productos);
+    res.json({ productos, resumen: resultado?.resumen?.[0] || { unidades: 0, dinero: 0, modelos: 0 } });
   } catch (error) {
     console.error("Error al generar Top Productos:", error);
     res.status(500).json({ error: "Error al calcular los productos más vendidos." });
@@ -179,12 +184,7 @@ router.get('/top-products', async (req, res) => {
 // 🔄 RUTA DE RANKING
 router.get('/ranking', async (req, res) => {
   try {
-    await Sale.updateMany(
-      { vendedor: { $regex: /alonso/i } },
-      { $set: { vendedor: "Bety" } }
-    );
-
-    const ranking = await Sale.aggregate([
+    const porNombre = await Sale.aggregate([
       { $match: { archivado: false } }, // Solo ranking del mes activo
       {
         $project: {
@@ -221,13 +221,20 @@ router.get('/ranking', async (req, res) => {
           totalTacos: { $sum: "$tacosVendidos" },
         }
       },
-      {
-        $addFields: {
-          totalChemas: { $subtract: ["$totalPrendas", "$totalTacos"] }
-        }
-      },
-      { $sort: { totalPrendas: -1, dineroGenerado: -1 } } 
     ]);
+
+    // Junta los alias de una misma persona (Alonso/Bety, Justin/Bulo, Steven/Steven Corrales...)
+    const CAMPOS = ['totalVentas', 'totalPrendas', 'dineroGenerado', 'enviosGenerados', 'montoTotal', 'totalTacos'];
+    const porVendedor = new Map();
+    for (const fila of porNombre) {
+      const nombre = normalizarVendedor(fila._id) || 'Sin vendedor';
+      const acc = porVendedor.get(nombre) || Object.fromEntries([['_id', nombre], ...CAMPOS.map((c) => [c, 0])]);
+      for (const c of CAMPOS) acc[c] += Number(fila[c]) || 0;
+      porVendedor.set(nombre, acc);
+    }
+    const ranking = [...porVendedor.values()]
+      .map((r) => ({ ...r, totalChemas: r.totalPrendas - r.totalTacos }))
+      .sort((a, b) => b.totalPrendas - a.totalPrendas || b.dineroGenerado - a.dineroGenerado);
 
     res.json(ranking);
   } catch (error) {

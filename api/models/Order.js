@@ -38,10 +38,35 @@ const orderSchema = new mongoose.Schema({
   
   tiloPayToken: String,
 
+  // Pago confirmado servidor a servidor con TiloPay (POST /api/v1/consult)
+  pago: {
+    idTilopay: String,
+    auth: String,
+    monto: Number,
+    moneda: String,
+    tarjeta: String,
+    ambiente: String,
+    verificadoEn: Date,
+  },
+
   stockDiscounted: { 
     type: Boolean, 
     default: false 
-  }
+  },
+  stockDiscountedAt: Date,
+  // Resultado del rebajo por artículo (para confirmarlo en Gestión de Pedidos)
+  stockDetalle: [
+    {
+      _id: false,
+      name: String,
+      size: String,
+      quantity: Number,
+      estado: { type: String, enum: ['rebajado', 'sin_stock', 'fallo'] },
+      motivo: String,
+      antes: Number,
+      despues: Number,
+    }
+  ]
 
 }, { timestamps: true });
 

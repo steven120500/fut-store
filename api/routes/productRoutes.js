@@ -138,7 +138,38 @@ router.get('/', async (req, res) => {
     const mode = String(req.query.mode || '').trim();
 
     const find = {};
+    const and = [];
     if (q) find.name = { $regex: escapeRegex(q), $options: 'i' };
+
+    // Tallas: ?sizes=M|L|7,5 US (40,5) → productos con stock > 0 en al menos una
+    // (sin importar mayúsculas ni coma/punto, igual que utils/stock.js)
+    const normTalla = (t) => String(t).replace(/,/g, '.').replace(/\s+/g, ' ').trim().toLowerCase();
+    const sizes = String(req.query.sizes || '')
+      .split('|')
+      .map(normTalla)
+      .filter((t) => t && t.length <= 30)
+      .slice(0, 15);
+    if (sizes.length) {
+      and.push({
+        $expr: {
+          $gt: [{
+            $size: {
+              $filter: {
+                input: { $objectToArray: { $ifNull: ['$stock', {}] } },
+                as: 's',
+                cond: {
+                  $and: [
+                    { $in: [{ $toLower: { $trim: { input: { $replaceAll: { input: '$$s.k', find: ',', replacement: '.' } } } } }, sizes] },
+                    { $gt: [{ $convert: { input: '$$s.v', to: 'double', onError: 0, onNull: 0 } }, 0] },
+                  ],
+                },
+              },
+            },
+          }, 0],
+        },
+      });
+    }
+    if (req.query.mundial === '1') find.isMundial = true;
 
     if (type === 'Ofertas') {
       find.discountPrice = { $ne: null,$gt: 0 };
@@ -149,6 +180,7 @@ router.get('/', async (req, res) => {
     } else if (type) {
       find.type = type;
     }
+    if (and.length) find.$and = [...(find.$and || []), ...and];
 
     // 👇 NUEVO: Agregamos 'ubicacion' en la vista estándar del catálogo
     // Público: solo lo necesario. Personal con sesión: también bodega, ubicación y bloqueo.

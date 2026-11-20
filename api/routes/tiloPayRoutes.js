@@ -5,8 +5,9 @@ import Product from '../models/Product.js';
 import Sale from '../models/Sale.js'; 
 import sendEmail from '../utils/sendEmail.js'; 
 import { escapeHtml, asString } from '../utils/security.js';
-import { adjustMany } from '../utils/stock.js';
+import { adjustMany, detalleRebajo } from '../utils/stock.js';
 import crypto from 'crypto';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -33,8 +34,63 @@ const getTiloPayToken = async () => {
     return res.data.access_token || res.data.token || res.data;
 };
 
+// --- VERIFICACIÓN DEL PAGO CON TILOPAY (servidor a servidor) ---
+// El "code=1" del regreso del cliente se puede falsificar, así que antes de marcar un pedido como
+// pagado se consulta a TiloPay (POST /api/v1/consult). Solo cuenta si TiloPay reporta para ESE pedido:
+// código 1 (aprobada), el mismo monto, en colones, y en producción (salvo TILOPAY_ALLOW_TEST=true).
+const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+const aNumero = (v) => Number(String(v ?? '').replace(/,/g, '').trim());
+
+export async function verificarPagoTiloPay(order) {
+  const key = process.env.TILOPAY_API_KEY?.trim();
+  if (!key) throw new Error('Falta TILOPAY_API_KEY');
+  const token = await getTiloPayToken();
+  const permitirPruebas = process.env.TILOPAY_ALLOW_TEST === 'true';
+
+  // TiloPay puede tardar unos segundos en registrar la transacción justo después del regreso
+  let transacciones = [];
+  for (let intento = 0; intento < 3; intento++) {
+    const { data } = await axios.post(
+      'https://app.tilopay.com/api/v1/consult',
+      { key, orderNumber: order.orderId },
+      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' }, timeout: 15000 }
+    );
+    transacciones = (Array.isArray(data?.response) ? data.response : []).filter((t) => String(t?.orderNumber) === order.orderId);
+    if (transacciones.some((t) => String(t.code) === '1')) break;
+    if (intento < 2) await esperar(2000);
+  }
+
+  const aprobada = transacciones.find((t) => {
+    if (String(t.code) !== '1') return false;
+    if (String(t.currency || '').toUpperCase() !== 'CRC') return false;
+    if (!(Math.abs(aNumero(t.amount) - Number(order.total)) <= 1)) return false;
+    if (!permitirPruebas && /test|prueba|sandbox/i.test(String(t.environment || ''))) return false;
+    return true;
+  });
+
+  if (!aprobada) {
+    const detalle = transacciones.map((t) => `code=${t.code} ${t.currency} ${t.amount} env=${t.environment}`).join(' | ') || 'sin transacciones';
+    return { ok: false, detalle };
+  }
+  return {
+    ok: true,
+    pago: {
+      idTilopay: String(aprobada.id_tilopay ?? ''),
+      auth: String(aprobada.auth ?? ''),
+      monto: aNumero(aprobada.amount),
+      moneda: 'CRC',
+      tarjeta: aprobada.last ? String(aprobada.last) : '',
+      ambiente: String(aprobada.environment ?? ''),
+      verificadoEn: new Date(),
+    },
+  };
+}
+
+const crearLinkLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 15, message: 'Demasiados intentos de pago. Espera unos minutos.' });
+const confirmarLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 30 });
+
 // --- RUTA 1: CREAR LINK DE PAGO Y DEJAR ORDEN PENDIENTE ---
-router.post('/create-link', async (req, res) => {
+router.post('/create-link', crearLinkLimiter, async (req, res) => {
   try {
     const { cliente, productos, envio } = req.body;
     const API_KEY = process.env.TILOPAY_API_KEY?.trim(); 
@@ -157,16 +213,37 @@ router.post('/create-link', async (req, res) => {
 });
 
 // --- RUTA 2: CONFIRMAR PAGO, RESTAR STOCK Y ENVIAR CORREOS ---
-router.post('/confirm-payment', async (req, res) => {
+router.post('/confirm-payment', confirmarLimiter, async (req, res) => {
   try {
-    const orderId = asString(req.body.orderId);
-    if (!orderId) return res.status(400).json({ message: "Orden inválida" });
+    const orderId = asString(req.body.orderId).trim();
+    if (!orderId || orderId.length > 64) return res.status(400).json({ message: "Orden inválida" });
 
-    // Transición atómica pendiente → pagado: si llegan dos confirmaciones a la vez, solo UNA
-    // descuenta stock, registra la venta y manda correos. (El pago aún se debe revisar en TiloPay.)
+    const pendiente = await Order.findOne({ orderId }).lean();
+    if (!pendiente) return res.status(404).json({ message: "Orden no encontrada" });
+    if (pendiente.status === 'cancelled') return res.status(409).json({ message: "Este pedido fue cancelado." });
+
+    // 1. Verificar con TiloPay ANTES de tocar nada (solo si sigue pendiente)
+    let pago = null;
+    if (pendiente.status === 'pending') {
+      let verificacion;
+      try {
+        verificacion = await verificarPagoTiloPay(pendiente);
+      } catch (e) {
+        console.error(`❌ No se pudo consultar TiloPay para ${orderId}:`, e.response?.status, JSON.stringify(e.response?.data || e.message));
+        return res.status(502).json({ message: "No pudimos confirmar el pago con el banco. Intenta de nuevo en un momento.", status: 'pending' });
+      }
+      if (!verificacion.ok) {
+        console.warn(`⛔ Pago NO verificado en TiloPay para ${orderId}: ${verificacion.detalle}`);
+        return res.status(402).json({ message: "TiloPay no reporta un pago aprobado para este pedido.", status: 'unpaid' });
+      }
+      pago = verificacion.pago;
+    }
+
+    // 2. Transición atómica pendiente → pagado: si llegan dos confirmaciones a la vez, solo UNA
+    //    descuenta stock, registra la venta y manda correos.
     const order = await Order.findOneAndUpdate(
       { orderId, status: 'pending' },
-      { $set: { status: 'paid', stockDiscounted: true } },
+      { $set: { status: 'paid', stockDiscounted: true, ...(pago ? { pago } : {}) } },
       { new: false }
     );
     if (!order) {
@@ -181,9 +258,11 @@ router.post('/confirm-payment', async (req, res) => {
       const ajustes = await adjustMany(order.items.map((item) => ({ productId: item.product_id, talla: item.size, delta: -(Number(item.quantity) || 1), nombre: item.name })));
       const fallidos = ajustes.filter((x) => !x.ok);
       if (fallidos.length) console.warn(`⚠️ Pedido ${orderId}: sin descontar stock en`, fallidos.map((f) => `${f.nombre} (${f.talla}): ${f.reason}`).join(' | '));
+      await Order.updateOne({ _id: order._id }, { $set: { stockDiscountedAt: new Date(), stockDetalle: detalleRebajo(ajustes) } })
+        .catch((e) => console.error('No se pudo guardar el detalle del stock:', e.message));
     }
     order.status = 'paid';
-    console.log(`✅ Pedido ${orderId} marcado como pagado (verificar en TiloPay).`);
+    console.log(`✅ Pedido ${orderId} pagado y verificado en TiloPay (id ${pago?.idTilopay}, auth ${pago?.auth}).`);
 
     // 🌟 4.5. REGISTRAR LA VENTA AUTOMÁTICAMENTE EN EL PANEL GENERAL (BLINDADO) 🌟
     try {

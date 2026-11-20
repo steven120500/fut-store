@@ -5,7 +5,7 @@ import History from '../models/History.js'; // 👈 IMPORTAMOS EL MODELO DEL HIS
 import sendEmail from '../utils/sendEmail.js'; 
 import { escapeHtml } from '../utils/security.js';
 import { requireAuth, actorName } from '../middleware/auth.js';
-import { adjustMany } from '../utils/stock.js';
+import { adjustMany, detalleRebajo } from '../utils/stock.js';
 
 const ESTADOS_PEDIDO = ['pending', 'paid', 'sent', 'cancelled'];
 
@@ -113,6 +113,9 @@ router.post('/:orderId/discount-stock', async (req, res) => {
         })));
         const ok = ajustes.filter((a) => a.ok);
         const fallidos = ajustes.filter((a) => !a.ok);
+        const stockDetalle = detalleRebajo(ajustes);
+        const stockDiscountedAt = new Date();
+        await Order.updateOne({ _id: order._id }, { $set: { stockDiscountedAt, stockDetalle } });
 
         await History.create({
             user: actorName(req, 'Super Admin'),
@@ -121,7 +124,7 @@ router.post('/:orderId/discount-stock', async (req, res) => {
             details: `Se restó: ${ok.map((a) => `${a.nombre} (Talla: ${a.key}) x${-a.delta}`).join(' | ') || 'nada'}${fallidos.length ? ` | ⚠️ No encontrado: ${fallidos.map((f) => `${f.nombre} (${f.talla})`).join(', ')}` : ''}`
         });
 
-        res.json({ ok: true, message: "Stock descontado con éxito", descontados: ok.length, noEncontrados: fallidos.length });
+        res.json({ ok: true, message: "Stock descontado con éxito", descontados: ok.length, noEncontrados: fallidos.length, stockDiscountedAt, stockDetalle });
     } catch (err) {
         console.error("Error descontando stock:", err);
         res.status(500).json({ error: "Error al actualizar inventario" });
