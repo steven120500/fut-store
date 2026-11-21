@@ -116,11 +116,11 @@ export default function CatalogHeader({ filterType, setFilterType, setPage }) {
         </div>
       </div>
 
-      {/* ♾️ Riel infinito (se pausa al pasar el mouse o tocar) */}
+      {/* ♾️ Riel infinito (se pausa con el mouse y se puede arrastrar con el dedo) */}
       <div className="relative">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-[#0b0b0b] to-transparent sm:w-32" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-[#0b0b0b] to-transparent sm:w-32" />
-        <motion.div ref={trackRef} style={{ x }} {...handlers} className="flex w-max py-4 will-change-transform">
+        <motion.div ref={trackRef} style={{ x }} {...handlers} className="flex w-max cursor-grab touch-pan-y py-4 will-change-transform active:cursor-grabbing">
           {halves}
         </motion.div>
       </div>

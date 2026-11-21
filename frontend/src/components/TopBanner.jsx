@@ -7,6 +7,9 @@ const MESSAGES = [
   "Envíos a todo el país",
   "Somos FutStore",
   "Tu estilo juega en primera",
+  "Viste tu pasión, marca la diferencia",
+  "Pagos contra entrega en el GAM",
+  "Sinpe móvil, transferencia bancaria, pago por web, efectivo",
 ];
 
 // Franja plateada con mensajes en marquesina (se renderiza dentro del Header)
@@ -21,7 +24,7 @@ export default function TopBanner() {
       style={{ height: "var(--banner-h)" }}
       aria-label={MESSAGES.join(" · ")}
     >
-      <motion.div ref={trackRef} {...handlers} className="flex w-max items-center" style={{ x, willChange: "transform" }} aria-hidden="true">
+      <motion.div ref={trackRef} {...handlers} className="flex w-max cursor-grab touch-pan-y items-center active:cursor-grabbing" style={{ x, willChange: "transform" }} aria-hidden="true">
         {[0, 1].map((dup) => (
           <div key={dup} className="flex shrink-0 items-center">
             {items.map((msg, i) => (
