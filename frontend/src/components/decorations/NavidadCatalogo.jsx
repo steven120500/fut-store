@@ -28,21 +28,21 @@ export function BannerNavidad() {
         <FaGift size={42} className="text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]" />
       </div>
 
-      <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:pr-28">
+      <div className="relative flex flex-col gap-3 sm:pr-28 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
         <div>
           <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.35em] text-cyan-300">
-            <Copo className="h-3 w-3 text-cyan-300" /> Navidad FutStore
+            <Copo className="h-3 w-3 text-cyan-300" /> Diciembre en FutStore
           </p>
-          <h3 className="mt-1 font-display text-2xl uppercase leading-tight tracking-wide sm:text-3xl">
-            Regalá la camiseta <span className="text-cyan-300">de su equipo</span>
+          <h3 className="mt-1 max-w-2xl font-display text-2xl uppercase leading-tight tracking-wide sm:text-3xl">
+            El regalo que <span className="text-cyan-300">todo aficionado quiere recibir esta Navidad</span>
           </h3>
         </div>
-        <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+        <div className="flex shrink-0 flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
           <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1.5">
             <FaTruck className="text-cyan-300" /> Envíos a todo el país
           </span>
           <span className="flex items-center gap-1.5 rounded-full border border-red-500/40 bg-red-600/15 px-3 py-1.5 text-red-300">
-            🎁 Ideal para regalo
+            🎁 Ideal para regalar
           </span>
         </div>
       </div>
