@@ -25,6 +25,7 @@ export default function SalesPage({ user, onLogout }) {
   const [catalogo, setCatalogo] = useState([]);
   const [apartadosActivos, setApartadosActivos] = useState([]);
   const [todasLasVentas, setTodasLasVentas] = useState([]);
+  const [apartadosComision, setApartadosComision] = useState([]); // apartados que ya ganan comisión (desde que se apartan)
 
   // Estados modales
   const [showQuickSaleModal, setShowQuickSaleModal] = useState(false);
@@ -76,7 +77,17 @@ export default function SalesPage({ user, onLogout }) {
     fetchCatalogoProductos();
     fetchApartadosActivos();
     fetchAllSalesList();
+    fetchApartadosComision();
   }, []);
+
+  const fetchApartadosComision = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/apartados/comision`);
+      if (res.ok) setApartadosComision(await res.json());
+    } catch (error) {
+      console.error("No se pudo cargar la comisión de apartados:", error);
+    }
+  };
 
   const fetchApartadosActivos = async () => {
     try {
@@ -178,7 +189,19 @@ export default function SalesPage({ user, onLogout }) {
   const getPrendasVendedor = (nombreVendedor) => {
     let tacos = 0;
     let totalVendidas = 0;
-    const ventasDelVendedor = todasLasVentas.filter(s => mismoVendedor(s.vendedor, nombreVendedor));
+    // Las ventas que vienen de un apartado entregado NO cuentan aquí: su comisión ya se sumó al apartarlo
+    const ventasDelVendedor = todasLasVentas.filter(s => !s.apartadoId && mismoVendedor(s.vendedor, nombreVendedor));
+
+    // Apartados (de stock o por encargo): cuentan desde el momento en que se apartan
+    apartadosComision
+      .filter(ap => mismoVendedor(ap.vendedor, nombreVendedor))
+      .forEach(ap => (ap.productos || []).forEach(p => {
+        const cant = Math.max(1, Number(p.cantidad) || 1);
+        totalVendidas += cant;
+        const nombre = (p.tipoPedido === 'stock' ? (p.productoObj?.name || p.busqueda) : p.descripcionManual) || '';
+        const texto = `${p.productoObj?.type || ''} ${p.version || ''} ${nombre}`.toLowerCase();
+        if (texto.includes('tacos') || (p.talla || '').toLowerCase().includes('us')) tacos += cant;
+      }));
 
     ventasDelVendedor.forEach(sale => {
       totalVendidas += (Number(sale.cantidad) || 1);
@@ -203,6 +226,14 @@ export default function SalesPage({ user, onLogout }) {
     return { totalTacos: tacos, totalChemas: totalVendidas - tacos, totalGenerales: totalVendidas };
   };
 
+  // Vendedores que solo tienen apartados (aún sin ventas) también aparecen para sacar su comisión
+  const rankingConApartados = [
+    ...ranking,
+    ...[...new Set(apartadosComision.map(ap => normalizarVendedor(ap.vendedor)).filter(Boolean))]
+      .filter(nombre => !ranking.some(emp => mismoVendedor(emp._id, nombre)))
+      .map(nombre => ({ _id: nombre, totalVentas: 0, totalPrendas: 0, dineroGenerado: 0, enviosGenerados: 0, montoTotal: 0, totalTacos: 0, totalChemas: 0 })),
+  ];
+
   const confirmResetMonthlySales = async () => {
     setResetting(true);
     try {
@@ -215,6 +246,7 @@ export default function SalesPage({ user, onLogout }) {
         setShowResetModal(false);
         fetchRankingData();
         fetchAllSalesList();
+        fetchApartadosComision();
       } else {
         throw new Error("No se pudo resetear");
       }
@@ -513,13 +545,13 @@ export default function SalesPage({ user, onLogout }) {
             <div className="text-center py-20 text-gray-500 font-bold uppercase tracking-widest text-xs animate-pulse">
               Calculando el ranking del equipo...
             </div>
-          ) : ranking.length === 0 ? (
+          ) : rankingConApartados.length === 0 ? (
             <div className="text-center py-20 bg-[#111] rounded-2xl border border-dashed border-gray-800 text-gray-500 text-sm font-bold uppercase">
               Aún no se han registrado ventas en el sistema.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {ranking.map((emp, index) => {
+              {rankingConApartados.map((emp, index) => {
                 const esOro = index === 0;
                 const esPlata = index === 1;
                 const esBronce = index === 2;

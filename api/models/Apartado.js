@@ -21,7 +21,9 @@ const apartadoSchema = new mongoose.Schema({
   },
   imagen: { type: String }, // Foto principal (base64 o URL)
   imagen2: { type: String }, // Espacio para la foto secundaria
-  fechaCreacion: { type: Date, default: Date.now }
+  fechaCreacion: { type: Date, default: Date.now },
+  // La comisión del apartado cuenta desde que se crea (stock o encargo). El cierre de mes la archiva.
+  comisionArchivada: { type: Boolean, default: false }
 });
 
 export default mongoose.model('Apartado', apartadoSchema);

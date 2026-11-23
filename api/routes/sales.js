@@ -1,5 +1,6 @@
 import express from 'express';
 import Sale from '../models/Sale.js';
+import Apartado from '../models/Apartado.js';
 import Product from '../models/Product.js';
 import History from '../models/History.js';
 import { adjustMany } from '../utils/stock.js';
@@ -248,6 +249,8 @@ router.delete('/reset/all', requireRole('edit'), async (req, res) => {
   try {
     // En lugar de hacer deleteMany, marcamos las ventas como archivadas para que el Balance anual las conserve
     await Sale.updateMany({ archivado: false }, { $set: { archivado: true } });
+    // La comisión de los apartados (que cuenta al apartar) también se cierra con el mes
+    await Apartado.updateMany({ comisionArchivada: { $ne: true } }, { $set: { comisionArchivada: true } });
     
     await History.create({
       user: actorName(req, 'Admin'),
