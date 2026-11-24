@@ -279,7 +279,7 @@ export default function ProductModal({
                 onChange={(e) => setEditedType(e.target.value)}
                 className="w-full px-3 py-2 border rounded mb-3"
               >
-                {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón'].map(t => (
+                {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','NBA'].map(t => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>

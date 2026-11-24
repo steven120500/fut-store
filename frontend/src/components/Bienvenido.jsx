@@ -13,6 +13,7 @@ const slides = [
   { id: 3, image: "/Descuento.png", label: "Ofertas", title: "Ver ofertas", eventName: "filtrarOfertas", isOffer: true },
   { id: 4, image: "/FanB.png", label: "Fan", title: "Ver Fan", eventName: "filtrarFan" },
   { id: 5, image: "/NacionalB.png", label: "Nacional", title: "Ver Nacional", eventName: "filtrarNacional" },
+  { id: 6, image: "/NBA.png", label: "NBA", title: "Ver NBA", eventName: "filtrarNBA", scale: 1.3 },
 ];
 
 const N = slides.length;
@@ -74,7 +75,7 @@ function RingItem({ slide, index, ring, radius, size, isActive, onClick }) {
       <motion.img
         src={slide.image}
         alt={slide.label}
-        style={{ filter }}
+        style={{ filter, scale: slide.scale || 1 }}
         draggable={false}
         className="h-full w-full object-contain drop-shadow-[0_24px_24px_rgba(0,0,0,0.8)]"
         animate={isActive ? { y: [0, -10, 0] } : { y: 0 }}

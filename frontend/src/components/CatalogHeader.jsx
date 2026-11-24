@@ -9,6 +9,7 @@ const CATEGORY_BOXES = [
   { label: "Player", value: "Player", sub: "Jugador", img: "/Botones/player.webp" },
   { label: "Mujer", value: "Mujer", sub: "Corte dama", img: "/Botones/mujer.webp" },
   { label: "Nacional", value: "Nacional", sub: "Fútbol nacional", img: "/Botones/nacional.webp" },
+  { label: "NBA", value: "NBA", sub: "Basketball", img: "/Botones/nba.webp" },
   { label: "Ofertas", value: "Ofertas", sub: "Precios especiales", isOffer: true },
   { label: "Tacos", value: "Tacos", sub: "Calzado pro", img: "/Botones/tacos.webp" },
   { label: "Niño", value: "Niño", sub: "Infantil", img: "/Botones/nino.webp" },

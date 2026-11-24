@@ -232,6 +232,7 @@ function MainApp() {
         filtrarPlayer: "Player",
         filtrarFan: "Fan",
         filtrarNacional: "Nacional",
+        filtrarNBA: "NBA",
         filtrarOfertas: "Ofertas",
         filtrarMundial: "Mundial", 
         filtrarTacos: "Tacos",
@@ -252,7 +253,7 @@ function MainApp() {
       }
     };
 
-    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarOfertas", "filtrarMundial", "filtrarTacos", "filtrarNuevos"];
+    const events = ["filtrarRetros", "filtrarPlayer", "filtrarFan", "filtrarNacional", "filtrarNBA", "filtrarOfertas", "filtrarMundial", "filtrarTacos", "filtrarNuevos"];
     events.forEach(ev => window.addEventListener(ev, handleFilterEvent));
 
     return () => {

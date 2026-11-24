@@ -390,7 +390,7 @@ export default function ProductDetail({
                           <div>
                               <label className="text-xs font-bold text-gray-500">TIPO</label>
                               <select value={editedType} onChange={e => setEditedType(e.target.value)} className="w-full border p-2 rounded">
-                                  {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','Tacos'].map(t => <option key={t}>{t}</option>)}
+                                  {['Player','Fan','Mujer','Nacional','Abrigos','Retro','Niño','Balón','Tacos','NBA'].map(t => <option key={t}>{t}</option>)}
                               </select>
                           </div>
                           <div>
