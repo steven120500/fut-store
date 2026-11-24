@@ -40,6 +40,10 @@ const getTiloPayToken = async () => {
 // código 1 (aprobada), el mismo monto, en colones, y en producción (salvo TILOPAY_ALLOW_TEST=true).
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const aNumero = (v) => Number(String(v ?? '').replace(/,/g, '').trim());
+const esMismoPedido = (numeroTilo, orderId) => {
+  const n = String(numeroTilo ?? '').trim();
+  return n === orderId || n.endsWith(`-${orderId}`);
+};
 
 export async function verificarPagoTiloPay(order) {
   const key = process.env.TILOPAY_API_KEY?.trim();
@@ -55,7 +59,9 @@ export async function verificarPagoTiloPay(order) {
       { key, orderNumber: order.orderId },
       { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' }, timeout: 15000 }
     );
-    transacciones = (Array.isArray(data?.response) ? data.response : []).filter((t) => String(t?.orderNumber) === order.orderId);
+    // TiloPay antepone un prefijo del comercio al número de pedido (p. ej. "PFC025049-ORD-…"),
+    // así que se acepta el número exacto o uno que termine en "-<orderId>".
+    transacciones = (Array.isArray(data?.response) ? data.response : []).filter((t) => esMismoPedido(t?.orderNumber, order.orderId));
     if (transacciones.some((t) => String(t.code) === '1')) break;
     if (intento < 2) await esperar(2000);
   }
