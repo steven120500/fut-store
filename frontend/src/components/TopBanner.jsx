@@ -9,7 +9,7 @@ const MESSAGES = [
   "Tu estilo juega en primera",
   "Viste tu pasión, marca la diferencia",
   "Pagos contra entrega en el GAM",
-  "Sinpe móvil, transferencia bancaria, pago por web, efectivo",
+  "Sinpe móvil, transferencia bancaria, pago por web, efectivo, datáfono (en tienda física)",
 ];
 
 // Franja plateada con mensajes en marquesina (se renderiza dentro del Header)
